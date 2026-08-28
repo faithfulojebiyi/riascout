@@ -17,22 +17,46 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": ["vitest/globals", "node"],
+    "types": [
+      "vitest/globals",
+      "node"
+    ],
     "ignoreDeprecations": "6.0",
     "baseUrl": "./",
     "paths": {
-      "@orm/app": ["./orm/app/client.ts"],
-      "@orm/app/sql/*": ["./orm/app/sql/*"],
-      "@api/*": ["./apps/api/src/*"],
-      "@worker/*": ["./apps/worker/src/*"],
-      "@system/*": ["./libs/system/*"],
-      "@feature/*": ["./libs/feature/*"],
-      "@providers/*": ["./libs/providers/*"]
+      "@orm/app": [
+        "./orm/app/client.ts"
+      ],
+      "@orm/app/sql/*": [
+        "./orm/app/sql/*"
+      ],
+      "@api/*": [
+        "./apps/api/src/*"
+      ],
+      "@worker/*": [
+        "./apps/worker/src/*"
+      ],
+      "@system/*": [
+        "./libs/system/*"
+      ],
+      "@feature/*": [
+        "./libs/feature/*"
+      ],
+      "@providers/*": [
+        "./libs/providers/*"
+      ]
     }
   },
   "files": [],
   "references": [
-    { "path": "./apps/api/tsconfig.app.json" },
-    { "path": "./apps/worker/tsconfig.app.json" }
+    {
+      "path": "./apps/api/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/worker/tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.scripts.json"
+    }
   ]
 }

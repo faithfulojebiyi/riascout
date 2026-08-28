@@ -123,27 +123,59 @@ async function main(): Promise<void> {
 
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-  const upsertCoded = async (
-    label: string,
-    rows: readonly (readonly [string, string])[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    model: { upsert: (args: unknown) => Promise<unknown> },
-  ): Promise<void> => {
-    for (const [code, name] of rows) {
-      await model.upsert({ where: { code }, create: { code, name }, update: { name } });
-    }
-
-    console.log(`  ${label}: ${rows.length}`);
+  const report = (label: string, count: number): void => {
+    console.log(`  ${label}: ${count}`);
   };
 
   console.log('seeding dimensions');
 
-  await upsertCoded('dim_client_type', CLIENT_TYPES, prisma.dimClientType);
-  await upsertCoded('dim_service_type', SERVICE_TYPES, prisma.dimServiceType);
-  await upsertCoded('dim_asset_category', ASSET_CATEGORIES, prisma.dimAssetCategory);
-  await upsertCoded('dim_fund_type', FUND_TYPES, prisma.dimFundType);
-  await upsertCoded('dim_registration_status', REGISTRATION_STATUSES, prisma.dimRegistrationStatus);
-  await upsertCoded('dim_firm_channel', FIRM_CHANNELS, prisma.dimFirmChannel);
+  for (const [code, name] of CLIENT_TYPES) {
+    await prisma.dimClientType.upsert({ where: { code }, create: { code, name }, update: { name } });
+  }
+
+  report('dim_client_type', CLIENT_TYPES.length);
+
+  for (const [code, name] of SERVICE_TYPES) {
+    await prisma.dimServiceType.upsert({ where: { code }, create: { code, name }, update: { name } });
+  }
+
+  report('dim_service_type', SERVICE_TYPES.length);
+
+  for (const [code, name] of ASSET_CATEGORIES) {
+    await prisma.dimAssetCategory.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+  }
+
+  report('dim_asset_category', ASSET_CATEGORIES.length);
+
+  for (const [code, name] of FUND_TYPES) {
+    await prisma.dimFundType.upsert({ where: { code }, create: { code, name }, update: { name } });
+  }
+
+  report('dim_fund_type', FUND_TYPES.length);
+
+  for (const [code, name] of REGISTRATION_STATUSES) {
+    await prisma.dimRegistrationStatus.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+  }
+
+  report('dim_registration_status', REGISTRATION_STATUSES.length);
+
+  for (const [code, name] of FIRM_CHANNELS) {
+    await prisma.dimFirmChannel.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+  }
+
+  report('dim_firm_channel', FIRM_CHANNELS.length);
 
   for (const [code, name, lowerPct, upperPct] of OWNERSHIP_CODES) {
     await prisma.dimOwnershipCode.upsert({
@@ -153,7 +185,7 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log(`  dim_ownership_code: ${OWNERSHIP_CODES.length}`);
+  report('dim_ownership_code', OWNERSHIP_CODES.length);
 
   for (const [code, name, lowerAum, upperAum] of AUM_BANDS) {
     await prisma.dimAumBand.upsert({
@@ -163,7 +195,7 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log(`  dim_aum_band: ${AUM_BANDS.length}`);
+  report('dim_aum_band', AUM_BANDS.length);
 
   for (const [code, name, category, precedence] of SOURCES) {
     await prisma.dimSource.upsert({
@@ -173,7 +205,7 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log(`  dim_source: ${SOURCES.length}`);
+  report('dim_source', SOURCES.length);
   console.log('done');
 
   await prisma.$disconnect();
