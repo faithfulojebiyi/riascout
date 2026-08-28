@@ -819,3 +819,380 @@ model EnrichmentRequest {
   @@schema("market")
   @@map("enrichment_request")
 }
+
+// ────────────────────────── app · EAV substrate ─────────────────────────
+//
+// User-authored columns only. SEC data is NOT stored here — it is projected
+// from market via reference attributes. 510k advisors x ~170 reference fields
+// as cells would be ~87M rows per tenant, duplicating data identical for
+// every tenant. See docs/plans/07-eav-and-grid.md.
+
+enum AttributeType {
+  text
+  number
+  checkbox
+  currency
+  date
+  timestamp
+  rating
+  status
+  select
+  record
+  relationship
+  user
+  location
+  domain
+  email
+  phone
+  url
+  boolean
+  percentage
+  country
+  file
+
+  @@schema("app")
+  @@map("attribute_type")
+}
+
+enum AttributeRelationshipType {
+  oneToOne
+  oneToMany
+  manyToOne
+  manyToMany
+
+  @@schema("app")
+  @@map("attribute_relationship_type")
+}
+
+/// records who set a cell. NULL = user. Lets an enrichment refresh overwrite
+/// its own prior writes without clobbering a manual edit.
+enum CellSource {
+  enrichment
+  import
+  ai
+
+  @@schema("app")
+  @@map("cell_source")
+}
+
+enum ViewType {
+  table
+  pipeline
+
+  @@schema("app")
+  @@map("view_type")
+}
+
+enum SourceKind {
+  advisor
+  firm
+
+  @@schema("app")
+  @@map("source_kind")
+}
+
+/// A table definition. Entity owns the attribute schema; List owns membership.
+model Entity {
+  id                 String   @id @default(uuid(7))
+  workspaceId        String   @map("workspace_id")
+  name               String
+  singularNoun       String?  @map("singular_noun")
+  slug               String
+  icon               String?
+  color              String?
+  /// advisor | firm when this entity mirrors market data
+  sourceKind         SourceKind? @map("source_kind")
+  primaryAttributeId String?  @map("primary_attribute_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  attributes EntityAttribute[]
+  records    EntityRecord[]
+  views      EntityView[]
+
+  @@unique([slug, workspaceId])
+  @@index([workspaceId])
+  @@schema("app")
+  @@map("entity")
+}
+
+/// A field definition. Three kinds, distinguished by how the grid resolves them:
+///   eav          — a cell in entity_record_value
+///   relationship — an edge in entity_record_relationship
+///   reference    — a column in a market projection, resolved by JOIN, never copied
+model EntityAttribute {
+  id          String        @id @default(uuid(7))
+  entityId    String        @map("entity_id")
+  workspaceId String        @map("workspace_id")
+  label       String
+  key         String
+  type        AttributeType
+  description String?
+  /// lexorank
+  position    String
+  defaultValue Json?        @map("default_value") @db.JsonB
+
+  isUnique        Boolean @default(false) @map("is_unique")
+  isSystem        Boolean @default(false) @map("is_system")
+  isPrimary       Boolean @default(false) @map("is_primary")
+  isRequired      Boolean @default(false) @map("is_required")
+  isEditable      Boolean @default(true) @map("is_editable")
+  isArchived      Boolean @default(false) @map("is_archived")
+  isMultiValue    Boolean @default(false) @map("is_multi_value")
+
+  /// set for reference attributes: the market projection column this resolves to.
+  /// Validated against an allowlist at compile time — identifiers never come
+  /// from user input.
+  referenceColumn String? @map("reference_column")
+
+  relationshipType                AttributeRelationshipType? @map("relationship_type")
+  /// which side of a relationship pair owns the canonical edge row
+  isCanonicalSide                 Boolean?                   @map("is_canonical_side")
+  otherRelationshipSideAttributeId String?                   @unique @map("other_relationship_side_attribute_id")
+  relationEntityId                String?                    @map("relation_entity_id")
+
+  /// per-type config blob, validated on write by the attribute-type registry
+  config Json @default("{}") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  entity        Entity                  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  choices       EntityAttributeChoice[]
+  values        EntityRecordValue[]
+  relationships EntityRecordRelationship[]
+  viewPaths     EntityViewFieldPath[]
+
+  @@unique([entityId, key])
+  @@index([workspaceId, entityId])
+  @@index([referenceColumn])
+  @@schema("app")
+  @@map("entity_attribute")
+}
+
+/// Unified labelled choices for status/select attributes. isWon/isLost carry
+/// pipeline semantics.
+model EntityAttributeChoice {
+  id          String  @id @default(uuid(7))
+  attributeId String  @map("attribute_id")
+  workspaceId String  @map("workspace_id")
+  name        String
+  color       String?
+  position    Int
+  isWon       Boolean @default(false) @map("is_won")
+  isLost      Boolean @default(false) @map("is_lost")
+  metadata    Json    @default("{}") @db.JsonB
+
+  attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeId, position])
+  @@index([workspaceId])
+  @@schema("app")
+  @@map("entity_attribute_choice")
+}
+
+/// A row. Points at market by CRD value — never by FK, and never at the firm
+/// an advisor works for, so a firm change is invisible here.
+model EntityRecord {
+  id          String      @id @default(uuid(7))
+  entityId    String      @map("entity_id")
+  workspaceId String      @map("workspace_id")
+  sourceKind  SourceKind? @map("source_kind")
+  sourceCrd   BigInt?     @map("source_crd")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  entity        Entity                     @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  values        EntityRecordValue[]
+  outgoingEdges EntityRecordRelationship[] @relation("SourceRecord")
+  incomingEdges EntityRecordRelationship[] @relation("TargetRecord")
+  listMembers   ListMember[]
+
+  @@unique([entityId, sourceKind, sourceCrd, workspaceId])
+  @@index([entityId, workspaceId])
+  @@index([sourceKind, sourceCrd])
+  @@schema("app")
+  @@map("entity_record")
+}
+
+/// EAV cell storage: one row per (record, attribute), one typed column
+/// populated per row, dispatched by attribute.type. The per-type composite
+/// indexes are what make EAV filtering fast rather than pathological.
+model EntityRecordValue {
+  id          String      @id @default(uuid(7))
+  recordId    String      @map("record_id")
+  attributeId String      @map("attribute_id")
+  workspaceId String      @map("workspace_id")
+
+  textValue    String?  @map("text_value")
+  numericValue Decimal? @map("numeric_value") @db.Decimal(30, 10)
+  dateValue    DateTime? @map("date_value") @db.Timestamptz(6)
+  booleanValue Boolean? @map("boolean_value")
+  jsonValue    Json?    @map("json_value") @db.JsonB
+
+  /// optimistic concurrency token
+  version Int         @default(0)
+  source  CellSource?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  record    EntityRecord    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, attributeId])
+  @@index([attributeId, numericValue])
+  @@index([attributeId, textValue])
+  @@index([attributeId, dateValue])
+  @@index([attributeId, booleanValue])
+  @@index([recordId])
+  @@index([workspaceId, attributeId])
+  @@schema("app")
+  @@map("entity_record_value")
+}
+
+/// Edges are written and read on the canonical side only; the non-canonical
+/// side dispatches through otherRelationshipSideAttributeId.
+model EntityRecordRelationship {
+  id             String @id @default(uuid(7))
+  sourceRecordId String @map("source_record_id")
+  targetRecordId String @map("target_record_id")
+  attributeId    String @map("attribute_id")
+  workspaceId    String @map("workspace_id")
+
+  relationshipType AttributeRelationshipType? @map("relationship_type")
+  metadata         Json                       @default("{}") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  source    EntityRecord    @relation("SourceRecord", fields: [sourceRecordId], references: [id], onDelete: Cascade)
+  target    EntityRecord    @relation("TargetRecord", fields: [targetRecordId], references: [id], onDelete: Cascade)
+  attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceRecordId, attributeId, targetRecordId])
+  @@index([sourceRecordId, attributeId])
+  @@index([targetRecordId])
+  @@schema("app")
+  @@map("entity_record_relationship")
+}
+
+/// A saved view: filter AST, sort AST and column configuration.
+model EntityView {
+  id          String   @id @default(uuid(7))
+  entityId    String   @map("entity_id")
+  workspaceId String   @map("workspace_id")
+  userId      String?  @map("user_id")
+  name        String
+  type        ViewType @default(table)
+  isDefault   Boolean  @default(false) @map("is_default")
+
+  /// filter ast (and|or|not|condition); compiled to parameterized sql at query time
+  filterTree Json? @map("filter_tree") @db.JsonB
+  /// multi-column sort: [{ path, direction }]
+  sort       Json? @db.JsonB
+
+  pipelineGroupById String? @map("pipeline_group_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  entity Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  fields EntityViewField[]
+
+  @@index([entityId, workspaceId])
+  @@schema("app")
+  @@map("entity_view")
+}
+
+model EntityViewField {
+  id          String  @id @default(uuid(7))
+  viewId      String  @map("view_id")
+  workspaceId String  @map("workspace_id")
+  label       String?
+  /// lexorank
+  position    String
+  width       Int?
+  aggregate   String?
+  isVisible   Boolean @default(true) @map("is_visible")
+  isPinned    Boolean @default(false) @map("is_pinned")
+  /// excluded from the page query and fetched on demand by the cell renderer
+  lazy        Boolean @default(false)
+
+  view  EntityView            @relation(fields: [viewId], references: [id], onDelete: Cascade)
+  paths EntityViewFieldPath[]
+
+  @@index([viewId])
+  @@schema("app")
+  @@map("entity_view_field")
+}
+
+/// Ordered hops enabling lookup columns through relationships, max 3.
+model EntityViewFieldPath {
+  fieldId     String @map("field_id")
+  position    Int
+  attributeId String @map("attribute_id")
+  workspaceId String @map("workspace_id")
+
+  field     EntityViewField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@id([fieldId, position])
+  @@index([attributeId])
+  @@schema("app")
+  @@map("entity_view_field_path")
+}
+
+// ───────────────────────────── app · lists ──────────────────────────────
+
+enum ListKind {
+  static
+  dynamic
+
+  @@schema("app")
+  @@map("list_kind")
+}
+
+/// Entity owns the schema; List owns membership. A record in two lists has ONE
+/// set of cells — the legacy model gave each list private columns, so setting
+/// a value in one left the other empty.
+model List {
+  id            String   @id @default(uuid(7))
+  workspaceId   String   @map("workspace_id")
+  userId        String   @map("user_id")
+  entityId      String   @map("entity_id")
+  name          String
+  kind          ListKind @default(static)
+  /// dynamic lists only: the filter AST defining membership
+  filterTree    Json?    @map("filter_tree") @db.JsonB
+  defaultViewId String?  @map("default_view_id")
+  /// workspace | private
+  visibility    String   @default("workspace")
+  deletedAt     DateTime? @map("deleted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  members ListMember[]
+
+  @@index([workspaceId, entityId])
+  @@schema("app")
+  @@map("list")
+}
+
+model ListMember {
+  listId        String   @map("list_id")
+  recordId      String   @map("record_id")
+  workspaceId   String   @map("workspace_id")
+  addedAt       DateTime @default(now()) @map("added_at")
+  addedByUserId String?  @map("added_by_user_id")
+
+  list   List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  record EntityRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@id([listId, recordId])
+  @@index([recordId])
+  @@index([workspaceId])
+  @@schema("app")
+  @@map("list_member")
+}
