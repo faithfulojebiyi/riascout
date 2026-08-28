@@ -267,10 +267,20 @@ model FirmFactMetrics {
   regulatoryAum         Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
   discretionaryAum      Decimal? @map("discretionary_aum") @db.Decimal(20, 2)
   nonDiscretionaryAum   Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
-  employeeCount         Int?     @map("employee_count")
-  advisoryEmployeeCount Int?     @map("advisory_employee_count")
-  clientCount           BigInt?  @map("client_count")
-  officeCount           Int?     @map("office_count")
+  /// Usable value: NULL when the source reported something impossible, so it
+  /// can never reach a ratio, percentile or aggregate. The exact reported
+  /// figure is preserved in *_raw, and *_quality says why it was withheld.
+  /// Corrections are never invented here — see docs/plans/04-market-etl.md.
+  employeeCount        BigInt? @map("employee_count")
+  employeeCountRaw     BigInt? @map("employee_count_raw")
+  employeeCountQuality String? @map("employee_count_quality")
+
+  clientCount        BigInt? @map("client_count")
+  clientCountRaw     BigInt? @map("client_count_raw")
+  clientCountQuality String? @map("client_count_quality")
+
+  advisoryEmployeeCount BigInt? @map("advisory_employee_count")
+  officeCount           BigInt? @map("office_count")
 
   filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
 
@@ -375,7 +385,11 @@ model FirmFactOffice {
   city            String?
   regionRaw       String? @map("region_raw")
   countryRaw      String? @map("country_raw")
-  employeeCount   Int?    @map("employee_count")
+  /// NULL when the source value is impossible; the reported figure is kept
+  /// in employee_count_raw. CRD 283824 filed its telephone number here.
+  employeeCount        BigInt? @map("employee_count")
+  employeeCountRaw     BigInt? @map("employee_count_raw")
+  employeeCountQuality String? @map("employee_count_quality")
 
   filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
 
