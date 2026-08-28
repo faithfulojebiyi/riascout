@@ -42,6 +42,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# planning docs are kept local, never committed
+/docs
+
 # generated prisma client
 /orm
 

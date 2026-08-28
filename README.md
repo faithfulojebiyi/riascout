@@ -27,8 +27,7 @@ Three domain facts drive the design:
 Plus: **know time ≠ valid time.** `detected_on` (when we saw a move) is separate from `occurred_on` (when it
 happened). Movement history is append-only and never deleted.
 
-Full detail in [`docs/plans/`](./docs/plans/) — start with
-[`00-overview.md`](./docs/plans/00-overview.md).
+Full detail lives in `docs/plans/`, which is kept local and gitignored — start with `00-overview.md`.
 
 ## Layout
 
@@ -41,7 +40,6 @@ libs/feature/     market, movement, entities, lists, prospecting, jobs, import-e
 libs/providers/   external integrations
 prisma/           schema.prisma (both schemas), migrations/, sql/ (TypedSQL)
 etl/              seed loader for the market schema
-docs/plans/       the plan documents
 ```
 
 ## Getting started
