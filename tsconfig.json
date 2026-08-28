@@ -18,8 +18,11 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals", "node"],
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "./",
     "paths": {
       "@orm/app": ["./orm/app/client.ts"],
+      "@orm/app/sql/*": ["./orm/app/sql/*"],
       "@api/*": ["./apps/api/src/*"],
       "@worker/*": ["./apps/worker/src/*"],
       "@system/*": ["./libs/system/*"],

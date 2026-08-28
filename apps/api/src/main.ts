@@ -6,17 +6,17 @@ import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { Logger } from 'nestjs-pino';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
+
+import { AppLogger } from '@system/logger/logger.service.js';
 
 import { ApiModule } from './api.module.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(ApiModule, new FastifyAdapter(), {
     bufferLogs: true,
+    logger: new AppLogger('api'),
   });
-
-  app.useLogger(app.get(Logger));
 
   await app.register(helmet);
   await app.register(cookie);

@@ -122,9 +122,10 @@ bun install
 bun run prisma:generate         # regenerate client + TypedSQL functions (runs generate --sql)
 bun run prisma:draft --name x   # draft migration for hand-appended DDL — YOU review it
 bun run prisma:migrate          # YOU run migrations
-bun run build                   # nest build api && nest build worker (full typecheck — use to verify)
-bun run start:dev:api           # api in watch mode (port 3320)
-bun run start:dev:worker        # worker in watch mode (port 3321)
+bun run typecheck               # tsc -b — the real gate for correctness
+bun run build                   # tsc -b && tsc-alias (no bundler; see below)
+bun run start:dev:api           # bun --watch, runs TS directly (port 3320)
+bun run start:dev:worker        # bun --watch, runs TS directly (port 3321)
 bun run inngest:dev             # local Inngest dev server (UI on http://localhost:8288)
 bun run infra:up                # postgres + redis · infra:down stops it
 bun run lint                    # oxlint + dependency-cruiser boundary check
@@ -194,7 +195,11 @@ Three that will cost you an afternoon. Full detail in `docs/plans/01-monorepo-sh
   `nestjs-cls`, `nestjs-pino` and `@nestjs/terminus` have no Nest 12 release and warn on install, but all
   work. `AlsService` is a thin wrapper over `ClsService` precisely so nestjs-cls can be swapped for
   `node:async_hooks` in one file if needed.
-- **`nest build` does not typecheck.** It finishes in ~20ms. `bun run typecheck` (`tsc -b`) is the real gate.
+- **There is no bundler.** rspack panics on the generated Prisma client (`should be a path: ()`, all of
+  2.0–2.2), and Nest 12 forces rspack for ESM — so `nest build` / `nest start` are unused. Dev runs TS
+  directly under `bun --watch`; build is `tsc -b && tsc-alias`; prod is plain `node` on the emitted ESM.
+  `tsc-alias` rewrites `@system/*` to relative paths, and it needs `baseUrl` (kept via
+  `ignoreDeprecations: "6.0"`) — without it, it silently reports `0 files were affected`.
 - **Nullability is preserved to the API boundary.** Never `|| 0` a measurement — it destroys the
   distinction between "no data" and "actual zero".
 
@@ -232,6 +237,13 @@ bun run prisma:migrate                        # user applies
 - **Only the EAV grid/filter compiler uses `$queryRawUnsafe`** (runtime-dynamic columns). There, values are
   always placeholders, identifiers come from the attribute registry allowlist, and result rows get a zod
   parse. Never interpolate a value into SQL.
+
+### SQL file naming
+
+- **`prisma/sql/` must be camelCase.** Prisma's TypedSQL turns the filename into the exported function
+  name, so kebab-case hard-fails: `name must be a valid JS identifier`. Verified, not assumed.
+- **`etl/sql/` is kebab-case** like everything else — those are plain data-op scripts run by the loader,
+  not TypedSQL.
 
 ### Prisma JSON columns
 

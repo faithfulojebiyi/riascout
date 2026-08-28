@@ -48,6 +48,9 @@ lerna-debug.log*
 # generated prisma client
 /orm
 
+# migrations are not committed yet
+/prisma/migrations
+
 # ETL working files (large; sourced from ASSET_DATA_DIR)
 /etl/.staging
 

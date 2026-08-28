@@ -2,16 +2,16 @@ import './load-env.js';
 
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { Logger } from 'nestjs-pino';
+
+import { AppLogger } from '@system/logger/logger.service.js';
 
 import { WorkerModule } from './worker.module.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(WorkerModule, new FastifyAdapter(), {
     bufferLogs: true,
+    logger: new AppLogger('worker'),
   });
-
-  app.useLogger(app.get(Logger));
 
   const prefix = process.env.API_PREFIX ?? '';
 

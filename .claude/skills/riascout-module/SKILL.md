@@ -237,6 +237,8 @@ where t.firm_crd = $1 and t.kind = 'registration'
 order by t.start_date desc;
 ```
 
+- **`prisma/sql/` filenames must be camelCase** — the filename becomes the exported function name and
+  Prisma rejects anything that is not a valid JS identifier. `etl/sql/` is kebab-case (not TypedSQL).
 - **`$queryRawUnsafe` is allowed in exactly one place:** the EAV grid/filter compiler, which has
   runtime-dynamic columns. There, values are always placeholders, identifiers come from the attribute
   registry allowlist, and result rows get a zod parse. **Never interpolate a value into SQL.**

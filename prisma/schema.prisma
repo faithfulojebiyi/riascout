@@ -1,0 +1,82 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../orm/app"
+  previewFeatures = ["typedSql"]
+  moduleFormat    = "esm"
+}
+
+/// no url here — the runtime client connects through @prisma/adapter-pg
+datasource db {
+  provider = "postgresql"
+  schemas  = ["app", "market"]
+}
+
+// ─────────────────────────────── app ───────────────────────────────
+
+/// smoke-test table proving the app schema and migration lineage work
+model HealthCheck {
+  id        String   @id @default(uuid(7))
+  checkedAt DateTime @default(now()) @map("checked_at")
+
+  @@schema("app")
+  @@map("health_check")
+}
+
+// ───────────────────────────── market ──────────────────────────────
+
+/// identity only. names are time-varying observations, never keys.
+model Firm {
+  firmCrd   BigInt    @id @map("firm_crd")
+  firstSeen DateTime? @map("first_seen") @db.Date
+  lastSeen  DateTime? @map("last_seen") @db.Date
+
+  tenures AdvisorTenure[]
+
+  @@schema("market")
+  @@map("firm")
+}
+
+/// identity only. one human may hold several CRDs over a career.
+model Advisor {
+  advisorCrd BigInt    @id @map("advisor_crd")
+  firstSeen  DateTime? @map("first_seen") @db.Date
+  lastSeen   DateTime? @map("last_seen") @db.Date
+
+  tenures AdvisorTenure[]
+
+  @@schema("market")
+  @@map("advisor")
+}
+
+enum TenureKind {
+  registration
+  employment
+
+  @@schema("market")
+  @@map("tenure_kind")
+}
+
+/// Half-open [start_date, end_date). end_date NULL means current.
+/// A GiST exclusion constraint (hand-appended in the migration) makes
+/// overlapping tenures impossible; there is no current_firm_crd column.
+model AdvisorTenure {
+  id                 BigInt     @id @default(autoincrement())
+  advisorCrd         BigInt     @map("advisor_crd")
+  /// NULL when the source employer matched no known firm (~2% of source rows)
+  firmCrd            BigInt?    @map("firm_crd")
+  sourceEmployerName String     @map("source_employer_name")
+  kind               TenureKind
+  jurisdiction       String?
+  startDate          DateTime?  @map("start_date") @db.Date
+  endDate            DateTime?  @map("end_date") @db.Date
+  startPrecision     String?    @map("start_precision")
+  endPrecision       String?    @map("end_precision")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd])
+  firm    Firm?   @relation(fields: [firmCrd], references: [firmCrd])
+
+  @@index([advisorCrd, endDate])
+  @@index([firmCrd, startDate(sort: Desc)])
+  @@schema("market")
+  @@map("advisor_tenure")
+}

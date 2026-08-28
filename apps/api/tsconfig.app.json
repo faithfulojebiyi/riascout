@@ -6,6 +6,13 @@
     "rootDir": "../../",
     "outDir": "../../dist/apps/api"
   },
-  "include": ["src/**/*", "../../libs/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": ["src/**/*", "../../libs/**/*", "../../orm/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "../../libs/**/*.spec.ts",
+    "../../libs/**/*.e2e-spec.ts"
+  ]
 }
