@@ -1,0 +1,14 @@
+import { EVENTS, INNGEST_OPTIONS } from '@system/queues/events.config';
+
+import { inngest } from './event-publisher.service';
+
+// deps resolved from DI in main.ts — no @nestjs/cqrs inside inngest functions
+export const {{camelCase name}} = (deps: { /* services */ }) =>
+  inngest.createFunction(
+    { id: '{{dashCase name}}', ...INNGEST_OPTIONS, triggers: [EVENTS.{{eventKey}}] },
+    async ({ event, step }) => {
+      await step.run('{{dashCase name}}', async () => {
+        throw new Error('not implemented');
+      });
+    },
+  );

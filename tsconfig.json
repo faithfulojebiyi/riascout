@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "@orm/app": ["./orm/app/client.ts"],
+      "@api/*": ["./apps/api/src/*"],
+      "@worker/*": ["./apps/worker/src/*"],
+      "@system/*": ["./libs/system/*"],
+      "@feature/*": ["./libs/feature/*"],
+      "@providers/*": ["./libs/providers/*"]
+    }
+  },
+  "files": [],
+  "references": [
+    { "path": "./apps/api/tsconfig.app.json" },
+    { "path": "./apps/worker/tsconfig.app.json" }
+  ]
+}

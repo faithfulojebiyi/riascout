@@ -1,0 +1,35 @@
+import { {{#if (isQuery type)}}IQueryHandler, Query, QueryHandler{{else}}Command, CommandHandler, ICommandHandler{{/if}} } from '@nestjs/cqrs';
+{{#if (isApi app)}}
+import { AlsService } from '@system/als/als.service';
+{{/if}}
+import { AppPrismaService } from '@system/database/database.service';
+
+import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from '../dto/{{feature}}.dto';
+
+export class {{pascalCase name}}{{pascalCase type}} extends {{#if (isQuery type)}}Query{{else}}Command{{/if}}<{{pascalCase name}}ResponseDto> {
+  constructor(public readonly dto: {{pascalCase name}}Dto) {
+    super();
+  }
+}
+
+@{{#if (isQuery type)}}QueryHandler{{else}}CommandHandler{{/if}}({{pascalCase name}}{{pascalCase type}})
+export class {{pascalCase name}}{{pascalCase type}}Handler
+  implements I{{#if (isQuery type)}}Query{{else}}Command{{/if}}Handler<{{pascalCase name}}{{pascalCase type}}>
+{
+  constructor(
+    private readonly appPrismaService: AppPrismaService,
+{{#if (isApi app)}}
+    private readonly alsService: AlsService,
+{{/if}}
+  ) {}
+
+  async execute({ dto }: {{pascalCase name}}{{pascalCase type}}): Promise<{{pascalCase name}}ResponseDto> {
+{{#if (isApi app)}}
+    const workspaceId = this.alsService.ctx.get('workspaceId');
+
+{{else}}
+    // worker has no ALS — workspaceId arrives in the event payload
+{{/if}}
+    throw new Error('not implemented');
+  }
+}

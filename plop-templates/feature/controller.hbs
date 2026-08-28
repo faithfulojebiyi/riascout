@@ -1,0 +1,22 @@
+import { Body, Controller, Post } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { ApiTags } from '@nestjs/swagger';
+import { ZodResponse } from 'nestjs-zod';
+
+import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from './dto/{{feature}}.dto';
+import { {{pascalCase name}}{{pascalCase type}} } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}';
+
+@ApiTags('{{titleCase feature}}')
+@Controller('{{feature}}')
+export class {{pascalCase feature}}Controller {
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
+  ) {}
+
+  @ZodResponse({ type: {{pascalCase name}}ResponseDto })
+  @Post('{{dashCase name}}')
+  async {{camelCase name}}(@Body() dto: {{pascalCase name}}Dto) {
+    return this.{{#if (isQuery type)}}queryBus{{else}}commandBus{{/if}}.execute(new {{pascalCase name}}{{pascalCase type}}(dto));
+  }
+}

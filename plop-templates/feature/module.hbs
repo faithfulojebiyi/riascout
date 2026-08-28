@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+
+// plop:imports
+{{#if (isApi app)}}
+import { {{pascalCase feature}}Controller } from './{{feature}}.controller';
+{{/if}}
+
+@Module({
+{{#if (isApi app)}}
+  controllers: [{{pascalCase feature}}Controller],
+{{/if}}
+  providers: [
+    // plop:providers
+  ],
+})
+export class {{pascalCase feature}}Module {}

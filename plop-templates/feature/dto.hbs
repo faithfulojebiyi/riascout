@@ -1,0 +1,8 @@
+import { createZodDto } from 'nestjs-zod';
+
+import { {{pascalCase name}}ResponseSchema, {{pascalCase name}}Schema } from '../schema';
+
+export class {{pascalCase name}}Dto extends createZodDto({{pascalCase name}}Schema) {}
+
+// codec: true so dates serialize correctly
+export class {{pascalCase name}}ResponseDto extends createZodDto({{pascalCase name}}ResponseSchema, { codec: true }) {}

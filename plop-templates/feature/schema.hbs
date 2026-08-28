@@ -1,0 +1,13 @@
+import { z } from 'zod';
+
+export const {{pascalCase name}}Schema = z
+  .object({
+    // request fields
+  })
+  .meta({ id: '{{pascalCase name}}' });
+
+export const {{pascalCase name}}ResponseSchema = z
+  .object({
+    // response fields
+  })
+  .meta({ id: '{{pascalCase name}}Response' });

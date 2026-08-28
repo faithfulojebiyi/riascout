@@ -1,0 +1,12 @@
+-- {{purpose}}
+-- Types are derived from the database by `bun run prisma:generate`.
+-- Call: prisma.$queryRawTyped({{camelCase name}}(args))
+--
+-- Declare every parameter. Supported: Int, BigInt, Float, Decimal, String, Boolean, DateTime, Bytes.
+-- @param {BigInt} $1:exampleCrd
+
+-- market tables MUST be schema-qualified
+select
+  1 as placeholder
+from market.advisor a
+where a.advisor_crd = $1;

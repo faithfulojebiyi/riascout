@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise", "node", "vitest"],
+  "env": { "node": true },
+  "rules": {
+    "no-console": "error",
+    "no-debugger": "error",
+    "eqeqeq": ["error", "smart"],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "unicorn/prefer-node-protocol": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.spec.ts", "**/*.e2e-spec.ts"],
+      "rules": { "no-console": "off" }
+    },
+    {
+      "files": ["etl/**/*.ts", "prisma/**/*.ts", "plopfile.mjs"],
+      "rules": { "no-console": "off" }
+    }
+  ],
+  "ignorePatterns": ["dist", "orm", "dashboard", "node_modules", "plop-templates"]
+}
