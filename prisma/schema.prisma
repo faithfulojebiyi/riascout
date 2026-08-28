@@ -22,7 +22,150 @@ model HealthCheck {
   @@map("health_check")
 }
 
-// ───────────────────────────── market ──────────────────────────────
+// ─────────────────────── market · dimensions ───────────────────────
+
+/// Every provider, waterfall tier and internal derivation is a source.
+model DimSource {
+  code       String  @id
+  name       String
+  /// internal | provider | user | scrape
+  category   String
+  /// lower wins ties in provenance precedence
+  precedence Int     @default(100)
+  isActive   Boolean @default(true) @map("is_active")
+
+  contactPoints      AdvisorContactPoint[]
+  enrichmentRequests EnrichmentRequest[]
+
+  @@schema("market")
+  @@map("dim_source")
+}
+
+model DimClientType {
+  code String @id
+  name String
+
+  facts FirmFactClientType[]
+
+  @@schema("market")
+  @@map("dim_client_type")
+}
+
+model DimServiceType {
+  code String @id
+  name String
+
+  facts FirmFactService[]
+
+  @@schema("market")
+  @@map("dim_service_type")
+}
+
+model DimAssetCategory {
+  code String @id
+  name String
+
+  facts FirmFactAssetAllocation[]
+
+  @@schema("market")
+  @@map("dim_asset_category")
+}
+
+model DimFundType {
+  code String @id
+  name String
+
+  facts FirmFactPrivateFund[]
+
+  @@schema("market")
+  @@map("dim_fund_type")
+}
+
+/// Form ADV Schedule A ownership bands. Verify bounds against the ADV
+/// instructions before rendering as percentages to users.
+model DimOwnershipCode {
+  code       String @id
+  name       String
+  lowerPct   Int?   @map("lower_pct")
+  upperPct   Int?   @map("upper_pct")
+
+  owners FirmFactOwner[]
+
+  @@schema("market")
+  @@map("dim_ownership_code")
+}
+
+model DimRegistrationStatus {
+  code String @id
+  name String
+
+  @@schema("market")
+  @@map("dim_registration_status")
+}
+
+/// exam_name is functionally dependent on exam_code — stored once here,
+/// not repeated on 739,581 advisor rows.
+model DimExam {
+  code String @id
+  name String
+
+  exams AdvisorExam[]
+
+  @@schema("market")
+  @@map("dim_exam")
+}
+
+/// Derived classification. The derivation rule is unit-tested — a
+/// misclassified channel sends a recruiter into the wrong conversation.
+model DimFirmChannel {
+  code String @id
+  name String
+
+  derived FirmFactDerived[]
+
+  @@schema("market")
+  @@map("dim_firm_channel")
+}
+
+model DimAumBand {
+  code     String  @id
+  name     String
+  lowerAum Decimal? @map("lower_aum") @db.Decimal(20, 2)
+  upperAum Decimal? @map("upper_aum") @db.Decimal(20, 2)
+
+  derived FirmFactDerived[]
+
+  @@schema("market")
+  @@map("dim_aum_band")
+}
+
+/// Custodian is a top-line recruiter filter, and the source carries only
+/// 7,312 dirty names across 2.5M rows — hence canonical + alias.
+model DimCustodian {
+  id            Int    @id @default(autoincrement())
+  canonicalName String @unique @map("canonical_name")
+
+  aliases DimCustodianAlias[]
+  facts   FirmFactCustodian[]
+
+  @@schema("market")
+  @@map("dim_custodian")
+}
+
+model DimCustodianAlias {
+  sourceName  String @id @map("source_name")
+  custodianId Int    @map("custodian_id")
+  confidence  Int    @default(100)
+  method      String
+
+  custodian DimCustodian @relation(fields: [custodianId], references: [id])
+
+  @@index([custodianId])
+  @@schema("market")
+  @@map("dim_custodian_alias")
+}
+
+// ──────────────────────── market · identity ────────────────────────
 
 /// identity only. names are time-varying observations, never keys.
 model Firm {
@@ -30,7 +173,10 @@ model Firm {
   firstSeen DateTime? @map("first_seen") @db.Date
   lastSeen  DateTime? @map("last_seen") @db.Date
 
-  tenures AdvisorTenure[]
+  filings            Filing[]
+  registrations      AdvisorRegistration[]
+  registrationEvents FirmRegistrationEvent[]
+  domain             FirmDomain?
 
   @@schema("market")
   @@map("firm")
@@ -42,41 +188,620 @@ model Advisor {
   firstSeen  DateTime? @map("first_seen") @db.Date
   lastSeen   DateTime? @map("last_seen") @db.Date
 
-  tenures AdvisorTenure[]
+  registrations  AdvisorRegistration[]
+  employments    AdvisorEmployment[]
+  names          AdvisorName[]
+  exams          AdvisorExam[]
+  designations   AdvisorDesignation[]
+  disclosureFlag AdvisorDisclosureFlag?
+  locations      AdvisorLocation[]
+  contactPoints  AdvisorContactPoint[]
+  derived        AdvisorDerived?
 
   @@schema("market")
   @@map("advisor")
 }
 
-enum TenureKind {
-  registration
-  employment
+// ───────────────────── market · the filing spine ────────────────────
 
+/// A filing is a point in time; "current" is the latest one. The source has
+/// no is_amendment or supersedes_id, so the amendment chain is implicit.
+model Filing {
+  filingId             String    @id @map("filing_id")
+  firmCrd              BigInt    @map("firm_crd")
+  submittedAt          DateTime? @map("submitted_at") @db.Timestamptz(6)
+  effectiveDate        DateTime? @map("effective_date") @db.Date
+  filingType           String?   @map("filing_type")
+  registrationCategory String?   @map("registration_category")
+  secNumber            String?   @map("sec_number")
+
+  firm Firm @relation(fields: [firmCrd], references: [firmCrd])
+
+  identity     FirmFactIdentity?
+  metrics      FirmFactMetrics?
+  registration FirmFactRegistration?
+  derived      FirmFactDerived?
+  clientTypes  FirmFactClientType[]
+  services     FirmFactService[]
+  allocations  FirmFactAssetAllocation[]
+  offices      FirmFactOffice[]
+  custodians   FirmFactCustodian[]
+  privateFunds FirmFactPrivateFund[]
+  affiliations FirmFactAffiliation[]
+  owners       FirmFactOwner[]
+  webPresence  FirmWebPresence[]
+
+  @@index([firmCrd, effectiveDate(sort: Desc)])
+  @@index([firmCrd, submittedAt(sort: Desc)])
   @@schema("market")
-  @@map("tenure_kind")
+  @@map("filing")
 }
 
-/// Half-open [start_date, end_date). end_date NULL means current.
-/// A GiST exclusion constraint (hand-appended in the migration) makes
-/// overlapping tenures impossible; there is no current_firm_crd column.
-model AdvisorTenure {
-  id                 BigInt     @id @default(autoincrement())
-  advisorCrd         BigInt     @map("advisor_crd")
-  /// NULL when the source employer matched no known firm (~2% of source rows)
-  firmCrd            BigInt?    @map("firm_crd")
-  sourceEmployerName String     @map("source_employer_name")
-  kind               TenureKind
-  jurisdiction       String?
-  startDate          DateTime?  @map("start_date") @db.Date
-  endDate            DateTime?  @map("end_date") @db.Date
-  startPrecision     String?    @map("start_precision")
-  endPrecision       String?    @map("end_precision")
+// ────────────────────── market · firm facts ────────────────────────
 
-  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd])
-  firm    Firm?   @relation(fields: [firmCrd], references: [firmCrd])
+model FirmFactIdentity {
+  filingId    String  @id @map("filing_id")
+  firmName    String? @map("firm_name")
+  secNumber   String? @map("sec_number")
+  street1     String? @map("street_1")
+  street2     String? @map("street_2")
+  city        String?
+  regionRaw   String? @map("region_raw")
+  state       String?
+  countryRaw  String? @map("country_raw")
+  countryCode String? @map("country_code")
+  postalCode  String? @map("postal_code")
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@index([state])
+  @@index([city])
+  @@schema("market")
+  @@map("firm_fact_identity")
+}
+
+/// Money is numeric, never float. AUM is NULL for ~25% of filings —
+/// preserve the NULL, never coerce to 0.
+model FirmFactMetrics {
+  filingId              String   @id @map("filing_id")
+  regulatoryAum         Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
+  discretionaryAum      Decimal? @map("discretionary_aum") @db.Decimal(20, 2)
+  nonDiscretionaryAum   Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
+  employeeCount         Int?     @map("employee_count")
+  advisoryEmployeeCount Int?     @map("advisory_employee_count")
+  clientCount           BigInt?  @map("client_count")
+  officeCount           Int?     @map("office_count")
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@index([regulatoryAum(sort: Desc)])
+  @@schema("market")
+  @@map("firm_fact_metrics")
+}
+
+model FirmFactRegistration {
+  filingId                String   @id @map("filing_id")
+  isSecRegistered         Boolean? @map("is_sec_registered")
+  isEra                   Boolean? @map("is_era")
+  /// NULL throughout the current seed — state coverage is unavailable
+  isStateRegistered       Boolean? @map("is_state_registered")
+  primaryRegistrationType String?  @map("primary_registration_type")
+  isUsBased               Boolean? @map("is_us_based")
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@index([isSecRegistered, isEra])
+  @@schema("market")
+  @@map("firm_fact_registration")
+}
+
+/// Ratios and classifications derived from metrics + our registered-advisor
+/// count. Every ratio is NULL when its denominator is 0 or NULL, never 0.
+model FirmFactDerived {
+  filingId String @id @map("filing_id")
+
+  /// OUR count of advisors with an open registration — distinct from the
+  /// ADV's self-reported advisoryEmployeeCount. Both are kept.
+  advisorCount      Int?     @map("advisor_count")
+  aumPerAdvisor     Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
+  aumPerClient      Decimal? @map("aum_per_client") @db.Decimal(20, 2)
+  aumPerEmployee    Decimal? @map("aum_per_employee") @db.Decimal(20, 2)
+  clientsPerAdvisor Decimal? @map("clients_per_advisor") @db.Decimal(12, 2)
+
+  /// percentile ranks within the same filing period, 0-100
+  aumPercentile           Int? @map("aum_percentile")
+  aumPerAdvisorPercentile Int? @map("aum_per_advisor_percentile")
+  aumPerClientPercentile  Int? @map("aum_per_client_percentile")
+
+  channelCode String? @map("channel_code")
+  aumBandCode String? @map("aum_band_code")
+
+  filing  Filing          @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  channel DimFirmChannel? @relation(fields: [channelCode], references: [code])
+  aumBand DimAumBand?     @relation(fields: [aumBandCode], references: [code])
+
+  @@index([aumPerAdvisor(sort: Desc)])
+  @@index([channelCode, aumBandCode])
+  @@schema("market")
+  @@map("firm_fact_derived")
+}
+
+model FirmFactClientType {
+  filingId       String   @map("filing_id")
+  clientTypeCode String   @map("client_type_code")
+  clientCount    BigInt?  @map("client_count")
+  regulatoryAum  Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
+
+  filing     Filing        @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  clientType DimClientType @relation(fields: [clientTypeCode], references: [code])
+
+  @@id([filingId, clientTypeCode])
+  @@index([clientTypeCode, regulatoryAum(sort: Desc)])
+  @@schema("market")
+  @@map("firm_fact_client_type")
+}
+
+model FirmFactService {
+  filingId        String @map("filing_id")
+  serviceTypeCode String @map("service_type_code")
+
+  filing      Filing         @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  serviceType DimServiceType @relation(fields: [serviceTypeCode], references: [code])
+
+  @@id([filingId, serviceTypeCode])
+  @@index([serviceTypeCode])
+  @@schema("market")
+  @@map("firm_fact_service")
+}
+
+model FirmFactAssetAllocation {
+  filingId          String   @map("filing_id")
+  assetCategoryCode String   @map("asset_category_code")
+  reportingBasis    String?  @map("reporting_basis")
+  percentage        Decimal? @db.Decimal(18, 8)
+
+  filing        Filing           @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  assetCategory DimAssetCategory @relation(fields: [assetCategoryCode], references: [code])
+
+  @@id([filingId, assetCategoryCode])
+  @@index([assetCategoryCode, percentage(sort: Desc)])
+  @@schema("market")
+  @@map("firm_fact_asset_allocation")
+}
+
+model FirmFactOffice {
+  filingId        String  @map("filing_id")
+  officeReference String  @map("office_reference")
+  city            String?
+  regionRaw       String? @map("region_raw")
+  countryRaw      String? @map("country_raw")
+  employeeCount   Int?    @map("employee_count")
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@id([filingId, officeReference])
+  @@index([city])
+  @@index([regionRaw])
+  @@schema("market")
+  @@map("firm_fact_office")
+}
+
+model FirmFactCustodian {
+  filingId       String   @map("filing_id")
+  custodianRef   String   @map("custodian_reference")
+  custodianId    Int?     @map("custodian_id")
+  /// the dirty name as filed, retained even when resolved
+  sourceName     String   @map("source_name")
+  aumAtCustodian Decimal? @map("aum_at_custodian") @db.Decimal(20, 2)
+  /// links a custodian to a specific private fund when reported that way
+  privateFundId  String?  @map("private_fund_id")
+  city           String?
+  regionRaw      String?  @map("region_raw")
+  countryRaw     String?  @map("country_raw")
+
+  filing    Filing        @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  custodian DimCustodian? @relation(fields: [custodianId], references: [id])
+
+  @@id([filingId, custodianRef])
+  @@index([custodianId, aumAtCustodian(sort: Desc)])
+  @@index([privateFundId])
+  @@schema("market")
+  @@map("firm_fact_custodian")
+}
+
+model FirmFactPrivateFund {
+  filingId        String   @map("filing_id")
+  privateFundId   String   @map("private_fund_id")
+  fundName        String?  @map("fund_name")
+  fundTypeCode    String?  @map("fund_type_code")
+  grossAssetValue Decimal? @map("gross_asset_value") @db.Decimal(20, 2)
+  countryRaw      String?  @map("country_raw")
+  regionRaw       String?  @map("region_raw")
+
+  filing   Filing       @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundType DimFundType? @relation(fields: [fundTypeCode], references: [code])
+
+  @@id([filingId, privateFundId])
+  @@index([fundTypeCode, grossAssetValue(sort: Desc)])
+  @@index([privateFundId])
+  @@schema("market")
+  @@map("firm_fact_private_fund")
+}
+
+/// One affiliation table. The legacy app had two overlapping ones plus two
+/// columns on the firm row, with no reconciliation.
+model FirmFactAffiliation {
+  filingId          String  @map("filing_id")
+  affiliationRef    String  @map("affiliation_reference")
+  legalName         String? @map("legal_name")
+  businessName      String? @map("business_name")
+  relatedCrd        BigInt? @map("related_crd")
+  relatedSecNumber  String? @map("related_sec_number")
+  relationshipTypes String? @map("relationship_types")
+  countryRaw        String? @map("country_raw")
+  regionRaw         String? @map("region_raw")
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@id([filingId, affiliationRef])
+  @@index([relatedCrd])
+  @@schema("market")
+  @@map("firm_fact_affiliation")
+}
+
+/// Schedule A (direct) and B (indirect) owners. ownerAdvisorCrd is a nullable
+/// join, never an FK — only ~29% of owners are registered advisers.
+model FirmFactOwner {
+  filingId String @map("filing_id")
+  /// A = direct owner, B = indirect owner
+  schedule String
+  ownerRef String @map("owner_ref")
+
+  /// individual | domestic_entity | foreign_entity  (source DE/FE/I)
+  ownerKind       String  @map("owner_kind")
+  ownerAdvisorCrd BigInt? @map("owner_advisor_crd")
+  fullLegalName   String  @map("full_legal_name")
+  titleOrStatus   String? @map("title_or_status")
+  ownershipCode   String? @map("ownership_code")
+  isControlPerson Boolean? @map("is_control_person")
+  /// month precision in the source (MM/YYYY)
+  statusAcquired  DateTime? @map("status_acquired") @db.Date
+  /// Schedule B only: the entity the interest is held through
+  heldThroughEntity String? @map("held_through_entity")
+
+  filing Filing            @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  code   DimOwnershipCode? @relation(fields: [ownershipCode], references: [code])
+
+  @@id([filingId, schedule, ownerRef])
+  @@index([ownerAdvisorCrd])
+  @@index([ownershipCode])
+  @@index([isControlPerson])
+  @@schema("market")
+  @@map("firm_fact_owner")
+}
+
+/// Form ADV Schedule D 1.I — website addresses and, in recent versions,
+/// social media accounts. The domain is the enrichment join key.
+model FirmWebPresence {
+  filingId String @map("filing_id")
+  sequence Int
+  /// website | social
+  kind     String
+  urlRaw   String  @map("url_raw")
+  /// registrable domain, lowercased, www stripped
+  domain   String?
+  /// linkedin | twitter | facebook | … when kind = social
+  platform String?
+
+  filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+
+  @@id([filingId, sequence])
+  @@index([domain])
+  @@index([kind, platform])
+  @@schema("market")
+  @@map("firm_web_presence")
+}
+
+/// Derived: the canonical domain per firm, from the most recent filing that
+/// reports one. The join key for company enrichment and email inference.
+model FirmDomain {
+  firmCrd        BigInt    @id @map("firm_crd")
+  domain         String
+  sourceFilingId String    @map("source_filing_id")
+  firstSeenOn    DateTime? @map("first_seen_on") @db.Date
+
+  firm    Firm              @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
+  pattern FirmEmailPattern?
+
+  @@index([domain])
+  @@schema("market")
+  @@map("firm_domain")
+}
+
+/// Learned per firm, refined as verifications land. Yields work email — an
+/// identifier for reverse lookup, never an outreach channel.
+model FirmEmailPattern {
+  firmCrd       BigInt   @id @map("firm_crd")
+  domain        String
+  /// {first}.{last} | {f}{last} | {first} | {last}{f} | …
+  pattern       String
+  evidenceCount Int      @default(0) @map("evidence_count")
+  confidence    Int
+  learnedAt     DateTime @default(now()) @map("learned_at") @db.Timestamptz(6)
+
+  firmDomain FirmDomain @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
+
+  @@index([domain])
+  @@schema("market")
+  @@map("firm_email_pattern")
+}
+
+model FirmRegistrationEvent {
+  eventId       String    @id @map("event_id")
+  firmCrd       BigInt    @map("firm_crd")
+  authority     String?
+  category      String?
+  status        String?
+  effectiveDate DateTime? @map("effective_date") @db.Date
+  jurisdiction  String?
+  filingId      String?   @map("filing_id")
+
+  firm Firm @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
+
+  @@index([firmCrd, effectiveDate(sort: Desc)])
+  @@index([jurisdiction])
+  @@schema("market")
+  @@map("firm_registration_event")
+}
+
+/// Field-level provenance, imported rather than invented — it already exists
+/// upstream at the right grain.
+model FirmFieldProvenance {
+  firmCrd              BigInt    @map("firm_crd")
+  snapshotYear         Int       @map("snapshot_year")
+  fieldName            String    @map("field_name")
+  sourceArtifactId     String?   @map("source_artifact_id")
+  sourceDate           DateTime? @map("source_date") @db.Date
+  sourceField          String?   @map("source_field")
+  transformationMethod String?   @map("transformation_method")
+
+  @@id([firmCrd, snapshotYear, fieldName])
+  @@schema("market")
+  @@map("firm_field_provenance")
+}
+
+// ────────────────────── market · advisor side ──────────────────────
+
+/// Authoritative advisor↔firm truth. One row per (advisor, firm, jurisdiction)
+/// interval; employer_firm_crd is 100% populated upstream. An advisor is
+/// legitimately registered in many states at once — the exclusion constraint
+/// is scoped accordingly (hand-appended in the migration).
+model AdvisorRegistration {
+  id                   BigInt    @id @default(autoincrement())
+  advisorCrd           BigInt    @map("advisor_crd")
+  employerFirmCrd      BigInt    @map("employer_firm_crd")
+  sourceEmployerName   String?   @map("source_employer_name")
+  /// US state code. NULL on ~592,828 rows, mostly closed PREVIOUS registrations.
+  jurisdiction         String?
+  registrationCategory String?   @map("registration_category")
+  /// APPROVED | APPROVED_RES | APP_PEND_IARCE | PREVIOUS | …
+  status               String?
+  startDate            DateTime? @map("start_date") @db.Date
+  endDate              DateTime? @map("end_date") @db.Date
+  startPrecision       String?   @map("start_precision")
+  endPrecision         String?   @map("end_precision")
+  intervalSource       String?   @map("interval_source")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  firm    Firm    @relation(fields: [employerFirmCrd], references: [firmCrd])
+
+  locations AdvisorLocation[]
 
   @@index([advisorCrd, endDate])
-  @@index([firmCrd, startDate(sort: Desc)])
+  @@index([employerFirmCrd, startDate(sort: Desc)])
+  @@index([employerFirmCrd, jurisdiction])
   @@schema("market")
-  @@map("advisor_tenure")
+  @@map("advisor_registration")
+}
+
+/// Context only. No firm CRD exists in the source (0 of 2,295,866) and dates
+/// are month-precision. Never derive movement from this.
+model AdvisorEmployment {
+  id                 BigInt    @id @default(autoincrement())
+  advisorCrd         BigInt    @map("advisor_crd")
+  sourceEmployerName String    @map("source_employer_name")
+  city               String?
+  regionRaw          String?   @map("region_raw")
+  startMonth         DateTime? @map("start_month") @db.Date
+  endMonth           DateTime? @map("end_month") @db.Date
+  isOpenEnded        Boolean   @default(false) @map("is_open_ended")
+  employmentSequence Int?      @map("employment_sequence")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@index([advisorCrd, startMonth(sort: Desc)])
+  @@schema("market")
+  @@map("advisor_employment")
+}
+
+/// Observation-versioned. Names are never identity.
+model AdvisorName {
+  advisorCrd BigInt    @map("advisor_crd")
+  observedOn DateTime  @map("observed_on") @db.Date
+  firstName  String?   @map("first_name")
+  middleName String?   @map("middle_name")
+  lastName   String?   @map("last_name")
+  suffixName String?   @map("suffix_name")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@id([advisorCrd, observedOn])
+  @@schema("market")
+  @@map("advisor_name")
+}
+
+model AdvisorExam {
+  advisorCrd BigInt    @map("advisor_crd")
+  examCode   String    @map("exam_code")
+  examDate   DateTime? @map("exam_date") @db.Date
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  exam    DimExam @relation(fields: [examCode], references: [code])
+
+  @@id([advisorCrd, examCode])
+  @@index([examCode])
+  @@schema("market")
+  @@map("advisor_exam")
+}
+
+model AdvisorDesignation {
+  advisorCrd      BigInt @map("advisor_crd")
+  designationName String @map("designation_name")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@id([advisorCrd, designationName])
+  @@index([designationName])
+  @@schema("market")
+  @@map("advisor_designation")
+}
+
+/// Flags are all this source has. Model an event table when a richer source
+/// exists rather than faking detail we do not have.
+model AdvisorDisclosureFlag {
+  advisorCrd           BigInt   @id @map("advisor_crd")
+  hasRegulatoryAction  Boolean? @map("has_regulatory_action")
+  hasCriminal          Boolean? @map("has_criminal")
+  hasBankruptcy        Boolean? @map("has_bankruptcy")
+  hasCivilJudgment     Boolean? @map("has_civil_judgment")
+  hasBond              Boolean? @map("has_bond")
+  hasJudgment          Boolean? @map("has_judgment")
+  hasInvestigation     Boolean? @map("has_investigation")
+  hasCustomerComplaint Boolean? @map("has_customer_complaint")
+  hasTermination       Boolean? @map("has_termination")
+  hasOther             Boolean? @map("has_other")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@schema("market")
+  @@map("advisor_disclosure_flag")
+}
+
+/// Work addresses, SEC-sourced. No enrichment needed.
+model AdvisorLocation {
+  id             BigInt   @id @default(autoincrement())
+  advisorCrd     BigInt   @map("advisor_crd")
+  registrationId BigInt?  @map("registration_id")
+  sequence       Int?
+  locationSource String?  @map("location_source")
+  street1        String?  @map("street_1")
+  street2        String?  @map("street_2")
+  city           String?
+  regionRaw      String?  @map("region_raw")
+  postalCode     String?  @map("postal_code")
+  countryCode    String?  @map("country_code")
+  isUsWorkplace  Boolean? @map("is_us_workplace")
+
+  advisor      Advisor              @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  registration AdvisorRegistration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+
+  @@index([advisorCrd])
+  @@index([city, regionRaw])
+  @@index([postalCode])
+  @@schema("market")
+  @@map("advisor_location")
+}
+
+/// Rebuilt by the projection refresh, not hand-maintained.
+model AdvisorDerived {
+  advisorCrd              BigInt   @id @map("advisor_crd")
+  experienceMonths        Int?     @map("experience_months")
+  tenureMonths            Int?     @map("tenure_months")
+  currentFirmCount        Int      @default(0) @map("current_firm_count")
+  previousFirmCount       Int      @default(0) @map("previous_firm_count")
+  /// mean tenure at firms already left — a mobility signal
+  avgPreviousTenureMonths Int?     @map("avg_previous_tenure_months")
+  jurisdictionCount       Int      @default(0) @map("jurisdiction_count")
+  jurisdictions           String[]
+  examCodes               String[] @map("exam_codes")
+  designations            String[]
+  isActive                Boolean? @map("is_active")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@schema("market")
+  @@map("advisor_derived")
+}
+
+// ─────────────────── market · contact + enrichment ──────────────────
+
+/// Long format, never fixed slots. Work email is an identifier here, not a
+/// channel — the sending layer allowlists channel subtypes.
+model AdvisorContactPoint {
+  id         BigInt @id @default(autoincrement())
+  advisorCrd BigInt @map("advisor_crd")
+
+  /// email | phone | social | url
+  kind    String
+  /// work_email | personal_email | mobile_phone | work_phone | home_phone |
+  /// fax | linkedin | twitter | facebook | website
+  subtype String
+
+  valueRaw String @map("value_raw")
+  /// normalized: E.164 for phone, lowercased for email, canonical URL for
+  /// social. The dedup key — an unnormalized unique is cosmetic.
+  valueNorm String @map("value_norm")
+
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  /// unverified | valid | invalid | risky | unknown
+  status       String    @default("unverified")
+  verifiedAt   DateTime? @map("verified_at") @db.Timestamptz(6)
+  bouncedAt    DateTime? @map("bounced_at") @db.Timestamptz(6)
+  bounceCount  Int       @default(0) @map("bounce_count")
+  /// opt-out is GLOBAL, not per-tenant
+  optedOutAt   DateTime? @map("opted_out_at") @db.Timestamptz(6)
+  doNotContact Boolean   @default(false) @map("do_not_contact")
+
+  sourceCode  String    @map("source_code")
+  confidence  Int?
+  firstSeenOn DateTime? @map("first_seen_on") @db.Date
+  lastSeenOn  DateTime? @map("last_seen_on") @db.Date
+
+  advisor Advisor   @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  source  DimSource @relation(fields: [sourceCode], references: [code])
+
+  @@unique([advisorCrd, kind, valueNorm])
+  @@index([advisorCrd, kind, isPrimary])
+  @@index([valueNorm])
+  @@index([doNotContact])
+  @@schema("market")
+  @@map("advisor_contact_point")
+}
+
+/// Append-only log of enrichment attempts. A miss is information: without it
+/// we retry forever and cost per usable channel per tier is unmeasurable.
+model EnrichmentRequest {
+  id          BigInt @id @default(autoincrement())
+  /// advisor | firm
+  subjectKind String @map("subject_kind")
+  subjectCrd  BigInt @map("subject_crd")
+  /// which waterfall tier ran
+  tier        Int
+  sourceCode  String @map("source_code")
+  /// hit | miss | error | rate_limited | skipped
+  outcome     String
+  /// what came back by channel, e.g. { personal_email: 1, mobile: 0 }
+  yieldSummary Json?    @map("yield_summary") @db.JsonB
+  costCents    Int?     @map("cost_cents")
+  requestedAt  DateTime @default(now()) @map("requested_at") @db.Timestamptz(6)
+  runId        String?  @map("run_id")
+
+  source DimSource @relation(fields: [sourceCode], references: [code])
+
+  @@index([subjectKind, subjectCrd, requestedAt(sort: Desc)])
+  @@index([sourceCode, requestedAt(sort: Desc)])
+  @@index([tier, outcome])
+  @@schema("market")
+  @@map("enrichment_request")
 }

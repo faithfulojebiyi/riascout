@@ -10,8 +10,8 @@ import { advisorsAtFirmOn } from '@orm/app/sql/advisorsAtFirmOn.js';
  */
 describe('typed sql', () => {
   let prisma: PrismaClient;
-  const firmCrd = 999000002n;
-  const advisorCrd = 999000003n;
+  const firmCrd = 999_000_402n;
+  const advisorCrd = 999_000_403n;
 
   beforeAll(async () => {
     const connectionString = process.env.APP_DATABASE_URL;
@@ -24,26 +24,28 @@ describe('typed sql', () => {
 
     await prisma.firm.upsert({ where: { firmCrd }, create: { firmCrd }, update: {} });
     await prisma.advisor.upsert({ where: { advisorCrd }, create: { advisorCrd }, update: {} });
-    await prisma.advisorTenure.create({
-      data: {
+
+    // two jurisdictions at the same firm — the query must not double-count
+    await prisma.advisorRegistration.createMany({
+      data: ['IN', 'OH'].map((jurisdiction) => ({
         advisorCrd,
-        firmCrd,
+        employerFirmCrd: firmCrd,
         sourceEmployerName: 'Typed SQL Fixture',
-        kind: 'registration',
+        jurisdiction,
         startDate: new Date('2021-01-01'),
         endDate: new Date('2024-01-01'),
-      },
+      })),
     });
   });
 
   afterAll(async () => {
-    await prisma.advisorTenure.deleteMany({ where: { advisorCrd } });
+    await prisma.advisorRegistration.deleteMany({ where: { advisorCrd } });
     await prisma.advisor.deleteMany({ where: { advisorCrd } });
     await prisma.firm.deleteMany({ where: { firmCrd } });
     await prisma.$disconnect();
   });
 
-  it('returns the advisor when the as-of date falls inside the tenure', async () => {
+  it('returns the advisor once when the as-of date falls inside the tenure', async () => {
     const rows = await prisma.$queryRawTyped(advisorsAtFirmOn(firmCrd, new Date('2022-06-01')));
 
     expect(rows).toHaveLength(1);
@@ -51,7 +53,7 @@ describe('typed sql', () => {
     expect(rows[0]?.source_employer_name).toBe('Typed SQL Fixture');
   });
 
-  it('excludes the advisor once the tenure has closed', async () => {
+  it('excludes the advisor once the registration has closed', async () => {
     const rows = await prisma.$queryRawTyped(advisorsAtFirmOn(firmCrd, new Date('2025-06-01')));
 
     expect(rows).toHaveLength(0);
