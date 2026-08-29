@@ -5,6 +5,7 @@ import {
   ATTRIBUTE_GROUPS,
   COLUMN_META,
   FALLBACK_GROUP,
+  iconFor,
   type AttributeGroup,
 } from './column-meta.js';
 import {
@@ -114,6 +115,7 @@ const referenceAttributes = (
         visible: meta?.visible ?? false,
         pinned: meta?.pinned ?? false,
         isPrimary: meta?.primary ?? false,
+        icon: iconFor(allowKey, ref.type),
       };
     });
 
@@ -261,6 +263,7 @@ const ADVISOR_PIPELINE: SeedAttribute[] = [
     group: 'Pipeline',
     visible: false,
     pinned: false,
+    icon: 'star',
   }),
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.lastContactedAt,
@@ -269,6 +272,7 @@ const ADVISOR_PIPELINE: SeedAttribute[] = [
     group: 'Pipeline',
     visible: false,
     pinned: false,
+    icon: 'date',
   }),
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.notes,
@@ -277,6 +281,7 @@ const ADVISOR_PIPELINE: SeedAttribute[] = [
     group: 'Pipeline',
     visible: false,
     pinned: false,
+    icon: 'note',
   }),
 ];
 
@@ -304,6 +309,7 @@ export const FIRM_ENTITY: SeedEntity = {
       group: 'Pipeline',
       visible: false,
       pinned: false,
+    icon: 'note',
     }),
   ]),
 };

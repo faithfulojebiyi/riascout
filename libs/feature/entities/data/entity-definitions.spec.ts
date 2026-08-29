@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_COLUMNS } from '../attribute-types/reference-columns.js';
-import { ATTRIBUTE_GROUPS } from './column-meta.js';
+import { ATTRIBUTE_GROUPS, iconFor } from './column-meta.js';
 import { ADVISOR_ENTITY, DEFAULT_ENTITIES } from './entity-definitions.js';
 import {
   ADVISOR_REFERENCE_ATTRIBUTES,
@@ -223,6 +223,30 @@ describe('default entities', () => {
     it('separates work email from personal, since only one is an outreach channel', () => {
       expect(labels).toContain('Work Email');
       expect(labels).toContain('Personal Email');
+    });
+  });
+
+  describe('icons', () => {
+    it('gives every attribute one', () => {
+      const missing = seeded.filter((a) => !a.icon);
+
+      expect(missing.map((a) => a.label)).toEqual([]);
+    });
+
+    /** derived from type, so a new column cannot be forgotten */
+    it('falls back to the type icon when there is no override', () => {
+      expect(iconFor('advisor.made_up_column', 'currency')).toBe('currency');
+      expect(iconFor('advisor.made_up_column', 'email')).toBe('email');
+    });
+
+    it('prefers a semantic override over the type default', () => {
+      // a CRD is a number, but 'hash' says less than 'badge'
+      expect(iconFor('advisor.advisor_crd', 'number')).toBe('badge');
+      expect(iconFor('advisor.state', 'text')).toBe('location');
+    });
+
+    it('never returns an empty icon, unlike the reference implementation', () => {
+      expect(iconFor('nothing.at.all', 'unknown-type')).toBe('text');
     });
   });
 });
