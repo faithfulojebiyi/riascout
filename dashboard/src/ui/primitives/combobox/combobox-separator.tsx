@@ -1,0 +1,14 @@
+'use client'
+
+import { Combobox as ComboboxPrimitive } from '@base-ui/react'
+
+import { styled } from '@riascout-ui/styled-system/jsx'
+import type { JsxStyleProps } from '@riascout-ui/styled-system/types'
+
+const StyledSeparator = styled(ComboboxPrimitive.Separator)
+
+export type ComboboxSeparatorProps = ComboboxPrimitive.Separator.Props & JsxStyleProps
+
+export const ComboboxSeparator = ({ ...props }: ComboboxSeparatorProps) => {
+	return <StyledSeparator bg="border.subtle" data-slot="combobox-separator" h="px" mx="-1" my="1" {...props} />
+}

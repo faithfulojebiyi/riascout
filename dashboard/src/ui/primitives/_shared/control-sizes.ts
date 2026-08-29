@@ -7,6 +7,8 @@ export const controlSizes = {
   xs: { h: '2rem', px: '2.5', fontSize: 'xs', rounded: 'lg' }, // 32px — grid controls
   sm: { h: '2.25rem', px: '3', fontSize: 'sm', rounded: 'lg' }, // 36px — forms
   md: { h: '2.5rem', px: '4', fontSize: 'sm', rounded: 'lg' }, // 40px — primary CTA
+  /** square: an icon-only control must not be wider than it is tall */
+  icon: { h: '2rem', w: '2rem', px: '0', fontSize: 'sm', rounded: 'lg' },
 } as const;
 
 export type ControlSize = keyof typeof controlSizes;
