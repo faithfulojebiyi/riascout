@@ -140,6 +140,9 @@ export const ADVISOR_WORKFLOW_ATTRIBUTES = {
   personalEmail: '01a04b16-f724-7560-a6dd-0b7b634224da',
   mobilePhone: '01a04b16-f725-7988-8cb0-8c56093b9e5a',
   doNotContact: '01a04b16-f726-7fd4-9857-4a222037c37d',
+  instagram: '01a04b27-56c3-771e-9399-011c4b445240',
+  personalWebsite: '01a04b27-56c8-71d1-92d7-1877411f53f2',
+  workEmail: '01a04b27-56c9-7143-a365-4857eaca12f5',
 } as const;
 
 export const FIRM_WORKFLOW_ATTRIBUTES = {

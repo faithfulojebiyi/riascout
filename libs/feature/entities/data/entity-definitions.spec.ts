@@ -184,4 +184,45 @@ describe('default entities', () => {
     // months stay allowlisted for precise filtering, just not as a column
     expect(visible).not.toContain('Experience (Months)');
   });
+
+  describe('social and contact channels', () => {
+    const contact = ADVISOR_ENTITY.attributes.filter((a) => a.group === 'Contact');
+    const labels = contact.map((a) => a.label);
+
+    it('covers every channel ghost carries, plus a personal site', () => {
+      expect(labels).toEqual(
+        expect.arrayContaining([
+          'LinkedIn',
+          'X / Twitter',
+          'Facebook',
+          'Instagram',
+          'Personal Email',
+          'Mobile Phone',
+        ]),
+      );
+    });
+
+    it('types profiles as url and addresses by their own type', () => {
+      const byLabel = new Map(contact.map((a) => [a.label, a]));
+
+      expect(byLabel.get('Instagram')?.type).toBe('url');
+      expect(byLabel.get('Personal Email')?.type).toBe('email');
+      expect(byLabel.get('Mobile Phone')?.type).toBe('phone');
+    });
+
+    it('marks them enriched and unique, so the waterfall knows its targets', () => {
+      expect(contact.every((a) => a.isEnriched)).toBe(true);
+      expect(contact.every((a) => a.isUnique)).toBe(true);
+    });
+
+    /** five social columns would crowd out the facts that decide a call */
+    it('shows only LinkedIn by default', () => {
+      expect(contact.filter((a) => a.visible).map((a) => a.label)).toEqual(['LinkedIn']);
+    });
+
+    it('separates work email from personal, since only one is an outreach channel', () => {
+      expect(labels).toContain('Work Email');
+      expect(labels).toContain('Personal Email');
+    });
+  });
 });

@@ -28,6 +28,12 @@ export type SeedAttribute = {
   pinned: boolean;
   /** the record's display name — one per entity */
   isPrimary: boolean;
+  icon?: string;
+  description?: string;
+  /** dedup key: two records must not share this value */
+  isUnique?: boolean;
+  /** the enrichment waterfall writes this attribute */
+  isEnriched?: boolean;
   choices?: string[];
 };
 
@@ -138,6 +144,16 @@ const workflow = (spec: WorkflowSpec): SeedAttribute => ({
  * cells with source set — where the cell writer's rule already stops it
  * overwriting anything a human entered.
  */
+/**
+ * Contact channels exist before the enrichment module does. A recruiter can
+ * paste a profile today, and when enrichment lands it writes the same cells
+ * with source set — where the cell writer already refuses to overwrite
+ * anything a human entered.
+ *
+ * Only LinkedIn is a default column: it is the highest-ROI first touch in
+ * recruiting, and five social columns would crowd out the market facts that
+ * decide whether a call is worth making.
+ */
 const ADVISOR_CONTACT: SeedAttribute[] = [
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.linkedinUrl,
@@ -146,22 +162,10 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     group: 'Contact',
     visible: true,
     pinned: false,
-  }),
-  workflow({
-    key: ADVISOR_WORKFLOW_ATTRIBUTES.personalEmail,
-    label: 'Personal Email',
-    type: 'email',
-    group: 'Contact',
-    visible: false,
-    pinned: false,
-  }),
-  workflow({
-    key: ADVISOR_WORKFLOW_ATTRIBUTES.mobilePhone,
-    label: 'Mobile Phone',
-    type: 'phone',
-    group: 'Contact',
-    visible: false,
-    pinned: false,
+    icon: 'linkedin',
+    description: 'LinkedIn profile',
+    isUnique: true,
+    isEnriched: true,
   }),
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.twitterUrl,
@@ -170,6 +174,10 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     group: 'Contact',
     visible: false,
     pinned: false,
+    icon: 'x',
+    description: 'X profile',
+    isUnique: true,
+    isEnriched: true,
   }),
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.facebookUrl,
@@ -178,6 +186,70 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     group: 'Contact',
     visible: false,
     pinned: false,
+    icon: 'facebook',
+    description: 'Facebook profile',
+    isUnique: true,
+    isEnriched: true,
+  }),
+  workflow({
+    key: ADVISOR_WORKFLOW_ATTRIBUTES.instagram,
+    label: 'Instagram',
+    type: 'url',
+    group: 'Contact',
+    visible: false,
+    pinned: false,
+    icon: 'instagram',
+    description: 'Instagram profile',
+    isUnique: true,
+    isEnriched: true,
+  }),
+  workflow({
+    key: ADVISOR_WORKFLOW_ATTRIBUTES.personalWebsite,
+    label: 'Personal Website',
+    type: 'url',
+    group: 'Contact',
+    visible: false,
+    pinned: false,
+    icon: 'globe',
+    description: 'Own site or bio page',
+    isUnique: true,
+    isEnriched: true,
+  }),
+  workflow({
+    key: ADVISOR_WORKFLOW_ATTRIBUTES.personalEmail,
+    label: 'Personal Email',
+    type: 'email',
+    group: 'Contact',
+    visible: false,
+    pinned: false,
+    icon: 'email',
+    description: 'Not the compliance-archived work address',
+    isUnique: true,
+    isEnriched: true,
+  }),
+  workflow({
+    key: ADVISOR_WORKFLOW_ATTRIBUTES.workEmail,
+    label: 'Work Email',
+    type: 'email',
+    group: 'Contact',
+    visible: false,
+    pinned: false,
+    icon: 'email',
+    description: 'An identifier for reverse lookup, not an outreach channel',
+    isUnique: true,
+    isEnriched: true,
+  }),
+  workflow({
+    key: ADVISOR_WORKFLOW_ATTRIBUTES.mobilePhone,
+    label: 'Mobile Phone',
+    type: 'phone',
+    group: 'Contact',
+    visible: false,
+    pinned: false,
+    icon: 'phone',
+    description: 'E.164 normalized',
+    isUnique: true,
+    isEnriched: true,
   }),
 ];
 

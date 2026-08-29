@@ -1391,6 +1391,7 @@ model EntityAttribute {
   description String?
   /// lexorank
   position    String
+  icon        String?
   defaultValue Json?        @map("default_value") @db.JsonB
 
   isUnique        Boolean @default(false) @map("is_unique")
@@ -1400,6 +1401,9 @@ model EntityAttribute {
   isEditable      Boolean @default(true) @map("is_editable")
   isArchived      Boolean @default(false) @map("is_archived")
   isMultiValue    Boolean @default(false) @map("is_multi_value")
+  /// written by the enrichment waterfall; the cell writer still refuses to
+  /// overwrite a value a human entered
+  isEnriched      Boolean @default(false) @map("is_enriched")
 
   /// set for reference attributes: the market projection column this resolves to.
   /// Validated against an allowlist at compile time — identifiers never come
@@ -1589,6 +1593,7 @@ model EntityViewField {
   label       String?
   /// lexorank
   position    String
+  icon        String?
   width       Int?
   aggregate   String?
   isVisible   Boolean @default(true) @map("is_visible")
