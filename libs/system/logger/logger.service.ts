@@ -16,11 +16,19 @@ export class AppLogger implements LoggerService {
       name: serviceName,
       level: process.env.LOG_LEVEL ?? (isDev ? 'debug' : 'info'),
       redact: {
-        paths: ['req.headers.authorization', 'req.headers.cookie', 'password', 'token'],
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'password',
+          'token',
+        ],
         censor: '[redacted]',
       },
       transport: isDev
-        ? { target: 'pino-pretty', options: { singleLine: true, translateTime: 'HH:MM:ss.l' } }
+        ? {
+            target: 'pino-pretty',
+            options: { singleLine: true, translateTime: 'HH:MM:ss.l' },
+          }
         : undefined,
     });
   }

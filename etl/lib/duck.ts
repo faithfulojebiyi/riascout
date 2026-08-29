@@ -53,7 +53,10 @@ export async function runDuck(sql: string, opts: DuckOptions): Promise<string> {
 }
 
 /** Single scalar, for counts and probes. */
-export async function duckScalar(sql: string, opts: DuckOptions): Promise<string> {
+export async function duckScalar(
+  sql: string,
+  opts: DuckOptions,
+): Promise<string> {
   const out = await runDuck(`.mode list\n.headers off\n${sql}`, opts);
 
   return out.trim().split('\n').filter(Boolean).at(-1) ?? '';

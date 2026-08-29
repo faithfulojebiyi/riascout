@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 import { AppPrismaService } from './database.service.js';
 
-export type AppPrismaTx = Parameters<Parameters<AppPrismaService['$transaction']>[0]>[0];
+export type AppPrismaTx = Parameters<
+  Parameters<AppPrismaService['$transaction']>[0]
+>[0];
 
 type Deferred = () => void | Promise<void>;
 
@@ -14,7 +16,9 @@ export class TransactionRunner {
    * Runs work in one transaction and defers side effects until after commit,
    * so a rollback drops them entirely. Use for any write that emits an event.
    */
-  async run<T>(work: (tx: AppPrismaTx, defer: (fn: Deferred) => void) => Promise<T>): Promise<T> {
+  async run<T>(
+    work: (tx: AppPrismaTx, defer: (fn: Deferred) => void) => Promise<T>,
+  ): Promise<T> {
     const deferred: Deferred[] = [];
 
     const result = await this.appPrismaService.$transaction((tx) =>

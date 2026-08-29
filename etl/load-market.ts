@@ -16,7 +16,11 @@ const STAGES: Stage[] = [
   { key: 'identity', file: '010-identity.sql', label: 'firms + advisors' },
   { key: 'filings', file: '020-filings.sql', label: 'filing spine' },
   { key: 'firm-facts', file: '030-firm-facts.sql', label: 'firm facts' },
-  { key: 'advisor', file: '040-advisor.sql', label: 'advisor detail + registrations' },
+  {
+    key: 'advisor',
+    file: '040-advisor.sql',
+    label: 'advisor detail + registrations',
+  },
 ];
 
 const SQL_DIR = join(import.meta.dirname, 'sql');
@@ -62,12 +66,17 @@ async function main(): Promise<void> {
 
   const pre = await preflight();
 
-  const opts: DuckOptions = { seedPath: pre.seedPath, postgresUrl: pre.postgresUrl };
+  const opts: DuckOptions = {
+    seedPath: pre.seedPath,
+    postgresUrl: pre.postgresUrl,
+  };
 
   console.log(`seed  ${pre.seedPath} (${(pre.seedBytes / 1e9).toFixed(2)} GB)`);
   console.log(`run   ${pre.runId}\n`);
 
-  const selected = STAGES.filter((s) => (only ? only.has(s.key) : s.key !== 'reset'));
+  const selected = STAGES.filter((s) =>
+    only ? only.has(s.key) : s.key !== 'reset',
+  );
   const startedAll = Date.now();
 
   for (const stage of selected) {
