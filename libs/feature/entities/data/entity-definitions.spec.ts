@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_COLUMNS } from '../attribute-types/reference-columns.js';
+import { ATTRIBUTE_GROUPS } from './column-meta.js';
 import { ADVISOR_ENTITY, DEFAULT_ENTITIES, FIRM_ENTITY } from './entity-definitions.js';
 import {
   ADVISOR_REFERENCE_ATTRIBUTES,
@@ -108,5 +109,62 @@ describe('default entities', () => {
     expect(FIRM_ENTITY.attributes.find((a) => a.type === 'status')?.choices?.length).toBeGreaterThan(
       0,
     );
+  });
+
+  it('groups every attribute into a declared group', () => {
+    const stray = seeded.filter((a) => !ATTRIBUTE_GROUPS.includes(a.group));
+
+    expect(stray).toEqual([]);
+  });
+
+  it('orders attributes by group, so the record panel reads top to bottom', () => {
+    for (const entity of DEFAULT_ENTITIES) {
+      const order = entity.attributes.map((a) => ATTRIBUTE_GROUPS.indexOf(a.group));
+
+      expect([...order].sort((x, y) => x - y), `${entity.slug} is not grouped`).toEqual(order);
+    }
+  });
+
+  /** 63 columns is not a usable default grid */
+  it('keeps the default grid to a workable number of columns', () => {
+    for (const entity of DEFAULT_ENTITIES) {
+      const visible = entity.attributes.filter((a) => a.visible).length;
+
+      expect(visible, `${entity.slug} default columns`).toBeLessThan(30);
+      expect(visible).toBeGreaterThan(5);
+    }
+  });
+
+  it('pins exactly one column per entity', () => {
+    for (const entity of DEFAULT_ENTITIES) {
+      expect(entity.attributes.filter((a) => a.pinned)).toHaveLength(1);
+    }
+  });
+
+  it('shows the identity column and the pipeline status by default', () => {
+    const advisor = ADVISOR_ENTITY.attributes.filter((a) => a.visible).map((a) => a.label);
+
+    expect(advisor).toContain('Full Name');
+    expect(advisor).toContain('Advisor CRD');
+    expect(advisor).toContain('Recruiting Status');
+  });
+
+  describe('contact channels', () => {
+    const contact = ADVISOR_ENTITY.attributes.filter((a) => a.group === 'Contact');
+
+    it('exist before the enrichment module does', () => {
+      expect(contact.map((a) => a.label)).toEqual(
+        expect.arrayContaining(['LinkedIn', 'Personal Email', 'Mobile Phone']),
+      );
+    });
+
+    /** a recruiter types these today; enrichment writes the same cells later */
+    it('are editable eav cells, not projected columns', () => {
+      expect(contact.every((a) => a.isEditable && a.referenceColumn === null)).toBe(true);
+    });
+
+    it('surfaces do-not-contact on the grid by default', () => {
+      expect(contact.find((a) => a.label === 'Do Not Contact')?.visible).toBe(true);
+    });
   });
 });

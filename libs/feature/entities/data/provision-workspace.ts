@@ -26,11 +26,29 @@ export type ProvisionClient = {
   entityAttributeChoice: {
     create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
   };
+  entityView: {
+    findFirst: (args: {
+      where: { entityId: string; isDefault: boolean };
+      select: { id: true };
+    }) => Promise<{ id: string } | null>;
+    create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{
+      id: string;
+    }>;
+  };
+  entityViewField: {
+    create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{
+      id: string;
+    }>;
+  };
+  entityViewFieldPath: {
+    create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+  };
 };
 
 export type ProvisionResult = {
   entitiesCreated: number;
   attributesCreated: number;
+  viewsCreated: number;
 };
 
 /**
@@ -45,6 +63,7 @@ export const provisionWorkspace = async (
 ): Promise<ProvisionResult> => {
   let entitiesCreated = 0;
   let attributesCreated = 0;
+  let viewsCreated = 0;
 
   for (const definition of entities) {
     const existing = await client.entity.findFirst({
@@ -68,14 +87,13 @@ export const provisionWorkspace = async (
       entitiesCreated += 1;
     }
 
-    const present = new Set(
-      (
-        await client.entityAttribute.findMany({
-          where: { entityId: entity.id },
-          select: { id: true, key: true },
-        })
-      ).map((a) => a.key),
-    );
+    const existingAttributes = await client.entityAttribute.findMany({
+      where: { entityId: entity.id },
+      select: { id: true, key: true },
+    });
+
+    const idByKey = new Map(existingAttributes.map((a) => [a.key, a.id]));
+    const present = new Set(idByKey.keys());
 
     // LexoRank keeps columns reorderable without renumbering the whole set
     let rank = LexoRank.middle();
@@ -104,6 +122,7 @@ export const provisionWorkspace = async (
       });
 
       attributesCreated += 1;
+      idByKey.set(attribute.key, created.id);
 
       for (const [index, name] of (attribute.choices ?? []).entries()) {
         await client.entityAttributeChoice.create({
@@ -111,7 +130,59 @@ export const provisionWorkspace = async (
         });
       }
     }
+
+    /**
+     * All 63 columns would be unusable as a default grid, so the view decides
+     * what shows. Every attribute still gets a field row, so switching one on
+     * in grid settings is a flag flip rather than a create.
+     */
+    const existingView = await client.entityView.findFirst({
+      where: { entityId: entity.id, isDefault: true },
+      select: { id: true },
+    });
+
+    if (!existingView) {
+      const view = await client.entityView.create({
+        data: {
+          entityId: entity.id,
+          workspaceId,
+          name: `All ${definition.name}s`,
+          type: 'table',
+          isDefault: true,
+        },
+        select: { id: true },
+      });
+
+      viewsCreated += 1;
+
+      let fieldRank = LexoRank.middle();
+
+      for (const attribute of definition.attributes) {
+        const attributeId = idByKey.get(attribute.key);
+
+        if (!attributeId) {
+          continue;
+        }
+
+        fieldRank = fieldRank.genNext();
+
+        const field = await client.entityViewField.create({
+          data: {
+            viewId: view.id,
+            workspaceId,
+            position: fieldRank.toString(),
+            isVisible: attribute.visible,
+            isPinned: attribute.pinned,
+          },
+          select: { id: true },
+        });
+
+        await client.entityViewFieldPath.create({
+          data: { fieldId: field.id, position: 0, attributeId, workspaceId },
+        });
+      }
+    }
   }
 
-  return { entitiesCreated, attributesCreated };
+  return { entitiesCreated, attributesCreated, viewsCreated };
 };

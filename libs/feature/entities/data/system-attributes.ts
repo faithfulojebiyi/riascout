@@ -129,6 +129,15 @@ export const ADVISOR_WORKFLOW_ATTRIBUTES = {
   notes: '01a04af1-e896-701c-a597-f99bb7745162',
   lastContactedAt: '01a04af1-e897-7928-be24-a5f7d61493c5',
   priority: '01a04af1-e898-75d8-9961-0089bbc827c9',
+
+  // contact channels: user-editable now, enrichment-written later. The cell
+  // writer's source rule means enrichment can never clobber a manual entry.
+  linkedinUrl: '01a04b16-f71d-755a-ae3f-c7c53c0f9b22',
+  twitterUrl: '01a04b16-f722-7b05-ac7e-fcb172063a56',
+  facebookUrl: '01a04b16-f723-7796-82e2-602fed01e171',
+  personalEmail: '01a04b16-f724-7560-a6dd-0b7b634224da',
+  mobilePhone: '01a04b16-f725-7988-8cb0-8c56093b9e5a',
+  doNotContact: '01a04b16-f726-7fd4-9857-4a222037c37d',
 } as const;
 
 export const FIRM_WORKFLOW_ATTRIBUTES = {
