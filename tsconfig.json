@@ -21,8 +21,6 @@
       "vitest/globals",
       "node"
     ],
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "./",
     "paths": {
       "@orm/app": [
         "./orm/app/client.ts"
@@ -57,6 +55,9 @@
     },
     {
       "path": "./tsconfig.scripts.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
     }
   ]
 }
