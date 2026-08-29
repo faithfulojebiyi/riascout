@@ -36,6 +36,7 @@ model DimSource {
 
   contactPoints      AdvisorContactPoint[]
   enrichmentRequests EnrichmentRequest[]
+  observations       AdvisorFirmObservation[]
 
   @@schema("market")
   @@map("dim_source")
@@ -177,6 +178,7 @@ model Firm {
   registrations      AdvisorRegistration[]
   registrationEvents FirmRegistrationEvent[]
   domain             FirmDomain?
+  search             FirmSearch?
 
   @@schema("market")
   @@map("firm")
@@ -197,6 +199,9 @@ model Advisor {
   locations      AdvisorLocation[]
   contactPoints  AdvisorContactPoint[]
   derived        AdvisorDerived?
+  search         AdvisorSearch?
+  observations   AdvisorFirmObservation[]
+  movements      AdvisorMovement[]
 
   @@schema("market")
   @@map("advisor")
@@ -820,6 +825,450 @@ model EnrichmentRequest {
   @@map("enrichment_request")
 }
 
+// ───────────────────────── market · movement ────────────────────────
+//
+// know time (detected_on) is separate from valid time (occurred_on).
+// Detection latency is the product, so movement is append-only and never
+// rebuilt from the current snapshot.
+
+/**
+ * One row per advisor per snapshot per firm. Append-only; movement is the diff
+ * between successive observations, so a vendor dropping a registration shows up
+ * as a DEPARTURE rather than silently erasing history.
+ *
+ */
+model AdvisorFirmObservation {
+  id                   BigInt   @id @default(autoincrement())
+  advisorCrd           BigInt   @map("advisor_crd")
+  observedOn           DateTime @map("observed_on") @db.Date
+  /// NULL means observed with no registration — the industry exit signal
+  firmCrd              BigInt?  @map("firm_crd")
+  registrationCategory String?  @map("registration_category")
+  sourceCode           String   @map("source_code")
+
+  advisor Advisor   @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  source  DimSource @relation(fields: [sourceCode], references: [code])
+
+  /// DDL rewrites this as NULLS NOT DISTINCT so a null firm cannot duplicate
+  @@unique([advisorCrd, observedOn, firmCrd], map: "advisor_firm_observation_key")
+  @@index([observedOn])
+  @@index([firmCrd, observedOn])
+  @@schema("market")
+  @@map("advisor_firm_observation")
+}
+
+/**
+ * Both firm CRDs are nullable so a departure from the industry is
+ * representable; event_type carries the distinction instead.
+ */
+model AdvisorMovement {
+  id           BigInt    @id @default(autoincrement())
+  advisorCrd   BigInt    @map("advisor_crd")
+  fromFirmCrd  BigInt?   @map("from_firm_crd")
+  toFirmCrd    BigInt?   @map("to_firm_crd")
+  /// FIRST_REGISTRATION | FIRM_CHANGE | DEPARTURE
+  eventType    String    @map("event_type")
+  /// valid time — when it happened. NULL when the source gives no start date
+  occurredOn   DateTime? @map("occurred_on") @db.Date
+  /// know time — when we saw it. Never null; this is what latency is measured on
+  detectedOn   DateTime  @map("detected_on") @db.Date
+  tenureDays   Int?      @map("tenure_days")
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@unique([advisorCrd, toFirmCrd, occurredOn], map: "advisor_movement_key")
+  @@index([detectedOn(sort: Desc)])
+  @@index([occurredOn(sort: Desc)])
+  @@index([toFirmCrd, detectedOn(sort: Desc)])
+  @@index([fromFirmCrd, detectedOn(sort: Desc)])
+  @@index([advisorCrd, occurredOn(sort: Desc)])
+  @@schema("market")
+  @@map("advisor_movement")
+}
+
+// ───────────────────── market · search projections ─────────────────────
+//
+// Denormalized, rebuilt into staging and swapped — never refreshed in place.
+// These lag market by one refresh, which the UI states as dataAsOf.
+// reference-columns.ts allowlists a subset; a drift test keeps them aligned.
+
+model AdvisorSearch {
+  advisorCrd BigInt   @id @map("advisor_crd")
+  fullName   String?  @map("full_name")
+  firstName  String?  @map("first_name")
+  lastName   String?  @map("last_name")
+  isActive   Boolean? @map("is_active")
+
+  /// primary registration = the longest-running open one
+  currentFirmCrd   BigInt?   @map("current_firm_crd")
+  currentFirmName  String?   @map("current_firm_name")
+  currentFirmSince DateTime? @map("current_firm_since") @db.Date
+  currentFirmCount Int       @default(0) @map("current_firm_count")
+
+  tenureMonths            Int?     @map("tenure_months")
+  experienceMonths        Int?     @map("experience_months")
+  previousFirmCount       Int      @default(0) @map("previous_firm_count")
+  avgPreviousTenureMonths Int?     @map("avg_previous_tenure_months")
+  previousFirmCrds        BigInt[] @map("previous_firm_crds")
+
+  examCodes         String[] @map("exam_codes")
+  designations      String[]
+  jurisdictions     String[]
+  jurisdictionCount Int      @default(0) @map("jurisdiction_count")
+
+  /// has_disclosure | none_reported | unknown — unknown should be ~0
+  disclosureStatus String @default("unknown") @map("disclosure_status")
+  /// the nine category flags, nulls preserved
+  disclosureFlags  Json?  @map("disclosure_flags") @db.JsonB
+  disclosureCount  Int?   @map("disclosure_count")
+
+  ownsCurrentFirm Boolean? @map("owns_current_firm")
+  ownershipBand   String?  @map("ownership_band")
+  isControlPerson Boolean? @map("is_control_person")
+  ownerTitle      String?  @map("owner_title")
+
+  city          String?
+  state         String?
+  postalCode    String?  @map("postal_code")
+  countryCode   String?  @map("country_code")
+  isUsWorkplace Boolean? @map("is_us_workplace")
+
+  /// null until the movement engine lands — never defaulted to 0
+  lastMovedOn     DateTime? @map("last_moved_on") @db.Date
+  lastDetectedOn  DateTime? @map("last_detected_on") @db.Date
+  previousFirmCrd BigInt?   @map("previous_firm_crd")
+  moveCount5y     Int?      @map("move_count_5y")
+
+  firmAum             Decimal? @map("firm_aum") @db.Decimal(20, 2)
+  firmAumBand         String?  @map("firm_aum_band")
+  firmClientCount     Int?     @map("firm_client_count")
+  firmEmployeeCount   Int?     @map("firm_employee_count")
+  firmAdvisorCount    Int?     @map("firm_advisor_count")
+  firmOfficeCount     Int?     @map("firm_office_count")
+  firmAumPerAdvisor   Decimal? @map("firm_aum_per_advisor") @db.Decimal(20, 2)
+  firmAumPerClient    Decimal? @map("firm_aum_per_client") @db.Decimal(20, 2)
+  firmAumCagr3y       Decimal? @map("firm_aum_cagr_3y") @db.Decimal(12, 6)
+  firmChannel         String?  @map("firm_channel")
+  firmState           String?  @map("firm_state")
+  firmDomain          String?  @map("firm_domain")
+  firmIsSecRegistered Boolean? @map("firm_is_sec_registered")
+  firmIsEra           Boolean? @map("firm_is_era")
+  firmClientTypeCodes String[] @map("firm_client_type_codes")
+  firmServiceCodes    String[] @map("firm_service_codes")
+  firmCustodianIds    Int[]    @map("firm_custodian_ids")
+  firmFundTypeCodes   String[] @map("firm_fund_type_codes")
+
+  /// no contact source yet — null means unknown, not false
+  hasPersonalEmail Boolean? @map("has_personal_email")
+  hasMobilePhone   Boolean? @map("has_mobile_phone")
+  hasLinkedin      Boolean? @map("has_linkedin")
+  isContactable    Boolean? @map("is_contactable")
+  /// opt-out is global, never per-tenant
+  doNotContact     Boolean  @default(false) @map("do_not_contact")
+
+  /// populated by the projection refresh; the ETL asserts it is non-empty
+  searchTsv   Unsupported("tsvector")?  @map("search_tsv")
+  refreshedAt DateTime                  @default(now()) @map("refreshed_at") @db.Timestamptz(6)
+
+  advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+
+  @@index([state, firmAumBand, firmChannel])
+  @@index([currentFirmCrd])
+  @@index([searchTsv], type: Gin, map: "advisor_search_tsv_gin")
+  @@index([previousFirmCrds], type: Gin, map: "advisor_search_previous_firm_crds_gin")
+  @@index([examCodes], type: Gin, map: "advisor_search_exam_codes_gin")
+  @@index([designations], type: Gin, map: "advisor_search_designations_gin")
+  @@index([jurisdictions], type: Gin, map: "advisor_search_jurisdictions_gin")
+  @@index([firmClientTypeCodes], type: Gin, map: "advisor_search_firm_client_type_codes_gin")
+  @@index([firmServiceCodes], type: Gin, map: "advisor_search_firm_service_codes_gin")
+  @@index([firmCustodianIds], type: Gin, map: "advisor_search_firm_custodian_ids_gin")
+  @@index([firmFundTypeCodes], type: Gin, map: "advisor_search_firm_fund_type_codes_gin")
+  @@index([disclosureFlags(ops: JsonbPathOps)], type: Gin, map: "advisor_search_disclosure_flags_gin")
+  @@index([lastMovedOn(sort: Desc)])
+  @@index([tenureMonths])
+  @@index([firmAum(sort: Desc)])
+  @@schema("market")
+  @@map("advisor_search")
+}
+
+model FirmSearch {
+  firmCrd   BigInt  @id @map("firm_crd")
+  firmName  String? @map("firm_name")
+  secNumber String? @map("sec_number")
+  domain    String?
+
+  city        String?
+  state       String?
+  postalCode  String? @map("postal_code")
+  countryCode String? @map("country_code")
+
+  isSecRegistered         Boolean? @map("is_sec_registered")
+  isEra                   Boolean? @map("is_era")
+  primaryRegistrationType String?  @map("primary_registration_type")
+  channelCode             String?  @map("channel_code")
+
+  regulatoryAum       Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
+  discretionaryAum    Decimal? @map("discretionary_aum") @db.Decimal(20, 2)
+  nonDiscretionaryAum Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
+  aumBand             String?  @map("aum_band")
+
+  clientCount           Int? @map("client_count")
+  employeeCount         Int? @map("employee_count")
+  advisoryEmployeeCount Int? @map("advisory_employee_count")
+  officeCount           Int? @map("office_count")
+  /// our count of open registrations, not the ADV's self-report
+  advisorCount          Int? @map("advisor_count")
+
+  aumPerAdvisor           Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
+  aumPerClient            Decimal? @map("aum_per_client") @db.Decimal(20, 2)
+  aumPerEmployee          Decimal? @map("aum_per_employee") @db.Decimal(20, 2)
+  aumPercentile           Int?     @map("aum_percentile")
+  aumPerAdvisorPercentile Int?     @map("aum_per_advisor_percentile")
+
+  aumCagr1y      Decimal? @map("aum_cagr_1y") @db.Decimal(12, 6)
+  aumCagr3y      Decimal? @map("aum_cagr_3y") @db.Decimal(12, 6)
+  aumCagr5y      Decimal? @map("aum_cagr_5y") @db.Decimal(12, 6)
+  employeeCagr3y Decimal? @map("employee_cagr_3y") @db.Decimal(12, 6)
+
+  clientTypeCodes    String[] @map("client_type_codes")
+  serviceCodes       String[] @map("service_codes")
+  assetCategoryCodes String[] @map("asset_category_codes")
+
+  custodianIds    Int[]    @map("custodian_ids")
+  topCustodianId  Int?     @map("top_custodian_id")
+  topCustodianAum Decimal? @map("top_custodian_aum") @db.Decimal(20, 2)
+
+  fundTypeCodes String[] @map("fund_type_codes")
+  fundCount     Int?     @map("fund_count")
+  totalFundGav  Decimal? @map("total_fund_gav") @db.Decimal(20, 2)
+
+  affiliatedCrds BigInt[] @map("affiliated_crds")
+
+  ownerCount             Int?     @map("owner_count")
+  ownerAdvisorCount      Int?     @map("owner_advisor_count")
+  ownershipConcentration Decimal? @map("ownership_concentration") @db.Decimal(6, 4)
+
+  /// the attrition signal — null until the movement engine lands
+  advisorsGained90d Int? @map("advisors_gained_90d")
+  advisorsLost90d   Int? @map("advisors_lost_90d")
+  netAdvisorFlow90d Int? @map("net_advisor_flow_90d")
+
+  firstFilingDate  DateTime? @map("first_filing_date") @db.Date
+  latestFilingDate DateTime? @map("latest_filing_date") @db.Date
+  filingCount      Int?      @map("filing_count")
+
+  searchTsv   Unsupported("tsvector")? @map("search_tsv")
+  refreshedAt DateTime                 @default(now()) @map("refreshed_at") @db.Timestamptz(6)
+
+  firm Firm @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
+
+  @@index([state, aumBand, channelCode])
+  @@index([regulatoryAum(sort: Desc)])
+  @@index([searchTsv], type: Gin, map: "firm_search_tsv_gin")
+  @@index([clientTypeCodes], type: Gin, map: "firm_search_client_type_codes_gin")
+  @@index([serviceCodes], type: Gin, map: "firm_search_service_codes_gin")
+  @@index([assetCategoryCodes], type: Gin, map: "firm_search_asset_category_codes_gin")
+  @@index([custodianIds], type: Gin, map: "firm_search_custodian_ids_gin")
+  @@index([fundTypeCodes], type: Gin, map: "firm_search_fund_type_codes_gin")
+  @@index([affiliatedCrds], type: Gin, map: "firm_search_affiliated_crds_gin")
+  @@index([advisorCount(sort: Desc)])
+  @@index([netAdvisorFlow90d(sort: Desc)])
+  @@schema("market")
+  @@map("firm_search")
+}
+
+/**
+ * workspace_id is the tenancy key on every app table. It becomes a FK to
+ * better-auth's organization.id in phase 06 — one organization is one
+ * workspace. The column keeps the product word so a later org 1-N workspace
+ * split repoints the FK instead of renaming 21 columns.
+ */
+
+// ─────────────────────────── app · auth (better-auth) ───────────────────────
+//
+// Generated by `@better-auth/cli generate`, then hand-annotated with @map /
+// @@map / @@schema. Re-running the CLI emits camelCase defaults and DROPS these
+// annotations — re-apply them, do not paste the output over this block.
+//
+// Organization IS the workspace. Every app table's workspace_id refers to
+// organization.id; session.activeOrganizationId is where it comes from.
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions    Session[]
+  accounts    Account[]
+  teamMembers TeamMember[]
+  members     Member[]
+  invitations Invitation[]
+
+  @@schema("app")
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime @map("expires_at") @db.Timestamptz(6)
+  token                String   @unique
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ipAddress            String?  @map("ip_address")
+  userAgent            String?  @map("user_agent")
+  userId               String   @map("user_id")
+  /// the active workspace — read into ALS by SessionGuard, never from a header
+  activeOrganizationId String?  @map("active_organization_id")
+  activeTeamId         String?  @map("active_team_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("app")
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  /// better-auth 1.7 writes this; its own CLI does not emit it
+  issuer                String?
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(6)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("app")
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([identifier])
+  @@schema("app")
+  @@map("verification")
+}
+
+/// the workspace / tenant. app.workspace_id points here.
+model Organization {
+  id        String   @id
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  teams       Team[]
+  members     Member[]
+  invitations Invitation[]
+
+  /// every app table's workspace_id points here — one organization is one workspace
+  entitys Entity[]
+  entityAttributes EntityAttribute[]
+  entityAttributeChoices EntityAttributeChoice[]
+  entityRecords EntityRecord[]
+  entityRecordValues EntityRecordValue[]
+  entityRecordRelationships EntityRecordRelationship[]
+  entityViews EntityView[]
+  entityViewFields EntityViewField[]
+  entityViewFieldPaths EntityViewFieldPath[]
+  lists List[]
+  listMembers ListMember[]
+
+  @@schema("app")
+  @@map("organization")
+}
+
+/// a sub-unit within a workspace — never repurposed as a tenant boundary
+model Team {
+  id             String    @id
+  name           String
+  memberCount    Int       @default(0) @map("member_count")
+  organizationId String    @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teamMembers  TeamMember[]
+
+  @@index([organizationId])
+  @@schema("app")
+  @@map("team")
+}
+
+model TeamMember {
+  id            String    @id
+  teamId        String    @map("team_id")
+  userId        String    @map("user_id")
+  membershipKey String?   @unique @map("membership_key")
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([userId])
+  @@schema("app")
+  @@map("team_member")
+}
+
+/// membership of an organization — not repurposed for anything else
+model Member {
+  id             String   @id
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
+  role           String   @default("member")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@schema("app")
+  @@map("member")
+}
+
+model Invitation {
+  id             String   @id
+  organizationId String   @map("organization_id")
+  email          String
+  role           String?
+  teamId         String?  @map("team_id")
+  status         String   @default("pending")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  inviterId      String   @map("inviter_id")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter      User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@schema("app")
+  @@map("invitation")
+}
+
 // ────────────────────────── app · EAV substrate ─────────────────────────
 //
 // User-authored columns only. SEC data is NOT stored here — it is projected
@@ -910,6 +1359,8 @@ model Entity {
   records    EntityRecord[]
   views      EntityView[]
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([slug, workspaceId])
   @@index([workspaceId])
   @@schema("app")
@@ -963,6 +1414,8 @@ model EntityAttribute {
   relationships EntityRecordRelationship[]
   viewPaths     EntityViewFieldPath[]
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([entityId, key])
   @@index([workspaceId, entityId])
   @@index([referenceColumn])
@@ -984,6 +1437,8 @@ model EntityAttributeChoice {
   metadata    Json    @default("{}") @db.JsonB
 
   attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([attributeId, position])
   @@index([workspaceId])
@@ -1007,6 +1462,8 @@ model EntityRecord {
   outgoingEdges EntityRecordRelationship[] @relation("SourceRecord")
   incomingEdges EntityRecordRelationship[] @relation("TargetRecord")
   listMembers   ListMember[]
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([entityId, sourceKind, sourceCrd, workspaceId])
   @@index([entityId, workspaceId])
@@ -1040,6 +1497,8 @@ model EntityRecordValue {
   record    EntityRecord    @relation(fields: [recordId], references: [id], onDelete: Cascade)
   attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@unique([recordId, attributeId])
   @@index([attributeId, numericValue])
   @@index([attributeId, textValue])
@@ -1069,6 +1528,8 @@ model EntityRecordRelationship {
   source    EntityRecord    @relation("SourceRecord", fields: [sourceRecordId], references: [id], onDelete: Cascade)
   target    EntityRecord    @relation("TargetRecord", fields: [targetRecordId], references: [id], onDelete: Cascade)
   attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([sourceRecordId, attributeId, targetRecordId])
   @@index([sourceRecordId, attributeId])
@@ -1100,6 +1561,8 @@ model EntityView {
   entity Entity            @relation(fields: [entityId], references: [id], onDelete: Cascade)
   fields EntityViewField[]
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([entityId, workspaceId])
   @@schema("app")
   @@map("entity_view")
@@ -1122,6 +1585,8 @@ model EntityViewField {
   view  EntityView            @relation(fields: [viewId], references: [id], onDelete: Cascade)
   paths EntityViewFieldPath[]
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([viewId])
   @@schema("app")
   @@map("entity_view_field")
@@ -1136,6 +1601,8 @@ model EntityViewFieldPath {
 
   field     EntityViewField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   attribute EntityAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([fieldId, position])
   @@index([attributeId])
@@ -1175,6 +1642,8 @@ model List {
 
   members ListMember[]
 
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([workspaceId, entityId])
   @@schema("app")
   @@map("list")
@@ -1189,6 +1658,8 @@ model ListMember {
 
   list   List         @relation(fields: [listId], references: [id], onDelete: Cascade)
   record EntityRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([listId, recordId])
   @@index([recordId])
