@@ -118,10 +118,15 @@ web as (
  * filing is five years old would report that gap as its one-year growth. The
  * elapsed period is measured from the actual dates, not the nominal horizon.
  *
- * The baseline need only exist and be > 0. A minimum size would be a product
- * judgement, and applying it here would destroy the value rather than let a
- * caller filter: a firm growing from $2M to $2B is a real ratio, not an
- * artifact, and a growth leaderboard filters on current AUM instead.
+ * The baseline need only exist and be > 0 — a minimum size would be a product
+ * judgement, and a firm growing from $2M to $2B is a real ratio.
+ *
+ * A thousandfold move either way is not. 971 filings across 319 firms, almost
+ * all filed between February and August 2025, carry AUM with its magnitude
+ * lost: Vanguard reads 102,466 against a true 10,246,596,045,633, the leading
+ * digits with the exponent dropped. Growth off such a baseline is meaningless
+ * and, left in, it sorts to the top of every growth ranking — so both
+ * directions are excluded. The defect is in the seed, not here.
  */
 growth_aum_raw as (
   select distinct on (c.firm_crd, g.horizon)
@@ -137,13 +142,11 @@ growth_aum_raw as (
      and h.on_date >= c.latest_on - make_interval(years => g.horizon, days => 180)
    where h.regulatory_aum > 0
      and c.aum_now > 0
+     -- see the corrupt-baseline note above
+     and c.aum_now < h.regulatory_aum * 1000
+     and h.regulatory_aum < c.aum_now * 1000
    order by c.firm_crd, g.horizon, h.on_date desc
 ),
-/**
- * 153 filings report AUM under $1,000, and growth off such a baseline exceeds
- * what numeric(12,6) holds. The ratio is real but unrepresentable, so it is
- * null rather than clamped to a value that would sort as if it were the truth.
- */
 growth_aum as (
   select firm_crd, horizon,
          case when abs(cagr) < 1000000 then cagr::numeric(12, 6) end as cagr
