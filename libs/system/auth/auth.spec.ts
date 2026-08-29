@@ -1,6 +1,8 @@
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { ADVISOR_WORKFLOW_ATTRIBUTES } from '@feature/entities/data/system-attributes.js';
+
 import { auth, authPrisma } from './auth.js';
 
 /**
@@ -14,10 +16,37 @@ describe('auth', () => {
   const email = 'auth-spec@example.test';
   const password = 'correct-horse-battery-staple';
 
+  let orgId: string;
+  let authedHeaders: Headers;
+
   beforeAll(async () => {
     db = new Client({ connectionString: process.env.APP_DATABASE_URL });
     await db.connect();
     await db.query('delete from app."user" where email = $1', [email]);
+
+    await auth.api.signUpEmail({
+      body: { email, password, name: 'Auth Spec' },
+      asResponse: true,
+    });
+
+    const signIn = await auth.api.signInEmail({
+      body: { email, password },
+      asResponse: true,
+    });
+
+    authedHeaders = new Headers({ cookie: signIn.headers.get('set-cookie') as string });
+
+    const org = await auth.api.createOrganization({
+      body: { name: 'Acme Recruiting', slug: `acme-${Date.now()}` },
+      headers: authedHeaders,
+    });
+
+    orgId = org?.id as string;
+
+    await auth.api.setActiveOrganization({
+      body: { organizationId: orgId },
+      headers: authedHeaders,
+    });
   });
 
   afterAll(async () => {
@@ -26,17 +55,8 @@ describe('auth', () => {
     await authPrisma.$disconnect();
   });
 
-  const signUp = () =>
-    auth.api.signUpEmail({
-      body: { email, password, name: 'Auth Spec' },
-      asResponse: true,
-    });
 
   it('creates a user and issues a session', async () => {
-    const response = await signUp();
-
-    expect(response.status).toBe(200);
-
     const { rows } = await db.query<{ id: string }>(
       'select id from app."user" where email = $1',
       [email],
@@ -87,28 +107,10 @@ describe('auth', () => {
 
   describe('workspace = organization', () => {
     it('sets activeOrganizationId on the session when a workspace is created', async () => {
-      const signIn = await auth.api.signInEmail({
-        body: { email, password },
-        asResponse: true,
-      });
-      const cookie = signIn.headers.get('set-cookie') as string;
-      const headers = new Headers({ cookie });
+      const session = await auth.api.getSession({ headers: authedHeaders });
 
-      const org = await auth.api.createOrganization({
-        body: { name: 'Acme Recruiting', slug: `acme-${Date.now()}` },
-        headers,
-      });
-
-      expect(org?.id).toBeTruthy();
-
-      await auth.api.setActiveOrganization({
-        body: { organizationId: org?.id as string },
-        headers,
-      });
-
-      const session = await auth.api.getSession({ headers });
-
-      expect(session?.session.activeOrganizationId).toBe(org?.id);
+      expect(orgId).toBeTruthy();
+      expect(session?.session.activeOrganizationId).toBe(orgId);
     });
 
     it('makes the creator a member of the organization', async () => {
@@ -133,6 +135,78 @@ describe('auth', () => {
       );
 
       expect(rows[0]?.id).toMatch(/\S/);
+    });
+  });
+
+  describe('workspace provisioning', () => {
+    it('seeds the advisor and firm entities on organization create', async () => {
+      const { rows } = await db.query<{ slug: string; source_kind: string }>(
+        `select e.slug, e.source_kind from app.entity e
+           join app.member m on m.organization_id = e.workspace_id
+           join app."user" u on u.id = m.user_id
+          where u.email = $1 order by e.slug`,
+        [email],
+      );
+
+      expect(rows.map((r) => r.slug)).toEqual(['advisor', 'firm']);
+      expect(rows.map((r) => r.source_kind)).toEqual(['advisor', 'firm']);
+    });
+
+    it('seeds every reference attribute as non-editable', async () => {
+      const { rows } = await db.query<{ n: string }>(
+        `select count(*)::text as n from app.entity_attribute a
+           join app.entity e on e.id = a.entity_id
+           join app.member m on m.organization_id = e.workspace_id
+           join app."user" u on u.id = m.user_id
+          where u.email = $1 and a.reference_column is not null and a.is_editable`,
+        [email],
+      );
+
+      expect(Number(rows[0]?.n)).toBe(0);
+    });
+
+    it('seeds the recruiter workflow columns as editable', async () => {
+      const { rows } = await db.query<{ label: string }>(
+        `select a.label from app.entity_attribute a
+           join app.entity e on e.id = a.entity_id
+           join app.member m on m.organization_id = e.workspace_id
+           join app."user" u on u.id = m.user_id
+          where u.email = $1 and a.reference_column is null and a.is_editable
+          order by a.label`,
+        [email],
+      );
+
+      expect(rows.map((r) => r.label)).toContain('Recruiting Status');
+      expect(rows.map((r) => r.label)).toContain('Notes');
+    });
+
+    it('gives the recruiting status its choices', async () => {
+      const { rows } = await db.query<{ name: string }>(
+        `select c.name from app.entity_attribute_choice c
+           join app.entity_attribute a on a.id = c.attribute_id
+           join app.entity e on e.id = a.entity_id
+           join app.member m on m.organization_id = e.workspace_id
+           join app."user" u on u.id = m.user_id
+          where u.email = $1 and a.label = 'Recruiting Status'
+          order by c.position`,
+        [email],
+      );
+
+      expect(rows.map((r) => r.name)).toContain('Contacted');
+    });
+
+    it('writes the stable uuid7 key, not a generated one', async () => {
+      const { rows } = await db.query<{ key: string }>(
+        `select a.key from app.entity_attribute a
+           join app.entity e on e.id = a.entity_id
+           join app.member m on m.organization_id = e.workspace_id
+           join app."user" u on u.id = m.user_id
+          where u.email = $1 and a.label = 'Recruiting Status'`,
+        [email],
+      );
+
+      // the constant is the workspace's permanent handle on this attribute
+      expect(rows[0]?.key).toBe(ADVISOR_WORKFLOW_ATTRIBUTES.recruitingStatus);
     });
   });
 });

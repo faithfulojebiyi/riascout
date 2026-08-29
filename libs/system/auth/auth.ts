@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { organization } from 'better-auth/plugins';
 
+import { provisionWorkspace } from '@feature/entities/data/provision-workspace.js';
 import { PrismaClient } from '@orm/app';
 
 /**
@@ -55,7 +56,21 @@ export const auth = betterAuth({
     },
   },
   advanced: { useSecureCookies: process.env.NODE_ENV !== 'development' },
-  plugins: [organization({ teams: { enabled: true } })],
+  plugins: [
+    organization({
+      teams: { enabled: true },
+      organizationHooks: {
+        /**
+         * A workspace with no entities cannot be used, so provisioning runs
+         * inline rather than as a job — a recruiter must not land in an empty
+         * CRM while a queue catches up. It is idempotent, so a retry is safe.
+         */
+        afterCreateOrganization: async ({ organization: org }) => {
+          await provisionWorkspace(authPrisma as never, org.id);
+        },
+      },
+    }),
+  ],
 });
 
 export type Auth = typeof auth;

@@ -204,7 +204,7 @@ describe('grid query builder', () => {
         offset: 0,
       });
 
-      await explains(sql, params);
+      await expect(explains(sql, params)).resolves.toBeUndefined();
     });
   });
 
