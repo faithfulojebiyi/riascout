@@ -39,7 +39,8 @@
     "prisma:status": "prisma migrate status",
     "prisma:reset": "prisma migrate reset",
     "build:aliases": "tsc-alias -p apps/api/tsconfig.app.json && tsc-alias -p apps/worker/tsconfig.app.json",
-    "prisma:seed": "bun prisma/seed/dimensions.ts"
+    "prisma:seed": "bun prisma/seed/dimensions.ts",
+    "api:generate": "cd dashboard && bun run api:generate"
   },
   "dependencies": {
     "@fastify/compress": "^8.3.1",

@@ -2,6 +2,8 @@ import { createZodDto } from 'nestjs-zod';
 
 import {
   CreateEntityRecordResponseSchema,
+  GetEntitiesResponseSchema,
+  GetEntitiesSchema,
   CreateEntityRecordSchema,
   GetEntityRecordsResponseSchema,
   GetEntityRecordsSchema,
@@ -25,3 +27,8 @@ export class CreateEntityRecordResponseDto extends createZodDto(
   CreateEntityRecordResponseSchema,
   { codec: true },
 ) {}
+
+export class GetEntitiesDto extends createZodDto(GetEntitiesSchema) {}
+export class GetEntitiesResponseDto extends createZodDto(GetEntitiesResponseSchema, {
+  codec: true,
+}) {}

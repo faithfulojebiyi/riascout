@@ -446,4 +446,51 @@ describe('POST /entities/get-entity-records', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe('GET /entities', () => {
+    const get = (withAuth = true) =>
+      fetch(`${base}/entities`, { headers: withAuth ? { cookie } : {} });
+
+    it('401s without a session', async () => {
+      expect((await get(false)).status).toBe(401);
+    });
+
+    it('lists the workspace entities with their views', async () => {
+      const body = (await (await get()).json()) as {
+        entities: {
+          slug: string;
+          sourceKind: string | null;
+          recordCount: number;
+          attributeCount: number;
+          views: { isDefault: boolean }[];
+        }[];
+      };
+
+      // the fixture entity plus the two provisioning seeded
+      const advisor = body.entities.find((e) => e.slug === 'e2e-advisor');
+
+      expect(advisor?.sourceKind).toBe('advisor');
+      expect(advisor?.recordCount).toBeGreaterThanOrEqual(3);
+      expect(advisor?.attributeCount).toBe(3);
+      expect(advisor?.views.filter((v) => v.isDefault)).toHaveLength(1);
+    });
+
+    it('includes the entities provisioning seeded', async () => {
+      const body = (await (await get()).json()) as { entities: { slug: string }[] };
+
+      expect(body.entities.map((e) => e.slug)).toEqual(
+        expect.arrayContaining(['advisor', 'firm']),
+      );
+    });
+
+    it("never lists another workspace's entities", async () => {
+      const body = (await (await get()).json()) as { entities: { id: string }[] };
+      const { rows } = await db.query<{ n: string }>(
+        `select count(*)::text as n from app.entity where workspace_id <> $1 and id = any($2::text[])`,
+        [workspaceId, body.entities.map((e) => e.id)],
+      );
+
+      expect(Number(rows[0]?.n)).toBe(0);
+    });
+  });
 });

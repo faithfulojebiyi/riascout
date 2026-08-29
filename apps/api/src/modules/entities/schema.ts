@@ -136,3 +136,25 @@ export const CreateEntityRecordResponseSchema = z
     created: z.boolean(),
   })
   .meta({ id: 'CreateEntityRecordResponse' });
+
+/** the sidebar needs to know what exists before it can navigate anywhere */
+export const GetEntitiesSchema = z.object({}).meta({ id: 'GetEntities' });
+
+const EntitySummarySchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string(),
+    /** which market projection this entity points at, if any */
+    sourceKind: z.enum(['advisor', 'firm']).nullable(),
+    recordCount: z.number().int(),
+    attributeCount: z.number().int(),
+    views: z.array(
+      z.object({ id: z.uuid(), name: z.string(), isDefault: z.boolean() }),
+    ),
+  })
+  .meta({ id: 'EntitySummary' });
+
+export const GetEntitiesResponseSchema = z
+  .object({ entities: z.array(EntitySummarySchema) })
+  .meta({ id: 'GetEntitiesResponse' });
