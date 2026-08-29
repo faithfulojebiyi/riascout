@@ -7,10 +7,23 @@ import { join } from 'node:path';
 
 import { runDuck, type DuckOptions } from './lib/duck.js';
 import { acquire } from './lib/lock.js';
+import { runPsql } from './lib/postgres.js';
 import { preflight } from './lib/preflight.js';
 
-type Stage = { key: string; file: string; label: string };
+/** duck stages read the seed; postgres stages only reshape what is already loaded */
+type Stage = {
+  key: string;
+  file: string;
+  label: string;
+  engine?: 'duck' | 'postgres';
+};
 
+/**
+ * Order matters: the derived tables feed the projections, and firm-derived
+ * needs advisor registrations for its advisor counts. Leaving the derived and
+ * projection stages unregistered is what left firm_fact_derived empty, and with
+ * it every aum_band and channel on both projections.
+ */
 const STAGES: Stage[] = [
   { key: 'reset', file: '000-reset.sql', label: 'truncate (full reload only)' },
   { key: 'identity', file: '010-identity.sql', label: 'firms + advisors' },
@@ -20,6 +33,30 @@ const STAGES: Stage[] = [
     key: 'advisor',
     file: '040-advisor.sql',
     label: 'advisor detail + registrations',
+  },
+  {
+    key: 'advisor-derived',
+    file: '045-advisor-derived.sql',
+    label: 'advisor tenure + experience',
+    engine: 'postgres',
+  },
+  {
+    key: 'firm-derived',
+    file: '046-firm-derived.sql',
+    label: 'firm ratios, bands, channel',
+    engine: 'postgres',
+  },
+  {
+    key: 'advisor-search',
+    file: '050-search-projections.sql',
+    label: 'advisor_search projection',
+    engine: 'postgres',
+  },
+  {
+    key: 'firm-search',
+    file: '051-firm-search.sql',
+    label: 'firm_search projection',
+    engine: 'postgres',
   },
 ];
 
@@ -86,7 +123,12 @@ async function main(): Promise<void> {
     process.stdout.write(`  ${stage.key.padEnd(12)} ${stage.label} … `);
 
     try {
-      await runDuck(sql, opts);
+      if (stage.engine === 'postgres') {
+        await runPsql(sql, pre.postgresUrl);
+      } else {
+        await runDuck(sql, opts);
+      }
+
       console.log(seconds(Date.now() - started));
     } catch (error) {
       console.log('FAILED');
