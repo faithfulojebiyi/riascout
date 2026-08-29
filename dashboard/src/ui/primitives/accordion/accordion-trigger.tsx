@@ -1,70 +1,80 @@
-'use client'
+'use client';
 
-import type * as React from 'react'
+import type * as React from 'react';
 
-import { Accordion as AccordionPrimitive } from 'radix-ui'
+import { Accordion as AccordionPrimitive } from 'radix-ui';
 
-import { cva, type RecipeVariantProps } from '@riascout-ui/styled-system/css'
-import { styled } from '@riascout-ui/styled-system/jsx'
-import type { JsxStyleProps } from '@riascout-ui/styled-system/types'
+import { cva, type RecipeVariantProps } from '@riascout-ui/styled-system/css';
+import { styled } from '@riascout-ui/styled-system/jsx';
+import type { JsxStyleProps } from '@riascout-ui/styled-system/types';
 
 const accordionHeaderStyle = cva({
-	base: {
-		display: 'flex',
-		w: '100%'
-	}
-})
+  base: {
+    display: 'flex',
+    w: '100%',
+  },
+});
 
-const StyledAccordionHeader = styled(AccordionPrimitive.Header, accordionHeaderStyle)
+const StyledAccordionHeader = styled(
+  AccordionPrimitive.Header,
+  accordionHeaderStyle,
+);
 
 const accordionTriggerStyle = cva({
-	base: {
-		'&[data-state=closed]': {
-			'& .caret': {
-				transform: 'rotate(-90deg)'
-			}
-		},
-		alignItems: 'center',
-		cursor: 'pointer',
-		display: 'flex',
-		flex: '1',
+  base: {
+    '&[data-state=closed]': {
+      '& .caret': {
+        transform: 'rotate(-90deg)',
+      },
+    },
+    alignItems: 'center',
+    cursor: 'pointer',
+    display: 'flex',
+    flex: '1',
 
-		fontWeight: '500',
-		gap: '0.625rem',
-		transition: 'all'
-	},
-	variants: {
-		look: {
-			grey: {
-				_hover: {
-					_disabled: {
-						bg: 'background.muted'
-					}
-				},
-				bg: 'background.muted'
-			},
-			transparent: {
-				_hover: {
-					bg: 'background.muted'
-				},
-				bg: 'transparent'
-			}
-		}
-	}
-})
+    fontWeight: '500',
+    gap: '0.625rem',
+    transition: 'all',
+  },
+  variants: {
+    look: {
+      grey: {
+        _hover: {
+          _disabled: {
+            bg: 'background.muted',
+          },
+        },
+        bg: 'background.muted',
+      },
+      transparent: {
+        _hover: {
+          bg: 'background.muted',
+        },
+        bg: 'transparent',
+      },
+    },
+  },
+});
 
-const StyledAccordionTrigger = styled(AccordionPrimitive.Trigger, accordionTriggerStyle)
+const StyledAccordionTrigger = styled(
+  AccordionPrimitive.Trigger,
+  accordionTriggerStyle,
+);
 
-type ButtonVariants = RecipeVariantProps<typeof accordionTriggerStyle>
+type ButtonVariants = RecipeVariantProps<typeof accordionTriggerStyle>;
 
 type Props = React.ComponentProps<typeof AccordionPrimitive.Trigger> &
-	JsxStyleProps &
-	ButtonVariants & { showCaret?: boolean; triggerHeaderProps?: JsxStyleProps }
+  JsxStyleProps &
+  ButtonVariants & { showCaret?: boolean; triggerHeaderProps?: JsxStyleProps };
 
-export const AccordionTrigger = ({ children, triggerHeaderProps, ...props }: Props) => {
-	return (
-		<StyledAccordionHeader {...triggerHeaderProps}>
-			<StyledAccordionTrigger {...props}>{children}</StyledAccordionTrigger>
-		</StyledAccordionHeader>
-	)
-}
+export const AccordionTrigger = ({
+  children,
+  triggerHeaderProps,
+  ...props
+}: Props) => {
+  return (
+    <StyledAccordionHeader {...triggerHeaderProps}>
+      <StyledAccordionTrigger {...props}>{children}</StyledAccordionTrigger>
+    </StyledAccordionHeader>
+  );
+};

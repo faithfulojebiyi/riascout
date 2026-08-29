@@ -1,18 +1,18 @@
-import { Flex, type FlexProps } from '@riascout-ui/styled-system/jsx'
+import { Flex, type FlexProps } from '@riascout-ui/styled-system/jsx';
 
 export const DialogFooter = ({ ...props }: FlexProps) => {
-	return (
-		<Flex
-			borderTop="subtle"
-			data-slot="dialog-footer"
-			gap="3"
-			// glass="popup"
-			justify="flex-end"
-			overflow="hidden"
-			px="4"
-			py="3"
-			w="full"
-			{...props}
-		/>
-	)
-}
+  return (
+    <Flex
+      borderTop="subtle"
+      data-slot="dialog-footer"
+      gap="3"
+      // glass="popup"
+      justify="flex-end"
+      overflow="hidden"
+      px="4"
+      py="3"
+      w="full"
+      {...props}
+    />
+  );
+};

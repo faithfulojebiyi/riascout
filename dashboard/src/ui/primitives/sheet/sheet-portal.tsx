@@ -1,5 +1,7 @@
-'use client'
+'use client';
 
-import { Dialog as SheetPrimitive } from 'radix-ui'
+import { Dialog as SheetPrimitive } from 'radix-ui';
 
-export const SheetPortal = ({ ...props }: SheetPrimitive.DialogPortalProps) => <SheetPrimitive.Portal {...props} />
+export const SheetPortal = ({ ...props }: SheetPrimitive.DialogPortalProps) => (
+  <SheetPrimitive.Portal {...props} />
+);

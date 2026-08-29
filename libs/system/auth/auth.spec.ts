@@ -34,7 +34,9 @@ describe('auth', () => {
       asResponse: true,
     });
 
-    authedHeaders = new Headers({ cookie: signIn.headers.get('set-cookie') as string });
+    authedHeaders = new Headers({
+      cookie: signIn.headers.get('set-cookie') as string,
+    });
 
     const org = await auth.api.createOrganization({
       body: { name: 'Acme Recruiting', slug: `acme-${Date.now()}` },
@@ -54,7 +56,6 @@ describe('auth', () => {
     await db.end();
     await authPrisma.$disconnect();
   });
-
 
   it('creates a user and issues a session', async () => {
     const { rows } = await db.query<{ id: string }>(

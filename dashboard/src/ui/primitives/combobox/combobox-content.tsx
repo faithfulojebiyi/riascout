@@ -1,101 +1,115 @@
-'use client'
+'use client';
 
-import { Combobox as ComboboxPrimitive } from '@base-ui/react'
+import { Combobox as ComboboxPrimitive } from '@base-ui/react';
 
-import { cva } from '@riascout-ui/styled-system/css'
-import { styled } from '@riascout-ui/styled-system/jsx'
-import type { JsxStyleProps } from '@riascout-ui/styled-system/types'
+import { cva } from '@riascout-ui/styled-system/css';
+import { styled } from '@riascout-ui/styled-system/jsx';
+import type { JsxStyleProps } from '@riascout-ui/styled-system/types';
 
 const positionerStyles = cva({
-	base: {
-		isolation: 'isolate',
-		zIndex: '150'
-	}
-})
+  base: {
+    isolation: 'isolate',
+    zIndex: '150',
+  },
+});
 
 const popupStyles = cva({
-	base: {
-		'& [data-slot=input-group]': {
-			bg: 'colors.gray.3/30',
-			border: 'none',
-			borderColor: 'colors.gray.3/30',
-			h: '2rem',
-			m: '1',
-			mb: '0',
-			shadow: 'none'
-		},
+  base: {
+    '& [data-slot=input-group]': {
+      bg: 'colors.gray.3/30',
+      border: 'none',
+      borderColor: 'colors.gray.3/30',
+      h: '2rem',
+      m: '1',
+      mb: '0',
+      shadow: 'none',
+    },
 
-		'&[data-chips=true]': {
-			minW: 'var(--anchor-width)'
-		},
+    '&[data-chips=true]': {
+      minW: 'var(--anchor-width)',
+    },
 
-		'&[data-closed]': {
-			animation: 'popoverHide'
-		},
+    '&[data-closed]': {
+      animation: 'popoverHide',
+    },
 
-		'&[data-open]': {
-			animation: 'popoverUpIn'
-		},
+    '&[data-open]': {
+      animation: 'popoverUpIn',
+    },
 
-		'&[data-side=bottom]': {
-			animation: 'slideInFromTop'
-		},
+    '&[data-side=bottom]': {
+      animation: 'slideInFromTop',
+    },
 
-		'&[data-side=inline-end]': {
-			animation: 'slideInFromLeft'
-		},
+    '&[data-side=inline-end]': {
+      animation: 'slideInFromLeft',
+    },
 
-		'&[data-side=inline-start]': {
-			animation: 'slideInFromRight'
-		},
+    '&[data-side=inline-start]': {
+      animation: 'slideInFromRight',
+    },
 
-		'&[data-side=left]': {
-			animation: 'slideInFromRight'
-		},
+    '&[data-side=left]': {
+      animation: 'slideInFromRight',
+    },
 
-		'&[data-side=right]': {
-			animation: 'slideInFromLeft'
-		},
+    '&[data-side=right]': {
+      animation: 'slideInFromLeft',
+    },
 
-		'&[data-side=top]': {
-			animation: 'slideInFromBottom'
-		},
+    '&[data-side=top]': {
+      animation: 'slideInFromBottom',
+    },
 
-		bg: 'background.popover',
-		bgOrigin: 'var(--transform-origin)',
-		border: 'subtle',
-		color: 'text.app',
-		maxH: '18rem',
-		maxW: 'var(--available-width)',
-		minW: 'calc(var(--anchor-width) + 1.75rem)',
-		overflow: 'hidden',
-		pos: 'relative',
-		rounded: 'lg',
-		shadow: 'md',
-		w: 'var(--anchor-width)'
-	}
-})
+    bg: 'background.popover',
+    bgOrigin: 'var(--transform-origin)',
+    border: 'subtle',
+    color: 'text.app',
+    maxH: '18rem',
+    maxW: 'var(--available-width)',
+    minW: 'calc(var(--anchor-width) + 1.75rem)',
+    overflow: 'hidden',
+    pos: 'relative',
+    rounded: 'lg',
+    shadow: 'md',
+    w: 'var(--anchor-width)',
+  },
+});
 
-const StyledPositioner = styled(ComboboxPrimitive.Positioner, positionerStyles)
-const StyledPopup = styled(ComboboxPrimitive.Popup, popupStyles)
+const StyledPositioner = styled(ComboboxPrimitive.Positioner, positionerStyles);
+const StyledPopup = styled(ComboboxPrimitive.Popup, popupStyles);
 
 export type ComboboxContentProps = ComboboxPrimitive.Popup.Props &
-	Pick<ComboboxPrimitive.Positioner.Props, 'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'> &
-	JsxStyleProps
+  Pick<
+    ComboboxPrimitive.Positioner.Props,
+    'side' | 'align' | 'sideOffset' | 'alignOffset' | 'anchor'
+  > &
+  JsxStyleProps;
 
 export const ComboboxContent = ({
-	side = 'bottom',
-	sideOffset = 6,
-	align = 'start',
-	alignOffset = 0,
-	anchor,
-	...props
+  side = 'bottom',
+  sideOffset = 6,
+  align = 'start',
+  alignOffset = 0,
+  anchor,
+  ...props
 }: ComboboxContentProps) => {
-	return (
-		<ComboboxPrimitive.Portal>
-			<StyledPositioner align={align} alignOffset={alignOffset} anchor={anchor} side={side} sideOffset={sideOffset}>
-				<StyledPopup className="group/combobox-content" data-chips={!!anchor} data-slot="combobox-content" {...props} />
-			</StyledPositioner>
-		</ComboboxPrimitive.Portal>
-	)
-}
+  return (
+    <ComboboxPrimitive.Portal>
+      <StyledPositioner
+        align={align}
+        alignOffset={alignOffset}
+        anchor={anchor}
+        side={side}
+        sideOffset={sideOffset}
+      >
+        <StyledPopup
+          className="group/combobox-content"
+          data-chips={!!anchor}
+          data-slot="combobox-content"
+          {...props}
+        />
+      </StyledPositioner>
+    </ComboboxPrimitive.Portal>
+  );
+};

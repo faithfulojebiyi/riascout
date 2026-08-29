@@ -1,9 +1,11 @@
-'use client'
+'use client';
 
-import { Combobox as ComboboxPrimitive } from '@base-ui/react'
+import { Combobox as ComboboxPrimitive } from '@base-ui/react';
 
-export type ComboboxCollectionProps = ComboboxPrimitive.Collection.Props
+export type ComboboxCollectionProps = ComboboxPrimitive.Collection.Props;
 
 export const ComboboxCollection = ({ ...props }: ComboboxCollectionProps) => {
-	return <ComboboxPrimitive.Collection data-slot="combobox-collection" {...props} />
-}
+  return (
+    <ComboboxPrimitive.Collection data-slot="combobox-collection" {...props} />
+  );
+};

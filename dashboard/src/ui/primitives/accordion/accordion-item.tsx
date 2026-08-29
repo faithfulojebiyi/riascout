@@ -1,14 +1,16 @@
-'use client'
+'use client';
 
-import type * as React from 'react'
+import type * as React from 'react';
 
-import { Accordion as AccordionPrimitive } from 'radix-ui'
+import { Accordion as AccordionPrimitive } from 'radix-ui';
 
-import { styled } from '@riascout-ui/styled-system/jsx'
-import type { JsxStyleProps } from '@riascout-ui/styled-system/types'
+import { styled } from '@riascout-ui/styled-system/jsx';
+import type { JsxStyleProps } from '@riascout-ui/styled-system/types';
 
-const StyledAccordionItem = styled(AccordionPrimitive.Item)
+const StyledAccordionItem = styled(AccordionPrimitive.Item);
 
-export const AccordionItem = ({ ...props }: React.ComponentProps<typeof AccordionPrimitive.Item> & JsxStyleProps) => {
-	return <StyledAccordionItem {...props} />
-}
+export const AccordionItem = ({
+  ...props
+}: React.ComponentProps<typeof AccordionPrimitive.Item> & JsxStyleProps) => {
+  return <StyledAccordionItem {...props} />;
+};

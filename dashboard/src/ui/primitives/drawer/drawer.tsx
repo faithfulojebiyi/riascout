@@ -1,9 +1,11 @@
-'use client'
+'use client';
 
-import type * as React from 'react'
+import type * as React from 'react';
 
-import { Drawer as DrawerPrimitive } from 'vaul'
+import { Drawer as DrawerPrimitive } from 'vaul';
 
-export const Drawer = ({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
-	return <DrawerPrimitive.Root data-slot="drawer" {...props} />
-}
+export const Drawer = ({
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
+  return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
+};

@@ -1,87 +1,99 @@
-import * as ResizablePrimitive from 'react-resizable-panels'
+import * as ResizablePrimitive from 'react-resizable-panels';
 
-import { Icons } from '../../icons/base'
-import { css, cx } from '@riascout-ui/styled-system/css'
-import { JsxStyleProps } from '@riascout-ui/styled-system/types'
+import { Icons } from '../../icons/base';
+import { css, cx } from '@riascout-ui/styled-system/css';
+import { JsxStyleProps } from '@riascout-ui/styled-system/types';
 
-import { Center } from '../layout'
+import { Center } from '../layout';
 
 const groupStyles = css({
-	'&[data-panel-group-direction=vertical]': {
-		flexDir: 'column'
-	},
-	display: 'flex',
-	h: '100%',
-	w: '100%'
-})
+  '&[data-panel-group-direction=vertical]': {
+    flexDir: 'column',
+  },
+  display: 'flex',
+  h: '100%',
+  w: '100%',
+});
 
 const ResizablePanelGroup = ({
-	className,
-	direction,
-	autoSaveId,
-	...props
+  className,
+  direction,
+  autoSaveId,
+  ...props
 }: React.ComponentProps<typeof ResizablePrimitive.Group> &
-	JsxStyleProps & { direction?: 'horizontal' | 'vertical'; autoSaveId?: string }) => (
-	<ResizablePrimitive.Group
-		className={cx(groupStyles, className)}
-		id={autoSaveId ?? props.id}
-		orientation={direction ?? props.orientation}
-		{...props}
-	/>
-)
+  JsxStyleProps & {
+    direction?: 'horizontal' | 'vertical';
+    autoSaveId?: string;
+  }) => (
+  <ResizablePrimitive.Group
+    className={cx(groupStyles, className)}
+    id={autoSaveId ?? props.id}
+    orientation={direction ?? props.orientation}
+    {...props}
+  />
+);
 
-const ResizablePanel = ResizablePrimitive.Panel
+const ResizablePanel = ResizablePrimitive.Panel;
 
 const handleStyles = css({
-	'&:after': {
-		insetY: '0',
-		left: '50%',
-		pos: 'absolute',
-		transform: 'translateX(50%)',
-		w: '4px'
-	},
+  '&:after': {
+    insetY: '0',
+    left: '50%',
+    pos: 'absolute',
+    transform: 'translateX(50%)',
+    w: '4px',
+  },
 
-	'&:focus-visible': {
-		border: 'focused',
-		outline: 'none'
-	},
+  '&:focus-visible': {
+    border: 'focused',
+    outline: 'none',
+  },
 
-	'&[data-panel-group-direction=vertical]': {
-		'&:after': {
-			h: '4px',
-			left: 0,
-			transform: 'translate(0, 50%)',
-			w: '100%'
-		},
-		h: '1px',
-		w: '100%'
-	},
+  '&[data-panel-group-direction=vertical]': {
+    '&:after': {
+      h: '4px',
+      left: 0,
+      transform: 'translate(0, 50%)',
+      w: '100%',
+    },
+    h: '1px',
+    w: '100%',
+  },
 
-	'&[data-panel-group-direction=vertical] > div': {
-		// transform: 'rotate(90deg)'
-	},
-	alignItems: 'center',
-	bg: 'background.muted',
-	display: 'flex',
-	justifyContent: 'center',
-	pos: 'relative',
-	w: '1px'
-})
+  '&[data-panel-group-direction=vertical] > div': {
+    // transform: 'rotate(90deg)'
+  },
+  alignItems: 'center',
+  bg: 'background.muted',
+  display: 'flex',
+  justifyContent: 'center',
+  pos: 'relative',
+  w: '1px',
+});
 
 const ResizableHandle = ({
-	withHandle,
-	className,
-	...props
+  withHandle,
+  className,
+  ...props
 }: React.ComponentProps<typeof ResizablePrimitive.Separator> & {
-	withHandle?: boolean
+  withHandle?: boolean;
 } & JsxStyleProps) => (
-	<ResizablePrimitive.Separator className={cx(handleStyles, className)} {...props}>
-		{withHandle && (
-			<Center border="subtle" overflow="hidden" px="1.5" rounded="md" zIndex="10">
-				<Icons.gripHorizontal size={16} />
-			</Center>
-		)}
-	</ResizablePrimitive.Separator>
-)
+  <ResizablePrimitive.Separator
+    className={cx(handleStyles, className)}
+    {...props}
+  >
+    {withHandle && (
+      <Center
+        border="subtle"
+        overflow="hidden"
+        px="1.5"
+        rounded="md"
+        zIndex="10"
+      >
+        <Icons.gripHorizontal size={16} />
+      </Center>
+    )}
+  </ResizablePrimitive.Separator>
+);
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup }
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup };

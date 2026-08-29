@@ -1,9 +1,9 @@
-import type { JSX, SVGProps } from 'react'
+import type { JSX, SVGProps } from 'react';
 
-import type { StyledComponent } from '@riascout-ui/styled-system/types'
+import type { StyledComponent } from '@riascout-ui/styled-system/types';
 
 export type IconProps = SVGProps<SVGSVGElement> & {
-	size?: string | number
-}
+  size?: string | number;
+};
 
-export type TIcon = StyledComponent<(props: IconProps) => JSX.Element>
+export type TIcon = StyledComponent<(props: IconProps) => JSX.Element>;

@@ -1,21 +1,21 @@
-import type { JsxStyleProps } from '@riascout-ui/styled-system/types'
+import type { JsxStyleProps } from '@riascout-ui/styled-system/types';
 
-import { Separator, type SeparatorProps } from '../separator'
+import { Separator, type SeparatorProps } from '../separator';
 
-export type ButtonGroupSeparatorProps = SeparatorProps & JsxStyleProps
+export type ButtonGroupSeparatorProps = SeparatorProps & JsxStyleProps;
 
 export const ButtonGroupSeparator = ({
-	orientation = 'vertical',
-	decorative = true,
-	...props
+  orientation = 'vertical',
+  decorative = true,
+  ...props
 }: ButtonGroupSeparatorProps) => {
-	return (
-		<Separator
-			alignSelf="stretch"
-			data-slot="button-group-separator"
-			decorative={decorative}
-			orientation={orientation}
-			{...props}
-		/>
-	)
-}
+  return (
+    <Separator
+      alignSelf="stretch"
+      data-slot="button-group-separator"
+      decorative={decorative}
+      orientation={orientation}
+      {...props}
+    />
+  );
+};

@@ -4,7 +4,10 @@ import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
-import type { GetEntitiesDto, GetEntitiesResponseDto } from '../dto/entities.dto.js';
+import type {
+  GetEntitiesDto,
+  GetEntitiesResponseDto,
+} from '../dto/entities.dto.js';
 
 export class GetEntitiesQuery extends Query<GetEntitiesResponseDto> {
   constructor(public readonly dto: GetEntitiesDto) {
@@ -38,7 +41,12 @@ export class GetEntitiesQueryHandler implements IQueryHandler<GetEntitiesQuery> 
           select: { id: true, name: true, isDefault: true },
           orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
         },
-        _count: { select: { records: true, attributes: { where: { isArchived: false } } } },
+        _count: {
+          select: {
+            records: true,
+            attributes: { where: { isArchived: false } },
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });

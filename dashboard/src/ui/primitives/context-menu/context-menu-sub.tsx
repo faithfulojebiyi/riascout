@@ -1,7 +1,9 @@
-'use client'
+'use client';
 
-import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
+import { ContextMenu as ContextMenuPrimitive } from 'radix-ui';
 
-export const ContextMenuSub = ({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Sub>) => {
-	return <ContextMenuPrimitive.Sub data-slot="context-menu-sub" {...props} />
-}
+export const ContextMenuSub = ({
+  ...props
+}: React.ComponentProps<typeof ContextMenuPrimitive.Sub>) => {
+  return <ContextMenuPrimitive.Sub data-slot="context-menu-sub" {...props} />;
+};

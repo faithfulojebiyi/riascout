@@ -1,5 +1,5 @@
-'use client'
+'use client';
 
-import { Select as SelectPrimitive } from 'radix-ui'
+import { Select as SelectPrimitive } from 'radix-ui';
 
-export const SelectGroup = SelectPrimitive.Group
+export const SelectGroup = SelectPrimitive.Group;

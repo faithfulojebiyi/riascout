@@ -45,7 +45,8 @@ export type SeedEntity = {
   attributes: SeedAttribute[];
 };
 
-const camel = (s: string): string => s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+const camel = (s: string): string =>
+  s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
 /** "firm_aum_per_advisor" -> "Firm Aum Per Advisor", then fixed up below */
 const ACRONYMS: Record<string, string> = {
@@ -122,7 +123,8 @@ const referenceAttributes = (
 /** groups appear in the order declared, so the record panel reads top to bottom */
 const byGroup = (attributes: SeedAttribute[]): SeedAttribute[] =>
   [...attributes].sort(
-    (a, b) => ATTRIBUTE_GROUPS.indexOf(a.group) - ATTRIBUTE_GROUPS.indexOf(b.group),
+    (a, b) =>
+      ATTRIBUTE_GROUPS.indexOf(a.group) - ATTRIBUTE_GROUPS.indexOf(b.group),
   );
 
 type WorkflowSpec = Omit<
@@ -309,7 +311,7 @@ export const FIRM_ENTITY: SeedEntity = {
       group: 'Pipeline',
       visible: false,
       pinned: false,
-    icon: 'note',
+      icon: 'note',
     }),
   ]),
 };

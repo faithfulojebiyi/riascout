@@ -1,1 +1,1 @@
-export { MultiSelectWithSearch } from './multi-select'
+export { MultiSelectWithSearch } from './multi-select';

@@ -21,12 +21,16 @@ describe('POST /entities/get-entity-records', () => {
   let hiddenAttr: string;
   let viewId: string;
 
-    /** seeded as records by beforeAll — the read tests assert on exactly these */
+  /** seeded as records by beforeAll — the read tests assert on exactly these */
   const CRDS = [910_001, 910_002, 910_003];
   /** created by the write tests; listed only so cleanup can remove them */
   const WRITE_CRDS = [910_004, 910_006, 910_007, 910_008, 910_009];
 
-  const post = (path: string, body: unknown, withAuth = true): Promise<Response> =>
+  const post = (
+    path: string,
+    body: unknown,
+    withAuth = true,
+  ): Promise<Response> =>
     fetch(`${base}${path}`, {
       method: 'POST',
       headers: {
@@ -77,7 +81,12 @@ describe('POST /entities/get-entity-records', () => {
 
     entityId = entity.rows[0]?.id as string;
 
-    const mkAttr = async (label: string, key: string, type: string, ref: string | null) => {
+    const mkAttr = async (
+      label: string,
+      key: string,
+      type: string,
+      ref: string | null,
+    ) => {
       const { rows } = await db.query<{ id: string }>(
         `insert into app.entity_attribute
            (id, entity_id, workspace_id, label, key, type, position, reference_column, is_editable)
@@ -90,7 +99,12 @@ describe('POST /entities/get-entity-records', () => {
     };
 
     statusAttr = await mkAttr('Status', 'status', 'text', null);
-    tenureAttr = await mkAttr('Tenure', 'tenure', 'number', 'advisor.tenure_months');
+    tenureAttr = await mkAttr(
+      'Tenure',
+      'tenure',
+      'number',
+      'advisor.tenure_months',
+    );
     hiddenAttr = await mkAttr('Hidden Note', 'hidden-note', 'text', null);
 
     const view = await db.query<{ id: string }>(
@@ -122,9 +136,10 @@ describe('POST /entities/get-entity-records', () => {
     }
 
     for (const [i, crd] of CRDS.entries()) {
-      await db.query(`insert into market.advisor (advisor_crd) values ($1) on conflict do nothing`, [
-        crd,
-      ]);
+      await db.query(
+        `insert into market.advisor (advisor_crd) values ($1) on conflict do nothing`,
+        [crd],
+      );
       await db.query(
         `insert into market.advisor_search (advisor_crd, full_name, tenure_months, disclosure_status)
          values ($1, $2, $3, 'none_reported')
@@ -154,10 +169,14 @@ describe('POST /entities/get-entity-records', () => {
     await db.query('delete from app."user" where email = $1', [email]);
     const allCrds = [...CRDS, ...WRITE_CRDS];
 
-    await db.query('delete from market.advisor_search where advisor_crd = any($1::bigint[])', [
-      allCrds,
-    ]);
-    await db.query('delete from market.advisor where advisor_crd = any($1::bigint[])', [allCrds]);
+    await db.query(
+      'delete from market.advisor_search where advisor_crd = any($1::bigint[])',
+      [allCrds],
+    );
+    await db.query(
+      'delete from market.advisor where advisor_crd = any($1::bigint[])',
+      [allCrds],
+    );
     await db.end();
   });
 
@@ -186,10 +205,16 @@ describe('POST /entities/get-entity-records', () => {
         value: 100,
       },
     });
-    const body = (await res.json()) as { records: { sourceCrd: string }[]; total: number };
+    const body = (await res.json()) as {
+      records: { sourceCrd: string }[];
+      total: number;
+    };
 
     expect(body.total).toBe(2);
-    expect(body.records.map((r) => r.sourceCrd).sort()).toEqual(['910002', '910003']);
+    expect(body.records.map((r) => r.sourceCrd).sort()).toEqual([
+      '910002',
+      '910003',
+    ]);
   });
 
   it('filters on a user-authored cell and hydrates it', async () => {
@@ -203,7 +228,10 @@ describe('POST /entities/get-entity-records', () => {
       },
     });
     const body = (await res.json()) as {
-      records: { sourceCrd: string; cells: { attributeId: string; value: unknown }[] }[];
+      records: {
+        sourceCrd: string;
+        cells: { attributeId: string; value: unknown }[];
+      }[];
     };
 
     expect(body.records).toHaveLength(1);
@@ -218,7 +246,11 @@ describe('POST /entities/get-entity-records', () => {
     });
     const body = (await res.json()) as { records: { sourceCrd: string }[] };
 
-    expect(body.records.map((r) => r.sourceCrd)).toEqual(['910003', '910002', '910001']);
+    expect(body.records.map((r) => r.sourceCrd)).toEqual([
+      '910003',
+      '910002',
+      '910001',
+    ]);
   });
 
   it('rejects a malformed filter tree with a 400', async () => {
@@ -252,7 +284,10 @@ describe('POST /entities/get-entity-records', () => {
   });
 
   it('caps the page size', async () => {
-    const res = await post('/entities/get-entity-records', { entityId, limit: 5000 });
+    const res = await post('/entities/get-entity-records', {
+      entityId,
+      limit: 5000,
+    });
 
     expect(res.status).toBe(400);
   });
@@ -297,14 +332,18 @@ describe('POST /entities/get-entity-records', () => {
         recordId: id,
         values: [{ attributeId: statusAttr, value: 'Contacted' }],
       });
-      const a = (await first.json()) as { results: { status: string; version: number }[] };
+      const a = (await first.json()) as {
+        results: { status: string; version: number }[];
+      };
 
       expect(a.results[0]?.status).toBe('written');
       expect(a.results[0]?.version).toBe(0);
 
       const second = await post('/entities/update-record-values', {
         recordId: id,
-        values: [{ attributeId: statusAttr, value: 'Qualified', expectedVersion: 0 }],
+        values: [
+          { attributeId: statusAttr, value: 'Qualified', expectedVersion: 0 },
+        ],
       });
       const b = (await second.json()) as { results: { version: number }[] };
 
@@ -372,7 +411,11 @@ describe('POST /entities/get-entity-records', () => {
     it('returns the default view and its fields when none is asked for', async () => {
       const res = await post('/entities/get-entity-records', { entityId });
       const body = (await res.json()) as {
-        view: { id: string; isDefault: boolean; fields: { label: string; isVisible: boolean }[] };
+        view: {
+          id: string;
+          isDefault: boolean;
+          fields: { label: string; isVisible: boolean }[];
+        };
       };
 
       expect(body.view.id).toBe(viewId);
@@ -385,7 +428,9 @@ describe('POST /entities/get-entity-records', () => {
     it('carries label, icon and type so the grid can render a column', async () => {
       const res = await post('/entities/get-entity-records', { entityId });
       const body = (await res.json()) as {
-        view: { fields: { label: string; type: string; isEditable: boolean }[] };
+        view: {
+          fields: { label: string; type: string; isEditable: boolean }[];
+        };
       };
       const tenure = body.view.fields.find((f) => f.label === 'Tenure');
 
@@ -423,9 +468,14 @@ describe('POST /entities/get-entity-records', () => {
 
     it('narrows to visibleFieldIds when the client sends them', async () => {
       const first = await post('/entities/get-entity-records', { entityId });
-      const view = ((await first.json()) as { view: { fields: { fieldId: string; label: string }[] } })
-        .view;
-      const tenureField = view.fields.find((f) => f.label === 'Tenure')?.fieldId;
+      const view = (
+        (await first.json()) as {
+          view: { fields: { fieldId: string; label: string }[] };
+        }
+      ).view;
+      const tenureField = view.fields.find(
+        (f) => f.label === 'Tenure',
+      )?.fieldId;
 
       const res = await post('/entities/get-entity-records', {
         entityId,
@@ -476,7 +526,9 @@ describe('POST /entities/get-entity-records', () => {
     });
 
     it('includes the entities provisioning seeded', async () => {
-      const body = (await (await get()).json()) as { entities: { slug: string }[] };
+      const body = (await (await get()).json()) as {
+        entities: { slug: string }[];
+      };
 
       expect(body.entities.map((e) => e.slug)).toEqual(
         expect.arrayContaining(['advisor', 'firm']),
@@ -484,7 +536,9 @@ describe('POST /entities/get-entity-records', () => {
     });
 
     it("never lists another workspace's entities", async () => {
-      const body = (await (await get()).json()) as { entities: { id: string }[] };
+      const body = (await (await get()).json()) as {
+        entities: { id: string }[];
+      };
       const { rows } = await db.query<{ n: string }>(
         `select count(*)::text as n from app.entity where workspace_id <> $1 and id = any($2::text[])`,
         [workspaceId, body.entities.map((e) => e.id)],

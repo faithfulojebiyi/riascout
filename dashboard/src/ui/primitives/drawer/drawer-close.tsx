@@ -1,5 +1,5 @@
-'use client'
+'use client';
 
-import { Drawer as DrawerPrimitive } from 'vaul'
+import { Drawer as DrawerPrimitive } from 'vaul';
 
-export const DrawerClose = DrawerPrimitive.Close
+export const DrawerClose = DrawerPrimitive.Close;

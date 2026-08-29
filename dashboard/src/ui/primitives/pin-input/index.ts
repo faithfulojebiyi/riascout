@@ -1,1 +1,1 @@
-export { PinInput } from './pin-input'
+export { PinInput } from './pin-input';

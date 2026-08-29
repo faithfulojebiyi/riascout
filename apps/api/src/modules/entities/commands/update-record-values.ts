@@ -1,7 +1,14 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
-import { writeCell, type CellExecutor } from '@feature/entities/cells/cell-writer.js';
+import {
+  writeCell,
+  type CellExecutor,
+} from '@feature/entities/cells/cell-writer.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
@@ -17,15 +24,15 @@ export class UpdateRecordValuesCommand extends Command<UpdateRecordValuesRespons
 }
 
 @CommandHandler(UpdateRecordValuesCommand)
-export class UpdateRecordValuesCommandHandler
-  implements ICommandHandler<UpdateRecordValuesCommand>
-{
+export class UpdateRecordValuesCommandHandler implements ICommandHandler<UpdateRecordValuesCommand> {
   constructor(
     private readonly appPrismaService: AppPrismaService,
     private readonly alsService: AlsService,
   ) {}
 
-  async execute({ dto }: UpdateRecordValuesCommand): Promise<UpdateRecordValuesResponseDto> {
+  async execute({
+    dto,
+  }: UpdateRecordValuesCommand): Promise<UpdateRecordValuesResponseDto> {
     const workspaceId = this.alsService.ctx.get('workspaceId');
 
     if (!workspaceId) {
@@ -65,7 +72,9 @@ export class UpdateRecordValuesCommandHandler
       );
     }
 
-    const projected = attributes.filter((a) => a.referenceColumn !== null || !a.isEditable);
+    const projected = attributes.filter(
+      (a) => a.referenceColumn !== null || !a.isEditable,
+    );
 
     if (projected.length > 0) {
       throw new ForbiddenException(
@@ -116,7 +125,10 @@ export class UpdateRecordValuesCommandHandler
 
   private get executor(): CellExecutor {
     return {
-      query: async <T>(sql: string, params: unknown[]): Promise<{ rows: T[] }> => ({
+      query: async <T>(
+        sql: string,
+        params: unknown[],
+      ): Promise<{ rows: T[] }> => ({
         rows: await this.appPrismaService.$queryRawUnsafe<T[]>(sql, ...params),
       }),
     };

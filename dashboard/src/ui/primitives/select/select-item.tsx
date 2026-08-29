@@ -1,111 +1,116 @@
-'use client'
+'use client';
 
-import type * as React from 'react'
+import type * as React from 'react';
 
-import { Select as SelectPrimitive } from 'radix-ui'
+import { Select as SelectPrimitive } from 'radix-ui';
 
-import { css, cva } from '@riascout-ui/styled-system/css'
-import { styled } from '@riascout-ui/styled-system/jsx'
-import type { JsxStyleProps, RecipeVariantProps } from '@riascout-ui/styled-system/types'
+import { css, cva } from '@riascout-ui/styled-system/css';
+import { styled } from '@riascout-ui/styled-system/jsx';
+import type {
+  JsxStyleProps,
+  RecipeVariantProps,
+} from '@riascout-ui/styled-system/types';
 
-import { Icons } from '../../icons/base'
-import { Span } from '../typography'
+import { Icons } from '../../icons/base';
+import { Span } from '../typography';
 
 const selectItemStyles = cva({
-	base: {
-		_disabled: {
-			opacity: '0.5',
-			pointerEvents: 'none'
-		},
+  base: {
+    _disabled: {
+      opacity: '0.5',
+      pointerEvents: 'none',
+    },
 
-		_focus: {
-			bg: 'background.muted'
-		},
+    _focus: {
+      bg: 'background.muted',
+    },
 
-		_hover: {
-			bg: 'background.muted'
-		},
+    _hover: {
+      bg: 'background.muted',
+    },
 
-		'&[data-highlighted]': {
-			bg: 'background.muted'
-		},
-		alignItems: 'center',
-		cursor: 'pointer',
-		display: 'flex',
-		fontSize: '1',
-		outline: 'none',
-		position: 'relative',
-		px: '2.5',
-		py: '2.5',
-		rounded: 'xl',
-		userSelect: 'none',
-		w: '100%'
-	},
-	defaultVariants: {
-		size: 'xs'
-	},
-	variants: {
-		size: {
-			auto: {},
-			lg: {
-				fontSize: 3,
-				h: '2.5rem',
-				px: '3.5',
-				rounded: 'xl'
-			},
-			md: {
-				fontSize: 2,
-				h: '2.25rem',
-				px: '4',
-				rounded: 'lg'
-			},
-			sm: {
-				fontSize: 2,
-				h: '2rem',
-				px: '3',
-				rounded: 'lg'
-			},
-			xs: {
-				fontSize: 1,
-				h: '1.75rem',
-				px: '1.5',
-				rounded: 'lg'
-			}
-		}
-	}
-})
+    '&[data-highlighted]': {
+      bg: 'background.muted',
+    },
+    alignItems: 'center',
+    cursor: 'pointer',
+    display: 'flex',
+    fontSize: '1',
+    outline: 'none',
+    position: 'relative',
+    px: '2.5',
+    py: '2.5',
+    rounded: 'xl',
+    userSelect: 'none',
+    w: '100%',
+  },
+  defaultVariants: {
+    size: 'xs',
+  },
+  variants: {
+    size: {
+      auto: {},
+      lg: {
+        fontSize: 3,
+        h: '2.5rem',
+        px: '3.5',
+        rounded: 'xl',
+      },
+      md: {
+        fontSize: 2,
+        h: '2.25rem',
+        px: '4',
+        rounded: 'lg',
+      },
+      sm: {
+        fontSize: 2,
+        h: '2rem',
+        px: '3',
+        rounded: 'lg',
+      },
+      xs: {
+        fontSize: 1,
+        h: '1.75rem',
+        px: '1.5',
+        rounded: 'lg',
+      },
+    },
+  },
+});
 
-const StyledItem = styled(SelectPrimitive.Item, selectItemStyles)
+const StyledItem = styled(SelectPrimitive.Item, selectItemStyles);
 
 export const SelectItem = ({
-	children,
-	...props
-}: React.ComponentProps<typeof SelectPrimitive.Item> & JsxStyleProps & RecipeVariantProps<typeof selectItemStyles>) => {
-	return (
-		<StyledItem
-			{...props}
-			css={{
-				...props.css,
-				'&[data-highlighted]': {
-					bg: 'background.muted'
-				}
-			}}
-		>
-			<Span
-				alignItems="center"
-				display="flex"
-				h="0.875rem"
-				justifyContent="center"
-				pos="absolute"
-				right="8px"
-				w="0.875rem"
-			>
-				<SelectPrimitive.ItemIndicator>
-					<Icons.check className={css({ h: '0.875rem', w: '0.875rem' })} />
-				</SelectPrimitive.ItemIndicator>
-			</Span>
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Item> &
+  JsxStyleProps &
+  RecipeVariantProps<typeof selectItemStyles>) => {
+  return (
+    <StyledItem
+      {...props}
+      css={{
+        ...props.css,
+        '&[data-highlighted]': {
+          bg: 'background.muted',
+        },
+      }}
+    >
+      <Span
+        alignItems="center"
+        display="flex"
+        h="0.875rem"
+        justifyContent="center"
+        pos="absolute"
+        right="8px"
+        w="0.875rem"
+      >
+        <SelectPrimitive.ItemIndicator>
+          <Icons.check className={css({ h: '0.875rem', w: '0.875rem' })} />
+        </SelectPrimitive.ItemIndicator>
+      </Span>
 
-			<SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-		</StyledItem>
-	)
-}
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </StyledItem>
+  );
+};

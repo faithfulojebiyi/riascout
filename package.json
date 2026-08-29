@@ -20,7 +20,7 @@
     "typecheck": "tsc -b --pretty",
     "lint": "oxlint apps libs etl && bun run lint:boundaries",
     "lint:boundaries": "depcruise apps libs --config .dependency-cruiser.cjs",
-    "format": "prettier --write \"{apps,libs,etl}/**/*.ts\"",
+    "format": "prettier --write \"{apps,libs,etl}/**/*.ts\" \"dashboard/src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

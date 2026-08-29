@@ -17,7 +17,8 @@ function Home() {
       <ul>
         {entities.map((entity) => (
           <li key={entity.id}>
-            {entity.name} — {entity.recordCount} records, {entity.attributeCount} attributes
+            {entity.name} — {entity.recordCount} records,{' '}
+            {entity.attributeCount} attributes
           </li>
         ))}
       </ul>

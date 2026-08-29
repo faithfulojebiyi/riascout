@@ -1,2 +1,2 @@
-export { ScrollArea } from './scroll-area'
-export { ScrollableContainer } from './scroll-container'
+export { ScrollArea } from './scroll-area';
+export { ScrollableContainer } from './scroll-container';

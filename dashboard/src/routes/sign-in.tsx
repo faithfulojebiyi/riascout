@@ -42,7 +42,10 @@ function SignIn() {
     setPending(true);
     setError(null);
 
-    const { error: signInError } = await authClient.signIn.email({ email, password });
+    const { error: signInError } = await authClient.signIn.email({
+      email,
+      password,
+    });
 
     setPending(false);
 
@@ -79,7 +82,13 @@ function SignIn() {
           w: '22rem',
         })}
       >
-        <h1 className={css({ color: 'brand.primary.12', fontSize: 'xl', fontWeight: '600' })}>
+        <h1
+          className={css({
+            color: 'brand.primary.12',
+            fontSize: 'xl',
+            fontWeight: '600',
+          })}
+        >
           Sign in
         </h1>
 
@@ -105,7 +114,10 @@ function SignIn() {
         </Button>
 
         {error ? (
-          <p role="alert" className={css({ color: 'brand.error.11', fontSize: 'sm' })}>
+          <p
+            role="alert"
+            className={css({ color: 'brand.error.11', fontSize: 'sm' })}
+          >
             {error}
           </p>
         ) : null}

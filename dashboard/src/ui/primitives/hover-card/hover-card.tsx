@@ -1,5 +1,5 @@
-'use client'
+'use client';
 
-import { HoverCard as HoverCardPrimitive } from 'radix-ui'
+import { HoverCard as HoverCardPrimitive } from 'radix-ui';
 
-export const HoverCard = HoverCardPrimitive.Root
+export const HoverCard = HoverCardPrimitive.Root;

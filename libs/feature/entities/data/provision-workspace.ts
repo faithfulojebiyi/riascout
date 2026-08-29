@@ -10,7 +10,12 @@ export type ProvisionClient = {
       select: { id: true };
     }) => Promise<{ id: string } | null>;
     create: (args: {
-      data: { workspaceId: string; name: string; slug: string; sourceKind: string };
+      data: {
+        workspaceId: string;
+        name: string;
+        slug: string;
+        sourceKind: string;
+      };
       select: { id: true };
     }) => Promise<{ id: string }>;
   };
@@ -19,7 +24,10 @@ export type ProvisionClient = {
       where: { entityId: string };
       select: { id: true; key: true };
     }) => Promise<{ id: string; key: string }[]>;
-    create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{
+    create: (args: {
+      data: Record<string, unknown>;
+      select: { id: true };
+    }) => Promise<{
       id: string;
     }>;
   };
@@ -31,12 +39,18 @@ export type ProvisionClient = {
       where: { entityId: string; isDefault: boolean };
       select: { id: true };
     }) => Promise<{ id: string } | null>;
-    create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{
+    create: (args: {
+      data: Record<string, unknown>;
+      select: { id: true };
+    }) => Promise<{
       id: string;
     }>;
   };
   entityViewField: {
-    create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{
+    create: (args: {
+      data: Record<string, unknown>;
+      select: { id: true };
+    }) => Promise<{
       id: string;
     }>;
   };

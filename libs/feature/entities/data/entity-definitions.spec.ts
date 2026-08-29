@@ -20,7 +20,8 @@ const allKeys = [
 describe('system attribute keys', () => {
   it('are all uuid7', () => {
     // version nibble 7, variant 10xx — matches @default(uuid(7)) on our PKs
-    const uuid7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    const uuid7 =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
     const wrong = allKeys.filter((k) => !uuid7.test(k));
 
     expect(wrong).toEqual([]);
@@ -51,10 +52,14 @@ describe('default entities', () => {
 
   it('seeds an attribute for every allowlisted reference column', () => {
     const seededRefs = new Set(
-      seeded.filter((a) => a.referenceColumn !== null).map((a) => a.referenceColumn),
+      seeded
+        .filter((a) => a.referenceColumn !== null)
+        .map((a) => a.referenceColumn),
     );
 
-    const missing = [...REFERENCE_COLUMNS.keys()].filter((k) => !seededRefs.has(k));
+    const missing = [...REFERENCE_COLUMNS.keys()].filter(
+      (k) => !seededRefs.has(k),
+    );
 
     expect(missing, 'allowlisted columns with no seeded attribute').toEqual([]);
   });
@@ -68,13 +73,17 @@ describe('default entities', () => {
   });
 
   it('marks every reference attribute non-editable', () => {
-    const editable = seeded.filter((a) => a.referenceColumn !== null && a.isEditable);
+    const editable = seeded.filter(
+      (a) => a.referenceColumn !== null && a.isEditable,
+    );
 
     expect(editable).toEqual([]);
   });
 
   it('marks every workflow attribute editable', () => {
-    const locked = seeded.filter((a) => a.referenceColumn === null && !a.isEditable);
+    const locked = seeded.filter(
+      (a) => a.referenceColumn === null && !a.isEditable,
+    );
 
     expect(locked).toEqual([]);
   });
@@ -100,7 +109,9 @@ describe('default entities', () => {
     for (const entity of DEFAULT_ENTITIES) {
       const keys = entity.attributes.map((a) => a.key);
 
-      expect(new Set(keys).size, `${entity.slug} has duplicate keys`).toBe(keys.length);
+      expect(new Set(keys).size, `${entity.slug} has duplicate keys`).toBe(
+        keys.length,
+      );
     }
   });
 
@@ -112,9 +123,14 @@ describe('default entities', () => {
 
   it('orders attributes by group, so the record panel reads top to bottom', () => {
     for (const entity of DEFAULT_ENTITIES) {
-      const order = entity.attributes.map((a) => ATTRIBUTE_GROUPS.indexOf(a.group));
+      const order = entity.attributes.map((a) =>
+        ATTRIBUTE_GROUPS.indexOf(a.group),
+      );
 
-      expect([...order].sort((x, y) => x - y), `${entity.slug} is not grouped`).toEqual(order);
+      expect(
+        [...order].sort((x, y) => x - y),
+        `${entity.slug} is not grouped`,
+      ).toEqual(order);
     }
   });
 
@@ -136,14 +152,18 @@ describe('default entities', () => {
   });
 
   it('shows the identity columns by default', () => {
-    const advisor = ADVISOR_ENTITY.attributes.filter((a) => a.visible).map((a) => a.label);
+    const advisor = ADVISOR_ENTITY.attributes
+      .filter((a) => a.visible)
+      .map((a) => a.label);
 
     expect(advisor).toContain('Full Name');
     expect(advisor).toContain('Advisor CRD');
   });
 
   describe('contact channels', () => {
-    const contact = ADVISOR_ENTITY.attributes.filter((a) => a.group === 'Contact');
+    const contact = ADVISOR_ENTITY.attributes.filter(
+      (a) => a.group === 'Contact',
+    );
 
     it('exist before the enrichment module does', () => {
       expect(contact.map((a) => a.label)).toEqual(
@@ -153,9 +173,10 @@ describe('default entities', () => {
 
     /** a recruiter types these today; enrichment writes the same cells later */
     it('are editable eav cells, not projected columns', () => {
-      expect(contact.every((a) => a.isEditable && a.referenceColumn === null)).toBe(true);
+      expect(
+        contact.every((a) => a.isEditable && a.referenceColumn === null),
+      ).toBe(true);
     });
-
   });
 
   it('marks exactly one primary attribute per entity', () => {
@@ -170,14 +191,18 @@ describe('default entities', () => {
   /** the paste-into-IAPD identifier; hiding it on one entity and not the other reads as a bug */
   it('shows the CRD on both entities', () => {
     for (const entity of DEFAULT_ENTITIES) {
-      const crd = entity.attributes.find((a) => a.label.endsWith(' CRD') && a.visible);
+      const crd = entity.attributes.find(
+        (a) => a.label.endsWith(' CRD') && a.visible,
+      );
 
       expect(crd, `${entity.slug} has no visible CRD`).toBeDefined();
     }
   });
 
   it('surfaces experience in years, not months', () => {
-    const visible = ADVISOR_ENTITY.attributes.filter((a) => a.visible).map((a) => a.label);
+    const visible = ADVISOR_ENTITY.attributes
+      .filter((a) => a.visible)
+      .map((a) => a.label);
 
     expect(visible).toContain('Years of Experience');
     expect(visible).toContain('Tenure (Years)');
@@ -186,7 +211,9 @@ describe('default entities', () => {
   });
 
   describe('social and contact channels', () => {
-    const contact = ADVISOR_ENTITY.attributes.filter((a) => a.group === 'Contact');
+    const contact = ADVISOR_ENTITY.attributes.filter(
+      (a) => a.group === 'Contact',
+    );
     const labels = contact.map((a) => a.label);
 
     it('covers every channel ghost carries, plus a personal site', () => {
@@ -217,7 +244,9 @@ describe('default entities', () => {
 
     /** five social columns would crowd out the facts that decide a call */
     it('shows only LinkedIn by default', () => {
-      expect(contact.filter((a) => a.visible).map((a) => a.label)).toEqual(['LinkedIn']);
+      expect(contact.filter((a) => a.visible).map((a) => a.label)).toEqual([
+        'LinkedIn',
+      ]);
     });
 
     it('separates work email from personal, since only one is an outreach channel', () => {

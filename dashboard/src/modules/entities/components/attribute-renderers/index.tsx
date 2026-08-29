@@ -21,7 +21,9 @@ const chip = css({
 });
 
 const isBlank = (value: unknown): boolean =>
-  value === null || value === undefined || value === '' ||
+  value === null ||
+  value === undefined ||
+  value === '' ||
   (Array.isArray(value) && value.length === 0);
 
 /** a blank cell must read as "no data", never as a zero or a false */
@@ -31,12 +33,16 @@ const Text = ({ value }: RendererProps) =>
   isBlank(value) ? <Blank /> : <>{String(value)}</>;
 
 const Numeric = ({ value }: RendererProps) =>
-  isBlank(value) ? <Blank /> : (
+  isBlank(value) ? (
+    <Blank />
+  ) : (
     <span className={numeric}>{Number(value).toLocaleString()}</span>
   );
 
 const Currency = ({ value }: RendererProps) =>
-  isBlank(value) ? <Blank /> : (
+  isBlank(value) ? (
+    <Blank />
+  ) : (
     <span className={numeric}>
       {Number(value).toLocaleString(undefined, {
         style: 'currency',
@@ -48,15 +54,29 @@ const Currency = ({ value }: RendererProps) =>
   );
 
 const Percentage = ({ value }: RendererProps) =>
-  isBlank(value) ? <Blank /> : <span className={numeric}>{Number(value).toFixed(1)}%</span>;
+  isBlank(value) ? (
+    <Blank />
+  ) : (
+    <span className={numeric}>{Number(value).toFixed(1)}%</span>
+  );
 
 const Bool = ({ value }: RendererProps) =>
   // null is genuinely different from false and must not render as "No"
-  value === null || value === undefined ? <Blank /> : <>{value ? 'Yes' : 'No'}</>;
+  value === null || value === undefined ? (
+    <Blank />
+  ) : (
+    <>{value ? 'Yes' : 'No'}</>
+  );
 
 const DateCell = ({ value }: RendererProps) =>
-  isBlank(value) ? <Blank /> : (
-    <>{new Date(String(value)).toLocaleDateString(undefined, { dateStyle: 'medium' })}</>
+  isBlank(value) ? (
+    <Blank />
+  ) : (
+    <>
+      {new Date(String(value)).toLocaleDateString(undefined, {
+        dateStyle: 'medium',
+      })}
+    </>
   );
 
 const Tags = ({ value }: RendererProps) => {
@@ -67,15 +87,21 @@ const Tags = ({ value }: RendererProps) => {
   return (
     <>
       {value.slice(0, 3).map((v) => (
-        <span className={chip} key={String(v)}>{String(v)}</span>
+        <span className={chip} key={String(v)}>
+          {String(v)}
+        </span>
       ))}
-      {value.length > 3 ? <span className={muted}>+{value.length - 3}</span> : null}
+      {value.length > 3 ? (
+        <span className={muted}>+{value.length - 3}</span>
+      ) : null}
     </>
   );
 };
 
 const Url = ({ value }: RendererProps) =>
-  isBlank(value) ? <Blank /> : (
+  isBlank(value) ? (
+    <Blank />
+  ) : (
     <a
       href={String(value)}
       rel="noreferrer noopener"
@@ -91,7 +117,10 @@ const Identifier = ({ value }: RendererProps) =>
   // a CRD is an identifier, not a quantity: no thousands separators to copy wrong
   isBlank(value) ? <Blank /> : <span className={numeric}>{String(value)}</span>;
 
-export const ATTRIBUTE_RENDERERS: Record<string, (p: RendererProps) => ReactNode> = {
+export const ATTRIBUTE_RENDERERS: Record<
+  string,
+  (p: RendererProps) => ReactNode
+> = {
   text: Text,
   email: Text,
   phone: Text,

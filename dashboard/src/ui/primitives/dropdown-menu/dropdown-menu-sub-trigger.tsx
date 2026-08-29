@@ -1,87 +1,94 @@
-'use client'
+'use client';
 
-import type * as React from 'react'
+import type * as React from 'react';
 
-import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui'
+import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 
-import { cva } from '@riascout-ui/styled-system/css'
-import { styled } from '@riascout-ui/styled-system/jsx'
-import type { JsxStyleProps, RecipeVariantProps } from '@riascout-ui/styled-system/types'
+import { cva } from '@riascout-ui/styled-system/css';
+import { styled } from '@riascout-ui/styled-system/jsx';
+import type {
+  JsxStyleProps,
+  RecipeVariantProps,
+} from '@riascout-ui/styled-system/types';
 
-import { Icons } from '../../icons/base'
+import { Icons } from '../../icons/base';
 
 const triggerStyles = cva({
-	base: {
-		_disabled: {
-			opacity: 0.5,
-			pointerEvents: 'none'
-		},
+  base: {
+    _disabled: {
+      opacity: 0.5,
+      pointerEvents: 'none',
+    },
 
-		_focus: {
-			bg: 'background.muted'
-		},
+    _focus: {
+      bg: 'background.muted',
+    },
 
-		'&[data-highlighted]': {
-			bg: 'background.muted'
-		},
+    '&[data-highlighted]': {
+      bg: 'background.muted',
+    },
 
-		'&[data-state=open]': {
-			bg: 'background.muted'
-		},
-		alignItems: 'center',
-		cursor: 'pointer',
-		display: 'flex',
-		outline: 'none',
-		pos: 'relative',
-		transition: 'colors 200ms',
-		userSelect: 'none'
-	},
-	defaultVariants: {
-		size: 'xs'
-	},
-	variants: {
-		size: {
-			auto: {},
-			md: {
-				fontSize: '2',
-				h: '3.8rem',
-				px: '3.2',
-				rounded: 'xl'
-			},
-			sm: {
-				fontSize: '2',
-				h: '3.2rem',
-				px: '1.5',
-				rounded: 'lg'
-			},
-			xs: {
-				fontSize: '1',
-				h: '1.75rem',
-				px: '1.5',
-				rounded: 'lg'
-			}
-		}
-	}
-})
+    '&[data-state=open]': {
+      bg: 'background.muted',
+    },
+    alignItems: 'center',
+    cursor: 'pointer',
+    display: 'flex',
+    outline: 'none',
+    pos: 'relative',
+    transition: 'colors 200ms',
+    userSelect: 'none',
+  },
+  defaultVariants: {
+    size: 'xs',
+  },
+  variants: {
+    size: {
+      auto: {},
+      md: {
+        fontSize: '2',
+        h: '3.8rem',
+        px: '3.2',
+        rounded: 'xl',
+      },
+      sm: {
+        fontSize: '2',
+        h: '3.2rem',
+        px: '1.5',
+        rounded: 'lg',
+      },
+      xs: {
+        fontSize: '1',
+        h: '1.75rem',
+        px: '1.5',
+        rounded: 'lg',
+      },
+    },
+  },
+});
 
 type Props = React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
-	inset?: boolean
+  inset?: boolean;
 } & JsxStyleProps &
-	RecipeVariantProps<typeof triggerStyles>
+  RecipeVariantProps<typeof triggerStyles>;
 
-const StyledTrigger = styled(DropdownMenuPrimitive.SubTrigger, triggerStyles)
+const StyledTrigger = styled(DropdownMenuPrimitive.SubTrigger, triggerStyles);
 
-export const DropdownMenuSubTrigger = ({ inset, children, ...props }: Props) => {
-	return (
-		<StyledTrigger
-			data-slot="dropdown-menu-sub-trigger"
-			style={{ paddingLeft: inset ? '3.2rem' : undefined }}
-			{...props}
-		>
-			<>
-				{children}
-				<Icons.caretRight color="text.muted" ml="auto" size={12} />
-			</>
-		</StyledTrigger>
-	)
-}
+export const DropdownMenuSubTrigger = ({
+  inset,
+  children,
+  ...props
+}: Props) => {
+  return (
+    <StyledTrigger
+      data-slot="dropdown-menu-sub-trigger"
+      style={{ paddingLeft: inset ? '3.2rem' : undefined }}
+      {...props}
+    >
+      <>
+        {children}
+        <Icons.caretRight color="text.muted" ml="auto" size={12} />
+      </>
+    </StyledTrigger>
+  );
+};

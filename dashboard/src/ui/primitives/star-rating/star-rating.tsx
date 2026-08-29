@@ -1,53 +1,56 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 
-import { Icons } from '../../icons/base'
+import { Icons } from '../../icons/base';
 
-import { RadioGroup, RadioGroupItem } from '../radio-group'
-import { Span } from '../text'
+import { RadioGroup, RadioGroupItem } from '../radio-group';
+import { Span } from '../text';
 
-const STARS = [1, 2, 3, 4, 5]
+const STARS = [1, 2, 3, 4, 5];
 
 type Props = {
-	disabled?: boolean
-	value: string
-	onValueChange: (value: string) => void
-}
+  disabled?: boolean;
+  value: string;
+  onValueChange: (value: string) => void;
+};
 
 export const StarRating = ({ disabled, value, onValueChange }: Props) => {
-	const [count, setCount] = useState(value)
-	const [hoverValue, setHoverValue] = useState(0)
+  const [count, setCount] = useState(value);
+  const [hoverValue, setHoverValue] = useState(0);
 
-	const starCount = Number(value)
+  const starCount = Number(value);
 
-	useEffect(() => {
-		onValueChange(count)
-	}, [count])
+  useEffect(() => {
+    onValueChange(count);
+  }, [count]);
 
-	return (
-		<RadioGroup display="flex" onValueChange={setCount} value={count}>
-			{STARS.map((star) => {
-				const isActive = starCount >= star || hoverValue >= star
+  return (
+    <RadioGroup display="flex" onValueChange={setCount} value={count}>
+      {STARS.map((star) => {
+        const isActive = starCount >= star || hoverValue >= star;
 
-				return (
-					<RadioGroupItem
-						disabled={disabled}
-						h="8"
-						key={star}
-						onMouseEnter={() => setHoverValue(star)}
-						onMouseLeave={() => setHoverValue(0)}
-						value={String(star)}
-						w="8"
-					>
-						<Span _hover={{ opacity: '0.8' }} color={isActive ? 'brand.primary.9' : 'text.muted'}>
-							<Icons.star
-								css={{
-									fill: isActive ? 'brand.primary.9' : 'none'
-								}}
-							/>
-						</Span>
-					</RadioGroupItem>
-				)
-			})}
-		</RadioGroup>
-	)
-}
+        return (
+          <RadioGroupItem
+            disabled={disabled}
+            h="8"
+            key={star}
+            onMouseEnter={() => setHoverValue(star)}
+            onMouseLeave={() => setHoverValue(0)}
+            value={String(star)}
+            w="8"
+          >
+            <Span
+              _hover={{ opacity: '0.8' }}
+              color={isActive ? 'brand.primary.9' : 'text.muted'}
+            >
+              <Icons.star
+                css={{
+                  fill: isActive ? 'brand.primary.9' : 'none',
+                }}
+              />
+            </Span>
+          </RadioGroupItem>
+        );
+      })}
+    </RadioGroup>
+  );
+};

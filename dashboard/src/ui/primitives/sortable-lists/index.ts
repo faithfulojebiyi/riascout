@@ -1,1 +1,1 @@
-export { SortableList } from './sortable-list'
+export { SortableList } from './sortable-list';

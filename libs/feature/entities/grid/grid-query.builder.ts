@@ -101,17 +101,20 @@ export const buildGridPageQuery = (input: GridQueryInput): BuiltQuery => {
    * projection. Selecting them here is what makes them render at all; the join
    * alone only enables filtering and sorting.
    */
-  const referenceSelects = (input.referenceAttributeIds ?? [])
-    .flatMap((attributeId) => {
+  const referenceSelects = (input.referenceAttributeIds ?? []).flatMap(
+    (attributeId) => {
       const attribute = input.attributesById.get(attributeId);
       const ref = attribute?.referenceColumn
         ? resolveReferenceColumn(attribute.referenceColumn)
         : null;
 
       return ref && referenceAlias
-        ? [`${referenceAlias}.${ref.column} AS "${REFERENCE_PREFIX}${attributeId}"`]
+        ? [
+            `${referenceAlias}.${ref.column} AS "${REFERENCE_PREFIX}${attributeId}"`,
+          ]
         : [];
-    });
+    },
+  );
 
   const sql = `SELECT ${RECORD_ALIAS}.id,
        ${RECORD_ALIAS}.source_crd,

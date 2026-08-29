@@ -1,1 +1,1 @@
-export { THEME_NAMES, ThemeProvider, useTheme } from './theme-provider'
+export { THEME_NAMES, ThemeProvider, useTheme } from './theme-provider';

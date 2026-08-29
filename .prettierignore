@@ -1,0 +1,5 @@
+# generated — reformatting these only produces churn on the next regen
+dashboard/src/api/generated
+dashboard/src/ui/styled-system
+dashboard/src/routeTree.gen.ts
+orm

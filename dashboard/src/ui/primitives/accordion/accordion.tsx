@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { Accordion as AccordionPrimitive } from 'radix-ui'
+import { Accordion as AccordionPrimitive } from 'radix-ui';
 
-import { styled } from '@riascout-ui/styled-system/jsx'
+import { styled } from '@riascout-ui/styled-system/jsx';
 
-const StyledAccordion = styled(AccordionPrimitive.Root)
+const StyledAccordion = styled(AccordionPrimitive.Root);
 
-export const Accordion = StyledAccordion
+export const Accordion = StyledAccordion;

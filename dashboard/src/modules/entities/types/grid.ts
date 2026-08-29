@@ -5,7 +5,12 @@ import type {
   GetEntityRecordsResponse,
 } from '../../../api/generated/rIAScoutAPI.schemas';
 
-export type { EntityRecordRow, EntityViewField, EntityViewSummary, GetEntityRecordsResponse };
+export type {
+  EntityRecordRow,
+  EntityViewField,
+  EntityViewSummary,
+  GetEntityRecordsResponse,
+};
 
 /**
  * One ag-grid row. Cells arrive keyed by attribute id rather than by column, so
@@ -17,8 +22,12 @@ export type GridRow = {
   cellsByAttributeId: Record<string, unknown>;
 };
 
-export const toGridRow = (record: GetEntityRecordsResponse['records'][number]): GridRow => ({
+export const toGridRow = (
+  record: GetEntityRecordsResponse['records'][number],
+): GridRow => ({
   id: record.id,
   sourceCrd: record.sourceCrd,
-  cellsByAttributeId: Object.fromEntries(record.cells.map((cell) => [cell.attributeId, cell.value])),
+  cellsByAttributeId: Object.fromEntries(
+    record.cells.map((cell) => [cell.attributeId, cell.value]),
+  ),
 });

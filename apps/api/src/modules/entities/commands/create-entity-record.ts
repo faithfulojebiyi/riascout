@@ -1,7 +1,14 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
-import { writeCell, type CellExecutor } from '@feature/entities/cells/cell-writer.js';
+import {
+  writeCell,
+  type CellExecutor,
+} from '@feature/entities/cells/cell-writer.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
@@ -17,15 +24,15 @@ export class CreateEntityRecordCommand extends Command<CreateEntityRecordRespons
 }
 
 @CommandHandler(CreateEntityRecordCommand)
-export class CreateEntityRecordCommandHandler
-  implements ICommandHandler<CreateEntityRecordCommand>
-{
+export class CreateEntityRecordCommandHandler implements ICommandHandler<CreateEntityRecordCommand> {
   constructor(
     private readonly appPrismaService: AppPrismaService,
     private readonly alsService: AlsService,
   ) {}
 
-  async execute({ dto }: CreateEntityRecordCommand): Promise<CreateEntityRecordResponseDto> {
+  async execute({
+    dto,
+  }: CreateEntityRecordCommand): Promise<CreateEntityRecordResponseDto> {
     const workspaceId = this.alsService.ctx.get('workspaceId');
 
     if (!workspaceId) {
@@ -48,7 +55,9 @@ export class CreateEntityRecordCommandHandler
     }
 
     if ((dto.sourceCrd === null) !== (dto.sourceKind === null)) {
-      throw new BadRequestException('sourceKind and sourceCrd must be set together');
+      throw new BadRequestException(
+        'sourceKind and sourceCrd must be set together',
+      );
     }
 
     /**
@@ -97,7 +106,9 @@ export class CreateEntityRecordCommandHandler
         const attribute = byId.get(write.attributeId);
 
         if (!attribute) {
-          throw new NotFoundException(`Unknown or non-editable attribute ${write.attributeId}`);
+          throw new NotFoundException(
+            `Unknown or non-editable attribute ${write.attributeId}`,
+          );
         }
 
         await writeCell(this.executor, {
@@ -117,7 +128,10 @@ export class CreateEntityRecordCommandHandler
 
   private get executor(): CellExecutor {
     return {
-      query: async <T>(sql: string, params: unknown[]): Promise<{ rows: T[] }> => ({
+      query: async <T>(
+        sql: string,
+        params: unknown[],
+      ): Promise<{ rows: T[] }> => ({
         rows: await this.appPrismaService.$queryRawUnsafe<T[]>(sql, ...params),
       }),
     };

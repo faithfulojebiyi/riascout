@@ -1,1 +1,1 @@
-export * from './keyboard-shortcut'
+export * from './keyboard-shortcut';

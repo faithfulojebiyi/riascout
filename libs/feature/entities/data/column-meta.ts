@@ -37,7 +37,12 @@ export type ColumnMeta = {
 /** keyed by the allowlist key, e.g. "advisor.full_name" */
 export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   // ── advisor ───────────────────────────────────────────────────────────────
-  'advisor.full_name': { visible: true, group: 'Identity', pinned: true, primary: true },
+  'advisor.full_name': {
+    visible: true,
+    group: 'Identity',
+    pinned: true,
+    primary: true,
+  },
   'advisor.first_name': { group: 'Identity' },
   'advisor.last_name': { group: 'Identity' },
   'advisor.advisor_crd': { visible: true, group: 'Identity' },
@@ -86,7 +91,12 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'advisor.firm_linkedin_url': { group: 'Firm detail' },
 
   // ── firm ──────────────────────────────────────────────────────────────────
-  'firm.firm_name': { visible: true, group: 'Identity', pinned: true, primary: true },
+  'firm.firm_name': {
+    visible: true,
+    group: 'Identity',
+    pinned: true,
+    primary: true,
+  },
   'firm.firm_crd': { visible: true, group: 'Identity' },
   'firm.sec_number': { group: 'Identity' },
   'firm.domain': { group: 'Contact' },
@@ -113,7 +123,10 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
 };
 
 /** columns not listed above land here, hidden */
-export const FALLBACK_GROUP: Record<'advisor_search' | 'firm_search', AttributeGroup> = {
+export const FALLBACK_GROUP: Record<
+  'advisor_search' | 'firm_search',
+  AttributeGroup
+> = {
   advisor_search: 'Firm detail',
   firm_search: 'Firm coverage',
 };

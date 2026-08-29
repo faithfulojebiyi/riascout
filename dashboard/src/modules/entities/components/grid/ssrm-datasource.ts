@@ -1,4 +1,7 @@
-import type { IServerSideDatasource, IServerSideGetRowsParams } from 'ag-grid-enterprise';
+import type {
+  IServerSideDatasource,
+  IServerSideGetRowsParams,
+} from 'ag-grid-enterprise';
 
 import { entitiesControllerGetEntityRecords } from '../../../../api/generated/entities/entities';
 import { toGridRow } from '../../types/grid';
@@ -50,7 +53,10 @@ export class EntityGridDatasource implements IServerSideDatasource {
         return;
       }
 
-      success({ rowData: response.records.map(toGridRow), rowCount: response.total });
+      success({
+        rowData: response.records.map(toGridRow),
+        rowCount: response.total,
+      });
     } catch {
       if (!controller.signal.aborted) {
         fail();

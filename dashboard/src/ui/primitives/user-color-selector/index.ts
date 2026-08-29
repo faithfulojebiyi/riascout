@@ -1,1 +1,1 @@
-export { UserColorSelector } from './user-color-selector'
+export { UserColorSelector } from './user-color-selector';

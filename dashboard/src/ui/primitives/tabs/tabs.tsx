@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { Tabs as TabsPrimitive } from 'radix-ui'
+import { Tabs as TabsPrimitive } from 'radix-ui';
 
-import { styled } from '@riascout-ui/styled-system/jsx'
+import { styled } from '@riascout-ui/styled-system/jsx';
 
-export const Tabs = styled(TabsPrimitive.Root)
+export const Tabs = styled(TabsPrimitive.Root);

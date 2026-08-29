@@ -1,7 +1,9 @@
-'use client'
+'use client';
 
-import { Dialog as DialogPrimitive } from 'radix-ui'
+import { Dialog as DialogPrimitive } from 'radix-ui';
 
-export const DialogClose = ({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) => {
-	return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
-}
+export const DialogClose = ({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) => {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+};
