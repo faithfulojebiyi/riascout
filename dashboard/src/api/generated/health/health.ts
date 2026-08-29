@@ -4,7 +4,7 @@
  * RIAScout API
  * OpenAPI spec version: 0.0.1
  */
-import { apiClient } from '../../client.js';
+import { apiClient } from '../../client';
 
 
 

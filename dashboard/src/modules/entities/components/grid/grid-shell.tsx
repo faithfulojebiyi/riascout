@@ -1,19 +1,12 @@
-import { AllEnterpriseModule, LicenseManager, ModuleRegistry } from 'ag-grid-enterprise';
+import { type CellValueChangedEvent, themeAlpine } from 'ag-grid-enterprise';
 import { AgGridReact } from 'ag-grid-react';
 import { useCallback, useMemo, useRef } from 'react';
-import { css } from '@riascout-ui/styled-system/css';
 
+import { GridWrapper } from '../../../../ui/primitives/data-grid';
+import { useUpdateRecordValues } from '../../mutations/use-update-record-values';
 import type { EntityViewSummary, GridRow } from '../../types/grid';
 import { buildColumnDefs } from './column-defs';
 import { EntityGridDatasource } from './ssrm-datasource';
-
-ModuleRegistry.registerModules([AllEnterpriseModule]);
-
-const licenseKey = import.meta.env?.VITE_AG_GRID_LICENSE_KEY;
-
-if (licenseKey) {
-  LicenseManager.setLicenseKey(licenseKey);
-}
 
 export type EntityGridProps = {
   entityId: string;
@@ -23,8 +16,13 @@ export type EntityGridProps = {
 /**
  * Server-side row model, not client-side: 510k advisors will not fit in the
  * browser, and the projection is already paged and sorted in postgres.
+ *
+ * AgGridReact directly rather than the DataGrid primitive, which hardcodes
+ * sortable/resizable false and suppressColumnVirtualisation — all wrong for 63
+ * columns over 510k rows. Only GridWrapper, the theme layer, is shared.
  */
 export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
+  const updateRecordValues = useUpdateRecordValues();
   const columnDefs = useMemo(() => buildColumnDefs(view.fields), [view.fields]);
 
   // read at call time rather than captured, so scrolling to a new column
@@ -44,22 +42,50 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
   );
 
   const onColumnVisible = useCallback(() => {
-    visibleFieldIdsRef.current = view.fields.filter((f) => f.isVisible).map((f) => f.fieldId);
+    visibleFieldIdsRef.current = view.fields
+      .filter((f) => f.isVisible)
+      .map((f) => f.fieldId);
   }, [view.fields]);
 
+  /**
+   * ag-grid has already applied the new value to the row node by the time this
+   * fires, so a failed write must put the old one back — otherwise the grid
+   * shows an edit that was never persisted.
+   */
+  const onCellValueChanged = useCallback(
+    (event: CellValueChangedEvent<GridRow>) => {
+      const attributeId = event.colDef.cellEditorParams?.attributeId;
+      const recordId = event.data?.id;
+
+      if (!attributeId || !recordId || event.newValue === event.oldValue)
+        return;
+
+      updateRecordValues.mutate(
+        { recordId, values: [{ attributeId, value: event.newValue }] },
+        {
+          onError: () => {
+            event.node.setDataValue(event.column.getColId(), event.oldValue);
+          },
+        },
+      );
+    },
+    [updateRecordValues],
+  );
+
   return (
-    <div className={css({ h: 'full', w: 'full' })}>
+    <GridWrapper>
       <AgGridReact<GridRow>
+        cacheBlockSize={100}
         columnDefs={columnDefs}
+        getRowId={(params) => params.data.id}
+        maxBlocksInCache={10}
+        onCellValueChanged={onCellValueChanged}
+        onColumnVisible={onColumnVisible}
         rowModelType="serverSide"
         serverSideDatasource={datasource}
-        cacheBlockSize={100}
-        maxBlocksInCache={10}
-        getRowId={(params) => params.data.id}
-        onColumnVisible={onColumnVisible}
         suppressCellFocus={false}
-        theme="legacy"
+        theme={themeAlpine}
       />
-    </div>
+    </GridWrapper>
   );
 };

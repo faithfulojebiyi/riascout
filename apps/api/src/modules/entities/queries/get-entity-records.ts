@@ -1,7 +1,10 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
 
-import { readCellsForRecords, readEdgesForRecords } from '@feature/entities/cells/page-hydrator.js';
+import {
+  readCellsForRecords,
+  readEdgesForRecords,
+} from '@feature/entities/cells/page-hydrator.js';
 import {
   buildGridCountQuery,
   buildGridPageQuery,
@@ -12,7 +15,10 @@ import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
 import type { FilterTree, SortAst } from '@feature/entities/filter-sort/ast.js';
-import type { GetEntityRecordsDto, GetEntityRecordsResponseDto } from '../dto/entities.dto.js';
+import type {
+  GetEntityRecordsDto,
+  GetEntityRecordsResponseDto,
+} from '../dto/entities.dto.js';
 
 export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
   constructor(public readonly dto: GetEntityRecordsDto) {
@@ -20,7 +26,10 @@ export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
   }
 }
 
-type PageRow = { id: string; source_crd: string | null } & Record<string, unknown>;
+type PageRow = { id: string; source_crd: string | null } & Record<
+  string,
+  unknown
+>;
 
 /**
  * CRDs are bigint in postgres and JSON has no bigint. They are identifiers
@@ -46,7 +55,9 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     private readonly alsService: AlsService,
   ) {}
 
-  async execute({ dto }: GetEntityRecordsQuery): Promise<GetEntityRecordsResponseDto> {
+  async execute({
+    dto,
+  }: GetEntityRecordsQuery): Promise<GetEntityRecordsResponseDto> {
     const workspaceId = this.alsService.ctx.get('workspaceId');
 
     if (!workspaceId) {
@@ -78,6 +89,10 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
         icon: true,
         group: true,
         isEditable: true,
+        choices: {
+          select: { id: true, name: true, color: true },
+          orderBy: { position: 'asc' },
+        },
       },
     });
 
@@ -92,8 +107,10 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
      * saved filter with an ad-hoc one gives results neither asked for, and the
      * user cannot see why a row is missing.
      */
-    const filter = (dto.filter ?? (view?.filterTree as FilterTree | null)) ?? null;
-    const sort = dto.sort.length > 0 ? dto.sort : ((view?.sort as SortAst | null) ?? []);
+    const filter =
+      dto.filter ?? (view?.filterTree as FilterTree | null) ?? null;
+    const sort =
+      dto.sort.length > 0 ? dto.sort : ((view?.sort as SortAst | null) ?? []);
 
     const shared = {
       workspaceId,
@@ -108,7 +125,9 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     /** projected columns are selected on the page query, not hydrated as cells */
     const referenceAttributeIds = (view?.summary.fields ?? [])
       .filter((f) => f.isVisible && !f.lazy)
-      .filter((f) => requestedFields.size === 0 || requestedFields.has(f.fieldId))
+      .filter(
+        (f) => requestedFields.size === 0 || requestedFields.has(f.fieldId),
+      )
       .map((f) => f.attributeId)
       .filter((id) => attributesById.get(id)?.referenceColumn !== null);
 
@@ -122,8 +141,14 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     const count = buildGridCountQuery(shared);
 
     const [rows, totals] = await Promise.all([
-      this.appPrismaService.$queryRawUnsafe<PageRow[]>(page.sql, ...page.params),
-      this.appPrismaService.$queryRawUnsafe<{ total: bigint }[]>(count.sql, ...count.params),
+      this.appPrismaService.$queryRawUnsafe<PageRow[]>(
+        page.sql,
+        ...page.params,
+      ),
+      this.appPrismaService.$queryRawUnsafe<{ total: bigint }[]>(
+        count.sql,
+        ...count.params,
+      ),
     ]);
 
     const recordIds = rows.map((row) => row.id);
@@ -135,12 +160,24 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
      */
     const fetchAttributeIds = view?.summary.fields
       .filter((f) => f.isVisible && !f.lazy)
-      .filter((f) => requestedFields.size === 0 || requestedFields.has(f.fieldId))
+      .filter(
+        (f) => requestedFields.size === 0 || requestedFields.has(f.fieldId),
+      )
       .map((f) => f.attributeId);
 
     const [cells, edges] = await Promise.all([
-      readCellsForRecords(this.executor, recordIds, workspaceId, fetchAttributeIds),
-      readEdgesForRecords(this.executor, recordIds, workspaceId, fetchAttributeIds),
+      readCellsForRecords(
+        this.executor,
+        recordIds,
+        workspaceId,
+        fetchAttributeIds,
+      ),
+      readEdgesForRecords(
+        this.executor,
+        recordIds,
+        workspaceId,
+        fetchAttributeIds,
+      ),
     ]);
 
     return {
@@ -157,7 +194,14 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
 
             return value === undefined || value === null
               ? []
-              : [{ attributeId, value: toJsonValue(value), source: 'market', version: 0 }];
+              : [
+                  {
+                    attributeId,
+                    value: toJsonValue(value),
+                    source: 'market',
+                    version: 0,
+                  },
+                ];
           }),
         ],
         edges: edges.get(row.id) ?? [],
@@ -173,7 +217,15 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     dto: GetEntityRecordsDto,
     entityId: string,
     workspaceId: string,
-    attributes: { id: string; label: string; icon: string | null; type: string; group: string | null; isEditable: boolean }[],
+    attributes: {
+      id: string;
+      label: string;
+      icon: string | null;
+      type: string;
+      group: string | null;
+      isEditable: boolean;
+      choices: { id: string; name: string; color: string | null }[];
+    }[],
   ) {
     const view = await this.appPrismaService.entityView.findFirst({
       where: dto.viewId
@@ -193,7 +245,11 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
             isPinned: true,
             width: true,
             lazy: true,
-            paths: { select: { attributeId: true }, orderBy: { position: 'asc' }, take: 1 },
+            paths: {
+              select: { attributeId: true },
+              orderBy: { position: 'asc' },
+              take: 1,
+            },
           },
           orderBy: { position: 'asc' },
         },
@@ -212,7 +268,9 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
 
     const fields = view.fields.flatMap((field) => {
       const attributeId = field.paths[0]?.attributeId;
-      const attribute = attributeId ? attributeById.get(attributeId) : undefined;
+      const attribute = attributeId
+        ? attributeById.get(attributeId)
+        : undefined;
 
       // an archived attribute leaves its field row orphaned; drop it silently
       if (!attributeId || !attribute) {
@@ -233,6 +291,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
           width: field.width,
           lazy: field.lazy,
           isEditable: attribute.isEditable,
+          choices: attribute.choices,
         },
       ];
     });
@@ -240,14 +299,22 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     return {
       filterTree: view.filterTree,
       sort: view.sort,
-      summary: { id: view.id, name: view.name, isDefault: view.isDefault, fields },
+      summary: {
+        id: view.id,
+        name: view.name,
+        isDefault: view.isDefault,
+        fields,
+      },
     };
   }
 
   /** adapts prisma's raw interface to the hydrator's narrow executor */
   private get executor() {
     return {
-      query: async <T>(sql: string, params: unknown[]): Promise<{ rows: T[] }> => ({
+      query: async <T>(
+        sql: string,
+        params: unknown[],
+      ): Promise<{ rows: T[] }> => ({
         rows: await this.appPrismaService.$queryRawUnsafe<T[]>(sql, ...params),
       }),
     };

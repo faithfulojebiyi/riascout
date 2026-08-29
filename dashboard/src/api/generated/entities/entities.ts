@@ -12,9 +12,9 @@ import type {
   GetEntityRecordsResponse,
   UpdateRecordValues,
   UpdateRecordValuesResponse
-} from '../rIAScoutAPI.schemas.js';
+} from '../rIAScoutAPI.schemas';
 
-import { apiClient } from '../../client.js';
+import { apiClient } from '../../client';
 
 
 

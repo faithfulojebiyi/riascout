@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { filterTreeSchema, sortAstSchema } from '@feature/entities/filter-sort/ast.js';
+import {
+  filterTreeSchema,
+  sortAstSchema,
+} from '@feature/entities/filter-sort/ast.js';
 
 /**
  * The filter tree is parsed here, at the boundary, so the compiler only ever
@@ -22,6 +25,14 @@ export const GetEntityRecordsSchema = z
   })
   .meta({ id: 'GetEntityRecords' });
 
+const ChoiceSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    color: z.string().nullable(),
+  })
+  .meta({ id: 'EntityAttributeChoice' });
+
 /** what the grid needs to render its columns */
 const ViewFieldSchema = z
   .object({
@@ -39,6 +50,8 @@ const ViewFieldSchema = z
     lazy: z.boolean(),
     /** projected from market; the client renders it read-only */
     isEditable: z.boolean(),
+    /** empty unless the type is status or select; the editor has no other source */
+    choices: z.array(ChoiceSchema),
   })
   .meta({ id: 'EntityViewField' });
 
