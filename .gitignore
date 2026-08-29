@@ -66,3 +66,8 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# non-PSL DDL — local only for now
+/prisma/ddl
+/prisma/apply-ddl.ts
+/prisma/sync-ddl.ts

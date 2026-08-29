@@ -13,7 +13,9 @@ describe('schema invariants', () => {
     const connectionString = process.env.APP_DATABASE_URL;
 
     if (!connectionString) {
-      throw new Error('APP_DATABASE_URL is required to run schema invariant tests');
+      throw new Error(
+        'APP_DATABASE_URL is required to run schema invariant tests',
+      );
     }
 
     db = new Client({ connectionString });
@@ -24,7 +26,10 @@ describe('schema invariants', () => {
     await db?.end();
   });
 
-  const constraintExists = async (name: string, type: string): Promise<boolean> => {
+  const constraintExists = async (
+    name: string,
+    type: string,
+  ): Promise<boolean> => {
     const { rows } = await db.query<{ exists: boolean }>(
       `select exists (
          select 1 from pg_constraint where conname = $1 and contype = $2
@@ -57,14 +62,18 @@ describe('schema invariants', () => {
   };
 
   it('has btree_gist installed', async () => {
-    const { rows } = await db.query(`select 1 from pg_extension where extname = 'btree_gist'`);
+    const { rows } = await db.query(
+      `select 1 from pg_extension where extname = 'btree_gist'`,
+    );
 
     expect(rows).toHaveLength(1);
   });
 
   describe('exclusion constraints', () => {
     it('prevents overlapping advisor registrations', async () => {
-      await expect(constraintExists('advisor_registration_no_overlap', 'x')).resolves.toBe(true);
+      await expect(
+        constraintExists('advisor_registration_no_overlap', 'x'),
+      ).resolves.toBe(true);
     });
   });
 
@@ -81,6 +90,9 @@ describe('schema invariants', () => {
       'firm_fact_owner_crd_only_individual',
       'enrichment_request_outcome_valid',
       'enrichment_request_subject_valid',
+      'advisor_search_disclosure_status_valid',
+      'advisor_movement_event_type_valid',
+      'advisor_movement_firms_match_event',
     ];
 
     it.each(checks)('has %s', async (name) => {
@@ -94,11 +106,86 @@ describe('schema invariants', () => {
       'advisor_registration_current',
       'advisor_contact_point_one_primary',
       'advisor_contact_point_reachable',
+      'advisor_search_active_movers',
+      'advisor_search_clean_record',
+      'edge_one_to_one_source',
+      'edge_one_to_one_target',
+      'edge_many_to_one_source',
+      'edge_one_to_many_target',
+      'advisor_movement_key',
+      'advisor_firm_observation_key',
     ];
 
     it.each(indexes)('has %s', async (name) => {
       await expect(indexExists(name)).resolves.toBe(true);
     });
+  });
+
+  /**
+   * Named *_gin via `map:` so the name states the method. Asserted on indexdef
+   * anyway: Prisma's default <table>_<column>_idx is byte-identical whether the
+   * index is GIN or btree, and a btree on an array silently turns every `&&`
+   * facet filter into a sequential scan.
+   */
+  describe('array facet indexes use GIN', () => {
+    const ginIndexes = [
+      'advisor_search_previous_firm_crds_gin',
+      'advisor_search_exam_codes_gin',
+      'advisor_search_designations_gin',
+      'advisor_search_jurisdictions_gin',
+      'advisor_search_firm_client_type_codes_gin',
+      'advisor_search_firm_service_codes_gin',
+      'advisor_search_firm_custodian_ids_gin',
+      'advisor_search_firm_fund_type_codes_gin',
+      'advisor_search_disclosure_flags_gin',
+      'advisor_search_tsv_gin',
+      'firm_search_tsv_gin',
+      'firm_search_client_type_codes_gin',
+      'firm_search_service_codes_gin',
+      'firm_search_asset_category_codes_gin',
+      'firm_search_custodian_ids_gin',
+      'firm_search_fund_type_codes_gin',
+      'firm_search_affiliated_crds_gin',
+    ];
+
+    it.each(ginIndexes)('%s exists and is GIN', async (name) => {
+      const { rows } = await db.query<{ indexdef: string }>(
+        `select indexdef from pg_indexes where schemaname = 'market' and indexname = $1`,
+        [name],
+      );
+
+      expect(rows[0]?.indexdef, `${name} is missing`).toBeDefined();
+      expect(
+        rows[0]?.indexdef.toLowerCase(),
+        `${name} is not a GIN index`,
+      ).toContain('using gin');
+    });
+
+    it('no index named *_gin is anything other than GIN', async () => {
+      const { rows } = await db.query<{ indexname: string }>(
+        `select indexname from pg_indexes
+          where schemaname = 'market' and indexname like '%\\_gin'
+            and indexdef not ilike '%using gin%'`,
+      );
+
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe('search_tsv is a plain column, not generated', () => {
+    /** GENERATED ALWAYS reads as a default to Prisma and breaks every migration */
+    it.each([['advisor_search'], ['firm_search']])(
+      'market.%s.search_tsv',
+      async (table) => {
+        const { rows } = await db.query<{ is_generated: string }>(
+          `select is_generated from information_schema.columns
+          where table_schema = 'market' and table_name = $1 and column_name = 'search_tsv'`,
+          [table],
+        );
+
+        expect(rows[0]?.is_generated).toBe('NEVER');
+      },
+    );
   });
 
   describe('views', () => {
@@ -116,10 +203,16 @@ describe('schema invariants', () => {
     const firmB = 999_000_202;
 
     const seed = async (): Promise<void> => {
-      await db.query(`insert into market.advisor (advisor_crd) values ($1)
-                      on conflict do nothing`, [advisorCrd]);
-      await db.query(`insert into market.firm (firm_crd) values ($1), ($2)
-                      on conflict do nothing`, [firmA, firmB]);
+      await db.query(
+        `insert into market.advisor (advisor_crd) values ($1)
+                      on conflict do nothing`,
+        [advisorCrd],
+      );
+      await db.query(
+        `insert into market.firm (firm_crd) values ($1), ($2)
+                      on conflict do nothing`,
+        [firmA, firmB],
+      );
     };
 
     const insertReg = (
@@ -142,7 +235,9 @@ describe('schema invariants', () => {
         await seed();
 
         for (const state of ['IN', 'KY', 'MI', 'NE', 'OH', 'PA']) {
-          await expect(insertReg(firmA, state, '2023-01-25', null)).resolves.toBeDefined();
+          await expect(
+            insertReg(firmA, state, '2023-01-25', null),
+          ).resolves.toBeDefined();
         }
       } finally {
         await db.query('rollback');
@@ -156,7 +251,9 @@ describe('schema invariants', () => {
         await seed();
         await insertReg(firmA, 'IN', '2023-01-25', null);
 
-        await expect(insertReg(firmB, 'IN', '2024-06-01', null)).resolves.toBeDefined();
+        await expect(
+          insertReg(firmB, 'IN', '2024-06-01', null),
+        ).resolves.toBeDefined();
       } finally {
         await db.query('rollback');
       }
@@ -169,9 +266,9 @@ describe('schema invariants', () => {
         await seed();
         await insertReg(firmA, 'IN', '2023-01-25', null);
 
-        await expect(insertReg(firmA, 'IN', '2023-06-01', null)).rejects.toThrow(
-          /exclusion constraint/i,
-        );
+        await expect(
+          insertReg(firmA, 'IN', '2023-06-01', null),
+        ).rejects.toThrow(/exclusion constraint/i);
       } finally {
         await db.query('rollback');
       }
@@ -186,9 +283,9 @@ describe('schema invariants', () => {
 
         // without COALESCE in the constraint, GiST treats NULLs as distinct
         // and this would be silently permitted
-        await expect(insertReg(firmA, null, '2015-06-01', '2016-06-01')).rejects.toThrow(
-          /exclusion constraint/i,
-        );
+        await expect(
+          insertReg(firmA, null, '2015-06-01', '2016-06-01'),
+        ).rejects.toThrow(/exclusion constraint/i);
       } finally {
         await db.query('rollback');
       }
@@ -202,7 +299,9 @@ describe('schema invariants', () => {
         await insertReg(firmA, 'IN', '2020-01-01', '2023-01-01');
 
         // left firm A the day they joined firm B — not an overlap
-        await expect(insertReg(firmA, 'IN', '2023-01-01', null)).resolves.toBeDefined();
+        await expect(
+          insertReg(firmA, 'IN', '2023-01-01', null),
+        ).resolves.toBeDefined();
       } finally {
         await db.query('rollback');
       }
@@ -214,9 +313,9 @@ describe('schema invariants', () => {
       try {
         await seed();
 
-        await expect(insertReg(firmA, 'IN', '2025-01-01', '2024-01-01')).rejects.toThrow(
-          /advisor_registration_ordered/i,
-        );
+        await expect(
+          insertReg(firmA, 'IN', '2025-01-01', '2024-01-01'),
+        ).rejects.toThrow(/advisor_registration_ordered/i);
       } finally {
         await db.query('rollback');
       }

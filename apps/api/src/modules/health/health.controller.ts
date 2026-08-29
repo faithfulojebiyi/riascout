@@ -1,8 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { Public } from '@system/auth/auth.decorators.js';
+
 @ApiTags('Health')
 @Controller('health')
+@Public()
 export class HealthController {
   // shallow: no dependencies. container probes use THIS one.
   @Get()

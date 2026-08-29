@@ -4,19 +4,27 @@ import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 
+import { auth } from '@system/auth/auth.js';
 import { AppLogger } from '@system/logger/logger.service.js';
 
 import { ApiModule } from './api.module.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestFastifyApplication>(ApiModule, new FastifyAdapter(), {
-    bufferLogs: true,
-    logger: new AppLogger('api'),
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    ApiModule,
+    new FastifyAdapter(),
+    {
+      bufferLogs: true,
+      logger: new AppLogger('api'),
+    },
+  );
 
   await app.register(helmet);
   await app.register(cookie);
@@ -35,6 +43,45 @@ async function bootstrap(): Promise<void> {
     .filter(Boolean);
 
   app.enableCors({ origin: origins, credentials: true });
+
+  /**
+   * Raw fastify route: better-auth owns its own request/response handling and
+   * must bypass the Nest pipe/guard/interceptor stack entirely.
+   */
+  const fastify = app.getHttpAdapter().getInstance();
+
+  fastify.route({
+    method: ['GET', 'POST'],
+    url: `${prefix ? `/${prefix}` : ''}/api/auth/*`,
+    handler: async (request, reply) => {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      const headers = new Headers();
+
+      for (const [key, value] of Object.entries(request.headers)) {
+        if (value !== undefined) {
+          headers.append(
+            key,
+            Array.isArray(value) ? value.join(',') : String(value),
+          );
+        }
+      }
+
+      // content-length is stale: fastify already parsed and we re-serialize
+      headers.delete('content-length');
+
+      const response = await auth.handler(
+        new Request(url, {
+          method: request.method,
+          headers,
+          body: request.body ? JSON.stringify(request.body) : undefined,
+        }),
+      );
+
+      reply.status(response.status);
+      response.headers.forEach((value, key) => reply.header(key, value));
+      reply.send(await response.text());
+    },
+  });
 
   const document = SwaggerModule.createDocument(
     app,

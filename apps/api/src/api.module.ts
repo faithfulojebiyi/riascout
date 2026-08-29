@@ -4,6 +4,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 
 import { AlsModule } from '@system/als/als.module.js';
+import { AuthModule } from '@system/auth/auth.module.js';
 import { AppCqrsModule } from '@system/cqrs/cqrs.module.js';
 import { DatabaseModule } from '@system/database/database.module.js';
 import { AllExceptionsFilter } from '@system/interceptors/error.interceptor.js';
@@ -15,6 +16,7 @@ import { HealthModule } from './modules/health/health.module.js';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validationSchema: apiEnvSchema }),
     AlsModule,
+    AuthModule,
     AppCqrsModule,
     DatabaseModule,
     HealthModule,

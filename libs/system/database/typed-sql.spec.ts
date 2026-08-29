@@ -22,8 +22,16 @@ describe('typed sql', () => {
 
     prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-    await prisma.firm.upsert({ where: { firmCrd }, create: { firmCrd }, update: {} });
-    await prisma.advisor.upsert({ where: { advisorCrd }, create: { advisorCrd }, update: {} });
+    await prisma.firm.upsert({
+      where: { firmCrd },
+      create: { firmCrd },
+      update: {},
+    });
+    await prisma.advisor.upsert({
+      where: { advisorCrd },
+      create: { advisorCrd },
+      update: {},
+    });
 
     // two jurisdictions at the same firm — the query must not double-count
     await prisma.advisorRegistration.createMany({
@@ -46,7 +54,9 @@ describe('typed sql', () => {
   });
 
   it('returns the advisor once when the as-of date falls inside the tenure', async () => {
-    const rows = await prisma.$queryRawTyped(advisorsAtFirmOn(firmCrd, new Date('2022-06-01')));
+    const rows = await prisma.$queryRawTyped(
+      advisorsAtFirmOn(firmCrd, new Date('2022-06-01')),
+    );
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.advisor_crd).toBe(advisorCrd);
@@ -54,13 +64,17 @@ describe('typed sql', () => {
   });
 
   it('excludes the advisor once the registration has closed', async () => {
-    const rows = await prisma.$queryRawTyped(advisorsAtFirmOn(firmCrd, new Date('2025-06-01')));
+    const rows = await prisma.$queryRawTyped(
+      advisorsAtFirmOn(firmCrd, new Date('2025-06-01')),
+    );
 
     expect(rows).toHaveLength(0);
   });
 
   it('treats the interval as half-open: the end date itself is excluded', async () => {
-    const rows = await prisma.$queryRawTyped(advisorsAtFirmOn(firmCrd, new Date('2024-01-01')));
+    const rows = await prisma.$queryRawTyped(
+      advisorsAtFirmOn(firmCrd, new Date('2024-01-01')),
+    );
 
     expect(rows).toHaveLength(0);
   });

@@ -4,6 +4,8 @@ import { config } from 'dotenv';
 import { defineConfig } from 'vitest/config';
 
 config({ path: '.env', quiet: true });
+// auth config is api-scoped; tests exercise it directly
+config({ path: 'apps/api/.env', quiet: true });
 
 const r = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 
