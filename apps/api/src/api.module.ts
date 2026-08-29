@@ -11,6 +11,7 @@ import { AllExceptionsFilter } from '@system/interceptors/error.interceptor.js';
 
 import { apiEnvSchema } from './api.env.schema.js';
 import { EntitiesModule } from './modules/entities/entities.module.js';
+import { ProspectingModule } from './modules/prospecting/prospecting.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
@@ -22,6 +23,7 @@ import { HealthModule } from './modules/health/health.module.js';
     DatabaseModule,
     HealthModule,
     EntitiesModule,
+    ProspectingModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
