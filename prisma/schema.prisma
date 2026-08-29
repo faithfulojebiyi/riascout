@@ -907,6 +907,9 @@ model AdvisorSearch {
 
   tenureMonths            Int?     @map("tenure_months")
   experienceMonths        Int?     @map("experience_months")
+  /// recruiters think in years; months stay for precise filtering
+  tenureYears             Int?     @map("tenure_years")
+  experienceYears         Int?     @map("experience_years")
   previousFirmCount       Int      @default(0) @map("previous_firm_count")
   avgPreviousTenureMonths Int?     @map("avg_previous_tenure_months")
   previousFirmCrds        BigInt[] @map("previous_firm_crds")

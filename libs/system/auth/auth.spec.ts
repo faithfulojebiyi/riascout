@@ -176,23 +176,9 @@ describe('auth', () => {
         [email],
       );
 
-      expect(rows.map((r) => r.label)).toContain('Recruiting Status');
       expect(rows.map((r) => r.label)).toContain('Notes');
-    });
-
-    it('gives the recruiting status its choices', async () => {
-      const { rows } = await db.query<{ name: string }>(
-        `select c.name from app.entity_attribute_choice c
-           join app.entity_attribute a on a.id = c.attribute_id
-           join app.entity e on e.id = a.entity_id
-           join app.member m on m.organization_id = e.workspace_id
-           join app."user" u on u.id = m.user_id
-          where u.email = $1 and a.label = 'Recruiting Status'
-          order by c.position`,
-        [email],
-      );
-
-      expect(rows.map((r) => r.name)).toContain('Contacted');
+      expect(rows.map((r) => r.label)).toContain('LinkedIn');
+      expect(rows.map((r) => r.label)).toContain('Personal Email');
     });
 
     it('writes the stable uuid7 key, not a generated one', async () => {
@@ -201,12 +187,12 @@ describe('auth', () => {
            join app.entity e on e.id = a.entity_id
            join app.member m on m.organization_id = e.workspace_id
            join app."user" u on u.id = m.user_id
-          where u.email = $1 and a.label = 'Recruiting Status'`,
+          where u.email = $1 and a.label = 'Notes'`,
         [email],
       );
 
       // the constant is the workspace's permanent handle on this attribute
-      expect(rows[0]?.key).toBe(ADVISOR_WORKFLOW_ATTRIBUTES.recruitingStatus);
+      expect(rows[0]?.key).toBe(ADVISOR_WORKFLOW_ATTRIBUTES.notes);
     });
   });
 });

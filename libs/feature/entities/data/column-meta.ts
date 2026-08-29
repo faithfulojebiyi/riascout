@@ -48,8 +48,10 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'advisor.current_firm_since': { group: 'Current firm' },
   'advisor.current_firm_count': { group: 'Current firm' },
 
-  'advisor.tenure_months': { visible: true, group: 'Career' },
+  'advisor.tenure_months': { group: 'Career' },
   'advisor.experience_months': { group: 'Career' },
+  'advisor.tenure_years': { visible: true, group: 'Career' },
+  'advisor.experience_years': { visible: true, group: 'Career' },
   'advisor.previous_firm_count': { group: 'Career' },
   'advisor.avg_previous_tenure_months': { group: 'Career' },
   'advisor.previous_firm_crds': { group: 'Career' },
@@ -72,8 +74,6 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'advisor.postal_code': { group: 'Location' },
   'advisor.country_code': { group: 'Location' },
   'advisor.is_us_workplace': { group: 'Location' },
-
-  'advisor.last_moved_on': { visible: true, group: 'Movement' },
   'advisor.last_detected_on': { group: 'Movement' },
   'advisor.previous_firm_crd': { group: 'Movement' },
   'advisor.move_count_5y': { group: 'Movement' },
@@ -107,8 +107,7 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'firm.channel_code': { visible: true, group: 'Firm metrics' },
   'firm.is_sec_registered': { group: 'Firm metrics' },
   'firm.is_era': { group: 'Firm metrics' },
-
-  'firm.net_advisor_flow_90d': { visible: true, group: 'Movement' },
+  'firm.net_advisor_flow_90d': { group: 'Movement' },
   'firm.advisors_gained_90d': { group: 'Movement' },
   'firm.advisors_lost_90d': { group: 'Movement' },
 };

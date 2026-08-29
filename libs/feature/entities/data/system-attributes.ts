@@ -67,6 +67,8 @@ export const ADVISOR_REFERENCE_ATTRIBUTES = {
   firmServiceCodes: '01a04b01-33ab-791d-864e-768a3f9d6bbf', // advisor.firm_service_codes
   firmCustodianIds: '01a04b01-33ac-779a-a91c-6dade5bc006c', // advisor.firm_custodian_ids
   firmFundTypeCodes: '01a04b01-33ad-7b37-83d3-da88dee9265f', // advisor.firm_fund_type_codes
+  tenureYears: '01a04b24-3552-7efc-86a3-98cd9fb09138', // advisor.tenure_years
+  experienceYears: '01a04b24-3557-79e3-8d36-eadb27f6c3ce', // advisor.experience_years
 } as const;
 
 /** projected from market.firm_search */

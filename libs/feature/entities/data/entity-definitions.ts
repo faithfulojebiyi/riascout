@@ -60,7 +60,16 @@ const ACRONYMS: Record<string, string> = {
   '90D': '90d',
 };
 
+/** a few columns read better than their snake_case name suggests */
+const LABEL_OVERRIDES: Record<string, string> = {
+  tenure_years: 'Tenure (Years)',
+  experience_years: 'Years of Experience',
+  tenure_months: 'Tenure (Months)',
+  experience_months: 'Experience (Months)',
+};
+
 const humanise = (column: string): string =>
+  LABEL_OVERRIDES[column] ??
   column
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -107,16 +116,6 @@ const byGroup = (attributes: SeedAttribute[]): SeedAttribute[] =>
   [...attributes].sort(
     (a, b) => ATTRIBUTE_GROUPS.indexOf(a.group) - ATTRIBUTE_GROUPS.indexOf(b.group),
   );
-
-const RECRUITING_STAGES = [
-  'Not Contacted',
-  'Contacted',
-  'Responded',
-  'In Conversation',
-  'Offer Made',
-  'Signed',
-  'Passed',
-];
 
 type WorkflowSpec = Omit<
   SeedAttribute,
@@ -180,34 +179,9 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     visible: false,
     pinned: false,
   }),
-  workflow({
-    key: ADVISOR_WORKFLOW_ATTRIBUTES.doNotContact,
-    label: 'Do Not Contact',
-    type: 'checkbox',
-    group: 'Contact',
-    visible: true,
-    pinned: false,
-  }),
 ];
 
 const ADVISOR_PIPELINE: SeedAttribute[] = [
-  workflow({
-    key: ADVISOR_WORKFLOW_ATTRIBUTES.recruitingStatus,
-    label: 'Recruiting Status',
-    type: 'status',
-    group: 'Pipeline',
-    visible: true,
-    pinned: false,
-    choices: RECRUITING_STAGES,
-  }),
-  workflow({
-    key: ADVISOR_WORKFLOW_ATTRIBUTES.owner,
-    label: 'Owner',
-    type: 'user',
-    group: 'Pipeline',
-    visible: true,
-    pinned: false,
-  }),
   workflow({
     key: ADVISOR_WORKFLOW_ATTRIBUTES.priority,
     label: 'Priority',
@@ -251,23 +225,6 @@ export const FIRM_ENTITY: SeedEntity = {
   sourceKind: 'firm',
   attributes: byGroup([
     ...referenceAttributes('firm_search', FIRM_REFERENCE_ATTRIBUTES),
-    workflow({
-      key: FIRM_WORKFLOW_ATTRIBUTES.targetStatus,
-      label: 'Target Status',
-      type: 'status',
-      group: 'Pipeline',
-      visible: true,
-      pinned: false,
-      choices: ['Untouched', 'Researching', 'Engaged', 'Partnered', 'Passed'],
-    }),
-    workflow({
-      key: FIRM_WORKFLOW_ATTRIBUTES.owner,
-      label: 'Owner',
-      type: 'user',
-      group: 'Pipeline',
-      visible: true,
-      pinned: false,
-    }),
     workflow({
       key: FIRM_WORKFLOW_ATTRIBUTES.notes,
       label: 'Notes',

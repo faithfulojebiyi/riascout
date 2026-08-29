@@ -47,6 +47,8 @@ export const REFERENCE_COLUMNS: ReadonlyMap<string, ReferenceColumn> = new Map([
   advisor('current_firm_count', 'number'),
   advisor('tenure_months', 'number'),
   advisor('experience_months', 'number'),
+  advisor('tenure_years', 'number'),
+  advisor('experience_years', 'number'),
   advisor('previous_firm_count', 'number'),
   advisor('avg_previous_tenure_months', 'number'),
   advisor('previous_firm_crds', 'number', true),
@@ -75,7 +77,6 @@ export const REFERENCE_COLUMNS: ReadonlyMap<string, ReferenceColumn> = new Map([
   advisor('is_us_workplace', 'boolean'),
 
   // movement
-  advisor('last_moved_on', 'date'),
   advisor('last_detected_on', 'date'),
   advisor('previous_firm_crd', 'number'),
   advisor('move_count_5y', 'number'),

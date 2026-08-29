@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_COLUMNS } from '../attribute-types/reference-columns.js';
 import { ATTRIBUTE_GROUPS } from './column-meta.js';
-import { ADVISOR_ENTITY, DEFAULT_ENTITIES, FIRM_ENTITY } from './entity-definitions.js';
+import { ADVISOR_ENTITY, DEFAULT_ENTITIES } from './entity-definitions.js';
 import {
   ADVISOR_REFERENCE_ATTRIBUTES,
   ADVISOR_WORKFLOW_ATTRIBUTES,
@@ -40,7 +40,9 @@ describe('system attribute keys', () => {
       ...Object.keys(FIRM_REFERENCE_ATTRIBUTES),
     ];
 
-    expect(referenceKeys).toHaveLength(REFERENCE_COLUMNS.size);
+    // >= not ==: a column removed from the allowlist keeps its key, because
+    // reusing a retired uuid7 for a different column would rebind live cells
+    expect(referenceKeys.length).toBeGreaterThanOrEqual(REFERENCE_COLUMNS.size);
   });
 });
 
@@ -102,15 +104,6 @@ describe('default entities', () => {
     }
   });
 
-  it('gives the status attributes their choices', () => {
-    const status = ADVISOR_ENTITY.attributes.find((a) => a.type === 'status');
-
-    expect(status?.choices).toContain('Contacted');
-    expect(FIRM_ENTITY.attributes.find((a) => a.type === 'status')?.choices?.length).toBeGreaterThan(
-      0,
-    );
-  });
-
   it('groups every attribute into a declared group', () => {
     const stray = seeded.filter((a) => !ATTRIBUTE_GROUPS.includes(a.group));
 
@@ -142,12 +135,11 @@ describe('default entities', () => {
     }
   });
 
-  it('shows the identity column and the pipeline status by default', () => {
+  it('shows the identity columns by default', () => {
     const advisor = ADVISOR_ENTITY.attributes.filter((a) => a.visible).map((a) => a.label);
 
     expect(advisor).toContain('Full Name');
     expect(advisor).toContain('Advisor CRD');
-    expect(advisor).toContain('Recruiting Status');
   });
 
   describe('contact channels', () => {
@@ -164,9 +156,6 @@ describe('default entities', () => {
       expect(contact.every((a) => a.isEditable && a.referenceColumn === null)).toBe(true);
     });
 
-    it('surfaces do-not-contact on the grid by default', () => {
-      expect(contact.find((a) => a.label === 'Do Not Contact')?.visible).toBe(true);
-    });
   });
 
   it('marks exactly one primary attribute per entity', () => {
@@ -185,5 +174,14 @@ describe('default entities', () => {
 
       expect(crd, `${entity.slug} has no visible CRD`).toBeDefined();
     }
+  });
+
+  it('surfaces experience in years, not months', () => {
+    const visible = ADVISOR_ENTITY.attributes.filter((a) => a.visible).map((a) => a.label);
+
+    expect(visible).toContain('Years of Experience');
+    expect(visible).toContain('Tenure (Years)');
+    // months stay allowlisted for precise filtering, just not as a column
+    expect(visible).not.toContain('Experience (Months)');
   });
 });
