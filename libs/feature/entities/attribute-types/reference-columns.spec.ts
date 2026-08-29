@@ -27,6 +27,7 @@ describe('reference column allowlist', () => {
   /** postgres types each attribute type may legitimately sit on */
   const COMPATIBLE: Partial<Record<AttributeType, ReadonlySet<string>>> = {
     text: new Set(['text', 'character varying', 'character']),
+    url: new Set(['text', 'character varying']),
     number: new Set([
       'integer',
       'bigint',

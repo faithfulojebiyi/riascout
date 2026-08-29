@@ -52,6 +52,21 @@ export const ADVISOR_REFERENCE_ATTRIBUTES = {
   firmChannel: '01a04af1-e879-72b5-8610-ebe54e904fe3', // advisor.firm_channel
   firmState: '01a04af1-e87a-7c99-9206-693ca6b971b4', // advisor.firm_state
   firmDomain: '01a04af1-e87b-743e-89fe-e283c4829de1', // advisor.firm_domain
+  advisorCrd: '01a04b01-339b-7ae4-bdff-2456b4573cec', // advisor.advisor_crd
+  firstName: '01a04b01-339e-7ac6-b7ff-b2f3c0eaaaee', // advisor.first_name
+  lastName: '01a04b01-339f-7b64-8aba-3961302e7522', // advisor.last_name
+  previousFirmCrds: '01a04b01-33a1-711b-85d5-b804f2b9062e', // advisor.previous_firm_crds
+  isUsWorkplace: '01a04b01-33a2-7157-ad2d-b5a0b52dc3cb', // advisor.is_us_workplace
+  firmLinkedinUrl: '01a04b01-33a3-7b34-a396-7577332794d8', // advisor.firm_linkedin_url
+  firmOfficeCount: '01a04b01-33a4-7ab2-a88e-a61bc9fe6490', // advisor.firm_office_count
+  firmAumPerClient: '01a04b01-33a6-782c-8d73-2f8327cb645c', // advisor.firm_aum_per_client
+  firmAumCagr_3y: '01a04b01-33a7-7f0c-9767-c053f950aff8', // advisor.firm_aum_cagr_3y
+  firmIsSecRegistered: '01a04b01-33a8-79c1-86db-bec68bbf41ec', // advisor.firm_is_sec_registered
+  firmIsEra: '01a04b01-33a9-7d89-b31a-942b990eeb63', // advisor.firm_is_era
+  firmClientTypeCodes: '01a04b01-33aa-7105-a806-4b61392db029', // advisor.firm_client_type_codes
+  firmServiceCodes: '01a04b01-33ab-791d-864e-768a3f9d6bbf', // advisor.firm_service_codes
+  firmCustodianIds: '01a04b01-33ac-779a-a91c-6dade5bc006c', // advisor.firm_custodian_ids
+  firmFundTypeCodes: '01a04b01-33ad-7b37-83d3-da88dee9265f', // advisor.firm_fund_type_codes
 } as const;
 
 /** projected from market.firm_search */
@@ -78,6 +93,33 @@ export const FIRM_REFERENCE_ATTRIBUTES = {
   advisorsGained_90d: '01a04af1-e88f-7e5a-82a7-d53b0bf127c8', // firm.advisors_gained_90d
   advisorsLost_90d: '01a04af1-e890-7ec9-86f0-3c306e68131b', // firm.advisors_lost_90d
   netAdvisorFlow_90d: '01a04af1-e891-7c10-a3f6-b23da87b2629', // firm.net_advisor_flow_90d
+  firmCrd: '01a04b01-33ae-7239-852a-db7bfe98009a', // firm.firm_crd
+  secNumber: '01a04b01-33af-7732-a226-752b57ab105b', // firm.sec_number
+  linkedinUrl: '01a04b01-33b0-7c98-ba71-adcafc25486d', // firm.linkedin_url
+  socialPlatforms: '01a04b01-33b1-72ab-a851-9fa843dad52f', // firm.social_platforms
+  primaryRegistrationType: '01a04b01-33b2-7098-8921-0e6ce83211a7', // firm.primary_registration_type
+  discretionaryAum: '01a04b01-33b3-74e1-97f4-49987f5beb73', // firm.discretionary_aum
+  nonDiscretionaryAum: '01a04b01-33b4-74bb-95da-cfafc0934278', // firm.non_discretionary_aum
+  advisoryEmployeeCount: '01a04b01-33b5-758e-8fe1-caed77619511', // firm.advisory_employee_count
+  officeCount: '01a04b01-33b6-78b1-94be-12ec83774dd8', // firm.office_count
+  aumPerEmployee: '01a04b01-33b7-79ad-aa41-b5018a70a07b', // firm.aum_per_employee
+  aumPercentile: '01a04b01-33b8-77a5-88ae-4661fe8f2d76', // firm.aum_percentile
+  aumPerAdvisorPercentile: '01a04b01-33b9-74e1-b270-8999d69033d0', // firm.aum_per_advisor_percentile
+  aumCagr_1y: '01a04b01-33ba-7505-a1b5-6442a48912c2', // firm.aum_cagr_1y
+  aumCagr_5y: '01a04b01-33bb-78eb-9ffa-e69bcc30de12', // firm.aum_cagr_5y
+  employeeCagr_3y: '01a04b01-33bc-7da9-9e81-81506b15cbfa', // firm.employee_cagr_3y
+  assetCategoryCodes: '01a04b01-33bd-7ac0-a357-2c258d285fcf', // firm.asset_category_codes
+  topCustodianId: '01a04b01-33be-73f8-ba62-8a5c1c1eef56', // firm.top_custodian_id
+  topCustodianAum: '01a04b01-33bf-7d10-92f8-675710df68e9', // firm.top_custodian_aum
+  fundCount: '01a04b01-33c0-7010-9e8d-976294a69799', // firm.fund_count
+  totalFundGav: '01a04b01-33c2-72bd-b4fc-b12d9898066b', // firm.total_fund_gav
+  affiliatedCrds: '01a04b01-33c3-7814-90b6-a04deca18058', // firm.affiliated_crds
+  ownerCount: '01a04b01-33c4-7dbc-a935-abe4cb5164e8', // firm.owner_count
+  ownerAdvisorCount: '01a04b01-33c5-7ea8-83cc-1026e438e77c', // firm.owner_advisor_count
+  ownershipConcentration: '01a04b01-33c6-7bd7-8b69-455518ea15f5', // firm.ownership_concentration
+  firstFilingDate: '01a04b01-33c7-78a8-8e7b-65e707ec5421', // firm.first_filing_date
+  latestFilingDate: '01a04b01-33c8-74f1-8a84-d444c7f73926', // firm.latest_filing_date
+  filingCount: '01a04b01-33c9-75ee-bd36-dbfa5fcf3628', // firm.filing_count
 } as const;
 
 /** recruiter-authored columns every workspace starts with */

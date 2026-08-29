@@ -146,6 +146,7 @@ describe('schema invariants', () => {
       'firm_search_custodian_ids_gin',
       'firm_search_fund_type_codes_gin',
       'firm_search_affiliated_crds_gin',
+      'firm_search_social_platforms_gin',
     ];
 
     it.each(ginIndexes)('%s exists and is GIN', async (name) => {

@@ -32,13 +32,20 @@ const camel = (s: string): string => s.replace(/_([a-z])/g, (_, c: string) => c.
 const ACRONYMS: Record<string, string> = {
   Aum: 'AUM',
   Crd: 'CRD',
+  Crds: 'CRDs',
   Sec: 'SEC',
   Era: 'ERA',
   Cagr: 'CAGR',
-  Tsv: 'TSV',
+  Url: 'URL',
+  Linkedin: 'LinkedIn',
+  Us: 'US',
+  Gav: 'GAV',
+  Ids: 'IDs',
+  Id: 'ID',
+  '1Y': '1Y',
   '3Y': '3Y',
+  '5Y': '5Y',
   '90D': '90d',
-  '5Y': '5y',
 };
 
 const humanise = (column: string): string =>

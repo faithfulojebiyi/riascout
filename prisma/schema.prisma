@@ -951,6 +951,7 @@ model AdvisorSearch {
   firmChannel         String?  @map("firm_channel")
   firmState           String?  @map("firm_state")
   firmDomain          String?  @map("firm_domain")
+  firmLinkedinUrl     String?  @map("firm_linkedin_url")
   firmIsSecRegistered Boolean? @map("firm_is_sec_registered")
   firmIsEra           Boolean? @map("firm_is_era")
   firmClientTypeCodes String[] @map("firm_client_type_codes")
@@ -996,6 +997,11 @@ model FirmSearch {
   firmName  String? @map("firm_name")
   secNumber String? @map("sec_number")
   domain    String?
+  linkedinUrl String? @map("linkedin_url")
+  /// [SocialProfiles] every profile as {platform, url}
+  socialProfiles Json? @map("social_profiles") @db.JsonB
+  /// flat facet of the platforms present, for GIN filtering
+  socialPlatforms String[] @map("social_platforms")
 
   city        String?
   state       String?
@@ -1071,6 +1077,7 @@ model FirmSearch {
   @@index([custodianIds], type: Gin, map: "firm_search_custodian_ids_gin")
   @@index([fundTypeCodes], type: Gin, map: "firm_search_fund_type_codes_gin")
   @@index([affiliatedCrds], type: Gin, map: "firm_search_affiliated_crds_gin")
+  @@index([socialPlatforms], type: Gin, map: "firm_search_social_platforms_gin")
   @@index([advisorCount(sort: Desc)])
   @@index([netAdvisorFlow90d(sort: Desc)])
   @@schema("market")
