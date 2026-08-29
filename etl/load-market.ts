@@ -101,19 +101,25 @@ async function main(): Promise<void> {
 
   acquire();
 
-  const pre = await preflight();
+  const selected = STAGES.filter((s) =>
+    only ? only.has(s.key) : s.key !== 'reset',
+  );
+  const needsSeed = selected.some((s) => s.engine !== 'postgres');
+
+  const pre = await preflight(needsSeed);
 
   const opts: DuckOptions = {
     seedPath: pre.seedPath,
     postgresUrl: pre.postgresUrl,
   };
 
-  console.log(`seed  ${pre.seedPath} (${(pre.seedBytes / 1e9).toFixed(2)} GB)`);
-  console.log(`run   ${pre.runId}\n`);
+  if (needsSeed) {
+    console.log(
+      `seed  ${pre.seedPath} (${(pre.seedBytes / 1e9).toFixed(2)} GB)`,
+    );
+  }
 
-  const selected = STAGES.filter((s) =>
-    only ? only.has(s.key) : s.key !== 'reset',
-  );
+  console.log(`run   ${pre.runId}\n`);
   const startedAll = Date.now();
 
   for (const stage of selected) {

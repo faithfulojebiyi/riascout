@@ -113,20 +113,8 @@ web as (
    group by w.filing_id
 ),
 /**
- * Growth compares the current filing to the most recent one at or before the
- * horizon, but only within 180 days of it — otherwise a firm whose only prior
- * filing is five years old would report that gap as its one-year growth. The
- * elapsed period is measured from the actual dates, not the nominal horizon.
- *
- * The baseline need only exist and be > 0 — a minimum size would be a product
- * judgement, and a firm growing from $2M to $2B is a real ratio.
- *
- * A thousandfold move either way is not. 971 filings across 319 firms, almost
- * all filed between February and August 2025, carry AUM with its magnitude
- * lost: Vanguard reads 102,466 against a true 10,246,596,045,633, the leading
- * digits with the exponent dropped. Growth off such a baseline is meaningless
- * and, left in, it sorts to the top of every growth ranking — so both
- * directions are excluded. The defect is in the seed, not here.
+ * Nearest filing within 180 days of each horizon, so a five-year-old filing is
+ * never read as one-year growth. Elapsed period comes from the actual dates.
  */
 growth_aum_raw as (
   select distinct on (c.firm_crd, g.horizon)
@@ -142,7 +130,8 @@ growth_aum_raw as (
      and h.on_date >= c.latest_on - make_interval(years => g.horizon, days => 180)
    where h.regulatory_aum > 0
      and c.aum_now > 0
-     -- see the corrupt-baseline note above
+     -- TEMPORARY, remove after the seed rebuild: drops baselines whose exponent
+     -- a duckdb binder bug dropped. Also costs genuine >1000x ramps.
      and c.aum_now < h.regulatory_aum * 1000
      and h.regulatory_aum < c.aum_now * 1000
    order by c.firm_crd, g.horizon, h.on_date desc

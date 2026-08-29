@@ -15,7 +15,11 @@ export type Preflight = {
  * a held lock is a normal condition rather than an exception. Fail with an
  * explanation — the native error is a bare "Could not set lock on file".
  */
-export async function preflight(): Promise<Preflight> {
+/**
+ * needsSeed false for postgres-only runs: those never open the seed, so a
+ * concurrent ingestion holding its write lock must not block them.
+ */
+export async function preflight(needsSeed = true): Promise<Preflight> {
   const dataDir = process.env.ASSET_DATA_DIR;
 
   if (!dataDir) {
@@ -45,7 +49,9 @@ export async function preflight(): Promise<Preflight> {
   const opts: DuckOptions = { seedPath, postgresUrl };
 
   try {
-    await duckScalar('select 1;', opts);
+    if (needsSeed) {
+      await duckScalar('select 1;', opts);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
