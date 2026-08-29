@@ -77,3 +77,4 @@ dashboard/node_modules
 dashboard/.output
 dashboard/.nitro
 dashboard/.tanstack
+dashboard/src/routeTree.gen.ts
