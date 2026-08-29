@@ -1,16 +1,27 @@
-import { Injectable, type OnModuleDestroy, type OnModuleInit, type Type } from '@nestjs/common';
+import {
+  Injectable,
+  type OnModuleDestroy,
+  type OnModuleInit,
+  type Type,
+} from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '@orm/app';
 
+/** only production terminates TLS; dev and test run against a local postgres */
 const ssl =
-  process.env.NODE_ENV === 'development' ? undefined : { rejectUnauthorized: false };
+  process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: false }
+    : undefined;
 
 const adapterFor = (connectionString: string): PrismaPg =>
   new PrismaPg({ connectionString, ssl });
 
 @Injectable()
-export class AppPrismaProvider extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class AppPrismaProvider
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   /** guards connect/disconnect when api and worker share a process in watch mode */
   private static initialized = false;
 
