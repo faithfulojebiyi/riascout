@@ -45,7 +45,10 @@ const BY_TYPE: Record<AttributeType, StorageColumn> = {
 
 export const attributeTypeRegistry = {
   /** multi-value attributes store an array in jsonb regardless of base type */
-  effectiveStorageColumn(type: AttributeType, isMultiValue: boolean): StorageColumn {
+  effectiveStorageColumn(
+    type: AttributeType,
+    isMultiValue: boolean,
+  ): StorageColumn {
     const base = BY_TYPE[type];
 
     if (base === 'none') {

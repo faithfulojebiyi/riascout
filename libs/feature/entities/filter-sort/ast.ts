@@ -57,8 +57,14 @@ export const filterTreeSchema: z.ZodType<FilterTree> = z.lazy(() =>
       operator: filterOperatorSchema,
       value: z.unknown(),
     }),
-    z.object({ kind: z.literal('and'), children: z.array(filterTreeSchema).min(1) }),
-    z.object({ kind: z.literal('or'), children: z.array(filterTreeSchema).min(1) }),
+    z.object({
+      kind: z.literal('and'),
+      children: z.array(filterTreeSchema).min(1),
+    }),
+    z.object({
+      kind: z.literal('or'),
+      children: z.array(filterTreeSchema).min(1),
+    }),
     z.object({ kind: z.literal('not'), child: filterTreeSchema }),
   ]),
 );
@@ -66,7 +72,10 @@ export const filterTreeSchema: z.ZodType<FilterTree> = z.lazy(() =>
 export const sortDirectionSchema = z.enum(['asc', 'desc']);
 export type SortDirection = z.infer<typeof sortDirectionSchema>;
 
-export const sortSpecSchema = z.object({ path: pathSchema, direction: sortDirectionSchema });
+export const sortSpecSchema = z.object({
+  path: pathSchema,
+  direction: sortDirectionSchema,
+});
 export type SortSpec = z.infer<typeof sortSpecSchema>;
 
 /** multi-column sort; the compiler rejects 1:M and M:M hops to keep ordering deterministic */

@@ -26,7 +26,11 @@ export type OperatorDescriptor = {
 
 const stringValue = z.string();
 const numberValue = z.union([z.number(), z.coerce.number()]);
-const dateValue = z.union([z.iso.datetime({ offset: true }), z.iso.date(), z.date()]);
+const dateValue = z.union([
+  z.iso.datetime({ offset: true }),
+  z.iso.date(),
+  z.date(),
+]);
 const booleanValue = z.union([z.boolean(), z.stringbool()]);
 const stringArrayValue = z.array(z.string()).min(1);
 const numberRangeValue = z.tuple([numberValue, numberValue]);
@@ -44,7 +48,8 @@ const binary = (
   cast = '',
 ): OperatorDescriptor => ({
   parseValue: parser,
-  emit: (ctx) => `${ctx.columnExpr} ${op} ${ctx.addParam(parser(ctx.value))}${cast}`,
+  emit: (ctx) =>
+    `${ctx.columnExpr} ${op} ${ctx.addParam(parser(ctx.value))}${cast}`,
 });
 
 const like = (
@@ -66,7 +71,9 @@ const isNotEmpty: OperatorDescriptor = {
   emit: (ctx) => `${ctx.columnExpr} IS NOT NULL`,
 };
 
-const between = (parser: (raw: unknown) => readonly unknown[]): OperatorDescriptor => ({
+const between = (
+  parser: (raw: unknown) => readonly unknown[],
+): OperatorDescriptor => ({
   parseValue: parser,
   emit: (ctx) => {
     const [lo, hi] = parser(ctx.value);
@@ -88,12 +95,14 @@ const withinLastNDays: OperatorDescriptor = {
 
 const isAnyOf: OperatorDescriptor = {
   parseValue: parse(stringArrayValue),
-  emit: (ctx) => `${ctx.columnExpr} = ANY(${ctx.addParam(parse(stringArrayValue)(ctx.value))})`,
+  emit: (ctx) =>
+    `${ctx.columnExpr} = ANY(${ctx.addParam(parse(stringArrayValue)(ctx.value))})`,
 };
 
 const isNoneOf: OperatorDescriptor = {
   parseValue: parse(stringArrayValue),
-  emit: (ctx) => `${ctx.columnExpr} <> ALL(${ctx.addParam(parse(stringArrayValue)(ctx.value))})`,
+  emit: (ctx) =>
+    `${ctx.columnExpr} <> ALL(${ctx.addParam(parse(stringArrayValue)(ctx.value))})`,
 };
 
 type OperatorMap = Partial<Record<FilterOperator, OperatorDescriptor>>;
@@ -179,7 +188,10 @@ const REGISTRY: Record<AttributeType, OperatorMap> = {
 };
 
 export const operatorRegistry = {
-  resolve(type: AttributeType, operator: FilterOperator): OperatorDescriptor | null {
+  resolve(
+    type: AttributeType,
+    operator: FilterOperator,
+  ): OperatorDescriptor | null {
     return REGISTRY[type]?.[operator] ?? null;
   },
 };

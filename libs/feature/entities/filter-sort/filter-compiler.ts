@@ -20,7 +20,10 @@ export type CompileContext = {
  * referencing a deleted attribute is dropped and an empty and/or branch
  * collapses upward, so a saved view survives a schema change.
  */
-export const compileFilterTree = (tree: FilterTree, ctx: CompileContext): string | null => {
+export const compileFilterTree = (
+  tree: FilterTree,
+  ctx: CompileContext,
+): string | null => {
   switch (tree.kind) {
     case 'and':
     case 'or': {
@@ -50,8 +53,13 @@ export const compileFilterTree = (tree: FilterTree, ctx: CompileContext): string
   }
 };
 
-const compileCondition = (cond: FilterCondition, ctx: CompileContext): string | null => {
-  const attrs = cond.path.map((step) => ctx.attributesById.get(step.attributeId));
+const compileCondition = (
+  cond: FilterCondition,
+  ctx: CompileContext,
+): string | null => {
+  const attrs = cond.path.map((step) =>
+    ctx.attributesById.get(step.attributeId),
+  );
 
   if (attrs.some((attr) => !attr)) {
     return null;
@@ -81,7 +89,10 @@ const compileCondition = (cond: FilterCondition, ctx: CompileContext): string | 
     return null;
   }
 
-  const column = attributeTypeRegistry.effectiveStorageColumn(terminal.type, terminal.isMultiValue);
+  const column = attributeTypeRegistry.effectiveStorageColumn(
+    terminal.type,
+    terminal.isMultiValue,
+  );
 
   if (column === 'none') {
     return null;

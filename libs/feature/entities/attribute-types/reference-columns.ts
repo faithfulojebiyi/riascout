@@ -24,7 +24,11 @@ const advisor = (
   { source: 'advisor_search', column, type, isArray },
 ];
 
-const firm = (column: string, type: AttributeType, isArray = false): [string, ReferenceColumn] => [
+const firm = (
+  column: string,
+  type: AttributeType,
+  isArray = false,
+): [string, ReferenceColumn] => [
   `firm.${column}`,
   { source: 'firm_search', column, type, isArray },
 ];
@@ -107,5 +111,7 @@ export const REFERENCE_COLUMNS: ReadonlyMap<string, ReferenceColumn> = new Map([
 ]);
 
 /** null when the key is unknown — the compiler then drops the condition */
-export const resolveReferenceColumn = (key: string | null): ReferenceColumn | null =>
+export const resolveReferenceColumn = (
+  key: string | null,
+): ReferenceColumn | null =>
   key ? (REFERENCE_COLUMNS.get(key) ?? null) : null;
