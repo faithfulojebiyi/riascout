@@ -52,3 +52,50 @@ export const GetEntityRecordsResponseSchema = z
     offset: z.number().int(),
   })
   .meta({ id: 'GetEntityRecordsResponse' });
+
+/**
+ * A cell write carries expectedVersion so a stale edit is a 409 rather than a
+ * silent last-write-wins. Omit it to force the write.
+ */
+const CellWriteSchema = z.object({
+  attributeId: z.uuid(),
+  value: z.unknown(),
+  expectedVersion: z.number().int().min(0).optional(),
+});
+
+export const UpdateRecordValuesSchema = z
+  .object({
+    recordId: z.uuid(),
+    values: z.array(CellWriteSchema).min(1).max(100),
+  })
+  .meta({ id: 'UpdateRecordValues' });
+
+export const UpdateRecordValuesResponseSchema = z
+  .object({
+    results: z.array(
+      z.object({
+        attributeId: z.uuid(),
+        status: z.enum(['written', 'skipped', 'conflict']),
+        version: z.number().int().nullable(),
+      }),
+    ),
+  })
+  .meta({ id: 'UpdateRecordValuesResponse' });
+
+export const CreateEntityRecordSchema = z
+  .object({
+    entityId: z.uuid(),
+    /** points at market by CRD, never at a firm an advisor works for */
+    sourceKind: z.enum(['advisor', 'firm']).nullable().default(null),
+    sourceCrd: z.string().regex(/^\d+$/).nullable().default(null),
+    values: z.array(CellWriteSchema).max(100).default([]),
+  })
+  .meta({ id: 'CreateEntityRecord' });
+
+export const CreateEntityRecordResponseSchema = z
+  .object({
+    id: z.uuid(),
+    /** false when the record already existed for this CRD */
+    created: z.boolean(),
+  })
+  .meta({ id: 'CreateEntityRecordResponse' });

@@ -19,7 +19,10 @@ describe('POST /entities/get-entity-records', () => {
   let statusAttr: string;
   let tenureAttr: string;
 
+    /** seeded as records by beforeAll — the read tests assert on exactly these */
   const CRDS = [910_001, 910_002, 910_003];
+  /** created by the write tests; listed only so cleanup can remove them */
+  const WRITE_CRDS = [910_004, 910_006, 910_007, 910_008];
 
   const post = (path: string, body: unknown, withAuth = true): Promise<Response> =>
     fetch(`${base}${path}`, {
@@ -118,8 +121,12 @@ describe('POST /entities/get-entity-records', () => {
   afterAll(async () => {
     await db.query('delete from app.organization where id = $1', [workspaceId]);
     await db.query('delete from app."user" where email = $1', [email]);
-    await db.query('delete from market.advisor_search where advisor_crd = any($1::bigint[])', [CRDS]);
-    await db.query('delete from market.advisor where advisor_crd = any($1::bigint[])', [CRDS]);
+    const allCrds = [...CRDS, ...WRITE_CRDS];
+
+    await db.query('delete from market.advisor_search where advisor_crd = any($1::bigint[])', [
+      allCrds,
+    ]);
+    await db.query('delete from market.advisor where advisor_crd = any($1::bigint[])', [allCrds]);
     await db.end();
   });
 
@@ -217,5 +224,116 @@ describe('POST /entities/get-entity-records', () => {
     const res = await post('/entities/get-entity-records', { entityId, limit: 5000 });
 
     expect(res.status).toBe(400);
+  });
+
+  describe('writes', () => {
+    it('creates a record and is idempotent on the same CRD', async () => {
+      const body = { entityId, sourceKind: 'advisor', sourceCrd: '910004' };
+
+      const first = await post('/entities/create-entity-record', body);
+      const a = (await first.json()) as { id: string; created: boolean };
+
+      expect(a.created).toBe(true);
+
+      const second = await post('/entities/create-entity-record', body);
+      const b = (await second.json()) as { id: string; created: boolean };
+
+      // re-saving from search must not create a duplicate pipeline record
+      expect(b.created).toBe(false);
+      expect(b.id).toBe(a.id);
+
+      await db.query('delete from app.entity_record where id = $1', [a.id]);
+    });
+
+    it('rejects a sourceCrd without a sourceKind', async () => {
+      const res = await post('/entities/create-entity-record', {
+        entityId,
+        sourceCrd: '910005',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('writes a cell and bumps its version', async () => {
+      const created = await post('/entities/create-entity-record', {
+        entityId,
+        sourceKind: 'advisor',
+        sourceCrd: '910006',
+      });
+      const { id } = (await created.json()) as { id: string };
+
+      const first = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'Contacted' }],
+      });
+      const a = (await first.json()) as { results: { status: string; version: number }[] };
+
+      expect(a.results[0]?.status).toBe('written');
+      expect(a.results[0]?.version).toBe(0);
+
+      const second = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'Qualified', expectedVersion: 0 }],
+      });
+      const b = (await second.json()) as { results: { version: number }[] };
+
+      expect(b.results[0]?.version).toBe(1);
+
+      await db.query('delete from app.entity_record where id = $1', [id]);
+    });
+
+    it('409s on a stale expectedVersion', async () => {
+      const created = await post('/entities/create-entity-record', {
+        entityId,
+        sourceKind: 'advisor',
+        sourceCrd: '910007',
+      });
+      const { id } = (await created.json()) as { id: string };
+
+      await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'A' }],
+      });
+      await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'B' }],
+      });
+
+      const stale = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'C', expectedVersion: 0 }],
+      });
+
+      expect(stale.status).toBe(409);
+
+      await db.query('delete from app.entity_record where id = $1', [id]);
+    });
+
+    it('refuses to write a projected market column', async () => {
+      const created = await post('/entities/create-entity-record', {
+        entityId,
+        sourceKind: 'advisor',
+        sourceCrd: '910008',
+      });
+      const { id } = (await created.json()) as { id: string };
+
+      const res = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: tenureAttr, value: 999 }],
+      });
+
+      expect(res.status).toBe(403);
+
+      await db.query('delete from app.entity_record where id = $1', [id]);
+    });
+
+    it('404s writing to a record in another workspace', async () => {
+      const res = await post('/entities/update-record-values', {
+        recordId: '00000000-0000-4000-8000-000000000000',
+        values: [{ attributeId: statusAttr, value: 'X' }],
+      });
+
+      expect(res.status).toBe(404);
+    });
   });
 });
