@@ -5,9 +5,10 @@
   "scripts": {
     "api:generate": "orval --config ./orval.config.ts",
     "typecheck": "tsc --noEmit",
-    "dev": "vite dev --port 3020",
+    "dev": "panda codegen && vite dev --port 3020",
     "build": "vite build",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "prepare": "panda codegen"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.9",
@@ -19,6 +20,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@pandacss/dev": "^1.12.0",
     "@tanstack/router-plugin": "^1.168.35",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.0",

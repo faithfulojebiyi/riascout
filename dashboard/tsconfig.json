@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "preserve",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
@@ -10,8 +14,23 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "paths": { "@/*": ["./src/*"] },
-    "types": ["node"]
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@riascout-ui/styled-system/*": [
+        "./src/ui/styled-system/*"
+      ],
+      "@riascout-ui/styled-system": [
+        "./src/ui/styled-system"
+      ]
+    },
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src", "orval.config.ts"]
+  "include": [
+    "src",
+    "orval.config.ts"
+  ]
 }

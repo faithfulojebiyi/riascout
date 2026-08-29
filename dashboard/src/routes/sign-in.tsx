@@ -1,7 +1,9 @@
+import { css } from '@riascout-ui/styled-system/css';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, type ComponentProps } from 'react';
 
 import { authClient } from '../lib/auth-client';
+import { Button } from '../ui/primitives/button';
 
 type Search = { redirect?: string };
 
@@ -11,6 +13,19 @@ export const Route = createFileRoute('/sign-in')({
     redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
   }),
   component: SignIn,
+});
+
+const inputStyles = css({
+  bg: 'brand.primary.1',
+  borderColor: 'brand.primary.6',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  color: 'brand.primary.12',
+  fontSize: 'sm',
+  h: '2.25rem',
+  px: '3',
+  _focusVisible: { borderColor: 'brand.primary.8', outline: 'none' },
+  _placeholder: { color: 'brand.primary.11' },
 });
 
 function SignIn() {
@@ -41,26 +56,60 @@ function SignIn() {
   };
 
   return (
-    <form onSubmit={onSubmit} style={{ fontFamily: 'system-ui', padding: 24, maxWidth: 320 }}>
-      <h1>Sign in</h1>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Work email"
-        required
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        required
-      />
-      <button type="submit" disabled={pending}>
-        {pending ? 'Signing in…' : 'Continue'}
-      </button>
-      {error ? <p role="alert">{error}</p> : null}
-    </form>
+    <div
+      className={css({
+        alignItems: 'center',
+        bg: 'brand.primary.2',
+        display: 'flex',
+        justifyContent: 'center',
+        minH: '100dvh',
+      })}
+    >
+      <form
+        onSubmit={onSubmit}
+        className={css({
+          bg: 'brand.primary.1',
+          borderColor: 'brand.primary.5',
+          borderRadius: 'xl',
+          borderWidth: '1px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '3',
+          p: '8',
+          w: '22rem',
+        })}
+      >
+        <h1 className={css({ color: 'brand.primary.12', fontSize: 'xl', fontWeight: '600' })}>
+          Sign in
+        </h1>
+
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Work email"
+          required
+          className={inputStyles}
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+          className={inputStyles}
+        />
+
+        <Button type="submit" size="md" disabled={pending}>
+          {pending ? 'Signing in…' : 'Continue'}
+        </Button>
+
+        {error ? (
+          <p role="alert" className={css({ color: 'brand.error.11', fontSize: 'sm' })}>
+            {error}
+          </p>
+        ) : null}
+      </form>
+    </div>
   );
 }
