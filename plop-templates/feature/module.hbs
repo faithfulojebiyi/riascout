@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 // plop:imports
 {{#if (isApi app)}}
-import { {{pascalCase feature}}Controller } from './{{feature}}.controller';
+import { {{pascalCase feature}}Controller } from './{{feature}}.controller.js';
 {{/if}}
 
 @Module({

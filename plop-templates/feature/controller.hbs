@@ -3,8 +3,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
-import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from './dto/{{feature}}.dto';
-import { {{pascalCase name}}{{pascalCase type}} } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}';
+import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from './dto/{{feature}}.dto.js';
+import { {{pascalCase name}}{{pascalCase type}} } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}.js';
 
 @ApiTags('{{titleCase feature}}')
 @Controller('{{feature}}')

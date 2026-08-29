@@ -1,10 +1,10 @@
 import { {{#if (isQuery type)}}IQueryHandler, Query, QueryHandler{{else}}Command, CommandHandler, ICommandHandler{{/if}} } from '@nestjs/cqrs';
 {{#if (isApi app)}}
-import { AlsService } from '@system/als/als.service';
+import { AlsService } from '@system/als/als.service.js';
 {{/if}}
-import { AppPrismaService } from '@system/database/database.service';
+import { AppPrismaService } from '@system/database/database.service.js';
 
-import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from '../dto/{{feature}}.dto';
+import { {{pascalCase name}}Dto, {{pascalCase name}}ResponseDto } from '../dto/{{feature}}.dto.js';
 
 export class {{pascalCase name}}{{pascalCase type}} extends {{#if (isQuery type)}}Query{{else}}Command{{/if}}<{{pascalCase name}}ResponseDto> {
   constructor(public readonly dto: {{pascalCase name}}Dto) {

@@ -72,7 +72,7 @@ export default function plopfile(plop) {
         path: 'apps/{{app}}/src/modules/{{feature}}/{{feature}}.module.ts',
         pattern: /(\/\/ plop:imports)/,
         template:
-          "import { {{pascalCase name}}{{pascalCase type}}Handler } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}'",
+          "import { {{pascalCase name}}{{pascalCase type}}Handler } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}.js'",
       },
       {
         type: 'append',
@@ -108,7 +108,7 @@ export default function plopfile(plop) {
         path: 'apps/{{app}}/src/modules/{{feature}}/{{feature}}.module.ts',
         pattern: /(\/\/ plop:imports)/,
         template:
-          "import { {{pascalCase name}}{{pascalCase type}}Handler } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}'",
+          "import { {{pascalCase name}}{{pascalCase type}}Handler } from './{{#if (isQuery type)}}queries{{else}}commands{{/if}}/{{dashCase name}}.js'",
       },
       {
         type: 'append',
