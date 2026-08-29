@@ -26,6 +26,8 @@ export type SeedAttribute = {
   /** a column in the default grid; the rest are switched on from grid settings */
   visible: boolean;
   pinned: boolean;
+  /** the record's display name — one per entity */
+  isPrimary: boolean;
   choices?: string[];
 };
 
@@ -96,6 +98,7 @@ const referenceAttributes = (
         group: meta?.group ?? FALLBACK_GROUP[source],
         visible: meta?.visible ?? false,
         pinned: meta?.pinned ?? false,
+        isPrimary: meta?.primary ?? false,
       };
     });
 
@@ -115,12 +118,16 @@ const RECRUITING_STAGES = [
   'Passed',
 ];
 
-type WorkflowSpec = Omit<SeedAttribute, 'referenceColumn' | 'isEditable' | 'isMultiValue'> &
-  Partial<Pick<SeedAttribute, 'isMultiValue'>>;
+type WorkflowSpec = Omit<
+  SeedAttribute,
+  'referenceColumn' | 'isEditable' | 'isMultiValue' | 'isPrimary'
+> &
+  Partial<Pick<SeedAttribute, 'isMultiValue' | 'isPrimary'>>;
 
 /** recruiter-authored: stored as cells, editable, never projected */
 const workflow = (spec: WorkflowSpec): SeedAttribute => ({
   isMultiValue: false,
+  isPrimary: false,
   ...spec,
   referenceColumn: null,
   isEditable: true,
@@ -146,7 +153,7 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     label: 'Personal Email',
     type: 'email',
     group: 'Contact',
-    visible: true,
+    visible: false,
     pinned: false,
   }),
   workflow({
@@ -154,7 +161,7 @@ const ADVISOR_CONTACT: SeedAttribute[] = [
     label: 'Mobile Phone',
     type: 'phone',
     group: 'Contact',
-    visible: true,
+    visible: false,
     pinned: false,
   }),
   workflow({
@@ -206,7 +213,7 @@ const ADVISOR_PIPELINE: SeedAttribute[] = [
     label: 'Priority',
     type: 'rating',
     group: 'Pipeline',
-    visible: true,
+    visible: false,
     pinned: false,
   }),
   workflow({
@@ -214,7 +221,7 @@ const ADVISOR_PIPELINE: SeedAttribute[] = [
     label: 'Last Contacted',
     type: 'date',
     group: 'Pipeline',
-    visible: true,
+    visible: false,
     pinned: false,
   }),
   workflow({

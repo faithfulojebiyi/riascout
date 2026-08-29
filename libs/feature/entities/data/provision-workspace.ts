@@ -116,6 +116,8 @@ export const provisionWorkspace = async (
           referenceColumn: attribute.referenceColumn,
           isEditable: attribute.isEditable,
           isSystem: true,
+          isPrimary: attribute.isPrimary,
+          group: attribute.group,
           position: rank.toString(),
         },
         select: { id: true },

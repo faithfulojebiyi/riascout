@@ -1412,6 +1412,10 @@ model EntityAttribute {
   /// per-type config blob, validated on write by the attribute-type registry
   config Json @default("{}") @db.JsonB
 
+  /// panel grouping on the record page, e.g. "Pipeline" | "Current firm".
+  /// Presentation only — the grid's column set lives in entity_view_field.
+  group String?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 

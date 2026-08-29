@@ -130,7 +130,8 @@ describe('default entities', () => {
     for (const entity of DEFAULT_ENTITIES) {
       const visible = entity.attributes.filter((a) => a.visible).length;
 
-      expect(visible, `${entity.slug} default columns`).toBeLessThan(30);
+      // a usable opening grid, not a wall of columns
+      expect(visible, `${entity.slug} default columns`).toBeLessThanOrEqual(12);
       expect(visible).toBeGreaterThan(5);
     }
   });
@@ -166,5 +167,23 @@ describe('default entities', () => {
     it('surfaces do-not-contact on the grid by default', () => {
       expect(contact.find((a) => a.label === 'Do Not Contact')?.visible).toBe(true);
     });
+  });
+
+  it('marks exactly one primary attribute per entity', () => {
+    for (const entity of DEFAULT_ENTITIES) {
+      const primary = entity.attributes.filter((a) => a.isPrimary);
+
+      expect(primary, `${entity.slug} primary`).toHaveLength(1);
+      expect(primary[0]?.visible).toBe(true);
+    }
+  });
+
+  /** the paste-into-IAPD identifier; hiding it on one entity and not the other reads as a bug */
+  it('shows the CRD on both entities', () => {
+    for (const entity of DEFAULT_ENTITIES) {
+      const crd = entity.attributes.find((a) => a.label.endsWith(' CRD') && a.visible);
+
+      expect(crd, `${entity.slug} has no visible CRD`).toBeDefined();
+    }
   });
 });
