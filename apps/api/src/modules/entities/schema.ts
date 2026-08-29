@@ -9,12 +9,48 @@ import { filterTreeSchema, sortAstSchema } from '@feature/entities/filter-sort/a
 export const GetEntityRecordsSchema = z
   .object({
     entityId: z.uuid(),
+    /** omit to use the entity's default view */
+    viewId: z.uuid().nullable().default(null),
+    /** narrow to the columns actually on screen; omit for every visible one */
+    visibleFieldIds: z.array(z.uuid()).max(200).default([]),
+    /** overrides the view's saved filter; omit to use the view's */
     filter: filterTreeSchema.nullable().default(null),
+    /** overrides the view's saved sort when non-empty */
     sort: sortAstSchema.default([]),
     limit: z.number().int().min(1).max(200).default(50),
     offset: z.number().int().min(0).default(0),
   })
   .meta({ id: 'GetEntityRecords' });
+
+/** what the grid needs to render its columns */
+const ViewFieldSchema = z
+  .object({
+    fieldId: z.uuid(),
+    attributeId: z.uuid(),
+    label: z.string(),
+    icon: z.string().nullable(),
+    type: z.string(),
+    group: z.string().nullable(),
+    position: z.string(),
+    isVisible: z.boolean(),
+    isPinned: z.boolean(),
+    width: z.number().int().nullable(),
+    /** excluded from the page query; the cell renderer fetches it on demand */
+    lazy: z.boolean(),
+    /** projected from market; the client renders it read-only */
+    isEditable: z.boolean(),
+  })
+  .meta({ id: 'EntityViewField' });
+
+const ViewSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    isDefault: z.boolean(),
+    /** every attribute has a field row, so hiding one is a flag, not a delete */
+    fields: z.array(ViewFieldSchema),
+  })
+  .meta({ id: 'EntityViewSummary' });
 
 const CellSchema = z
   .object({
@@ -45,6 +81,7 @@ const RecordSchema = z
 
 export const GetEntityRecordsResponseSchema = z
   .object({
+    view: ViewSchema.nullable(),
     records: z.array(RecordSchema),
     /** total matching the filter, not the page — the grid needs the denominator */
     total: z.number().int(),

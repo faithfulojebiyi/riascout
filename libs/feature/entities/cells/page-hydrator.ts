@@ -24,10 +24,12 @@ export const readCellsForRecords = async (
   db: HydrateExecutor,
   recordIds: string[],
   workspaceId: string,
+  /** restrict to these attributes; omit for every cell on the record */
+  attributeIds?: string[],
 ): Promise<Map<string, CellValue[]>> => {
   const out = new Map<string, CellValue[]>();
 
-  if (recordIds.length === 0) {
+  if (recordIds.length === 0 || attributeIds?.length === 0) {
     return out;
   }
 
@@ -50,8 +52,9 @@ export const readCellsForRecords = async (
        FROM app.entity_record_value v
        JOIN app.entity_attribute a ON a.id = v.attribute_id
       WHERE v.record_id = ANY($1::text[])
-        AND v.workspace_id = $2`,
-    [recordIds, workspaceId],
+        AND v.workspace_id = $2
+        AND ($3::text[] IS NULL OR v.attribute_id = ANY($3::text[]))`,
+    [recordIds, workspaceId, attributeIds ?? null],
   );
 
   for (const row of rows) {
@@ -98,10 +101,11 @@ export const readEdgesForRecords = async (
   db: HydrateExecutor,
   recordIds: string[],
   workspaceId: string,
+  attributeIds?: string[],
 ): Promise<Map<string, EdgeValue[]>> => {
   const out = new Map<string, EdgeValue[]>();
 
-  if (recordIds.length === 0) {
+  if (recordIds.length === 0 || attributeIds?.length === 0) {
     return out;
   }
 
@@ -116,6 +120,7 @@ export const readEdgesForRecords = async (
        FROM app.entity_record_relationship rel
       WHERE rel.source_record_id = ANY($1::text[])
         AND rel.workspace_id = $2
+        AND ($3::text[] IS NULL OR rel.attribute_id = ANY($3::text[]))
       UNION ALL
      SELECT rel.target_record_id AS record_id,
             paired.id AS attribute_id,
@@ -124,8 +129,9 @@ export const readEdgesForRecords = async (
        JOIN app.entity_attribute paired
          ON paired.other_relationship_side_attribute_id = rel.attribute_id
       WHERE rel.target_record_id = ANY($1::text[])
-        AND rel.workspace_id = $2`,
-    [recordIds, workspaceId],
+        AND rel.workspace_id = $2
+        AND ($3::text[] IS NULL OR paired.id = ANY($3::text[]))`,
+    [recordIds, workspaceId, attributeIds ?? null],
   );
 
   for (const row of rows) {

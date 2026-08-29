@@ -18,11 +18,13 @@ describe('POST /entities/get-entity-records', () => {
   let entityId: string;
   let statusAttr: string;
   let tenureAttr: string;
+  let hiddenAttr: string;
+  let viewId: string;
 
     /** seeded as records by beforeAll — the read tests assert on exactly these */
   const CRDS = [910_001, 910_002, 910_003];
   /** created by the write tests; listed only so cleanup can remove them */
-  const WRITE_CRDS = [910_004, 910_006, 910_007, 910_008];
+  const WRITE_CRDS = [910_004, 910_006, 910_007, 910_008, 910_009];
 
   const post = (path: string, body: unknown, withAuth = true): Promise<Response> =>
     fetch(`${base}${path}`, {
@@ -89,6 +91,35 @@ describe('POST /entities/get-entity-records', () => {
 
     statusAttr = await mkAttr('Status', 'status', 'text', null);
     tenureAttr = await mkAttr('Tenure', 'tenure', 'number', 'advisor.tenure_months');
+    hiddenAttr = await mkAttr('Hidden Note', 'hidden-note', 'text', null);
+
+    const view = await db.query<{ id: string }>(
+      `insert into app.entity_view (id, entity_id, workspace_id, name, type, is_default)
+       values (gen_random_uuid()::text, $1, $2, 'All Advisors', 'table', true) returning id`,
+      [entityId, workspaceId],
+    );
+
+    viewId = view.rows[0]?.id as string;
+
+    for (const [i, [attrId, vis]] of (
+      [
+        [statusAttr, true],
+        [tenureAttr, true],
+        [hiddenAttr, false],
+      ] as [string, boolean][]
+    ).entries()) {
+      const f = await db.query<{ id: string }>(
+        `insert into app.entity_view_field (id, view_id, workspace_id, position, is_visible)
+         values (gen_random_uuid()::text, $1, $2, $3, $4) returning id`,
+        [viewId, workspaceId, `f${i}`, vis],
+      );
+
+      await db.query(
+        `insert into app.entity_view_field_path (field_id, position, attribute_id, workspace_id)
+         values ($1, 0, $2, $3)`,
+        [f.rows[0]?.id, attrId, workspaceId],
+      );
+    }
 
     for (const [i, crd] of CRDS.entries()) {
       await db.query(`insert into market.advisor (advisor_crd) values ($1) on conflict do nothing`, [
@@ -331,6 +362,85 @@ describe('POST /entities/get-entity-records', () => {
       const res = await post('/entities/update-record-values', {
         recordId: '00000000-0000-4000-8000-000000000000',
         values: [{ attributeId: statusAttr, value: 'X' }],
+      });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('views', () => {
+    it('returns the default view and its fields when none is asked for', async () => {
+      const res = await post('/entities/get-entity-records', { entityId });
+      const body = (await res.json()) as {
+        view: { id: string; isDefault: boolean; fields: { label: string; isVisible: boolean }[] };
+      };
+
+      expect(body.view.id).toBe(viewId);
+      expect(body.view.isDefault).toBe(true);
+      // every attribute has a field row, hidden or not
+      expect(body.view.fields).toHaveLength(3);
+      expect(body.view.fields.filter((f) => f.isVisible)).toHaveLength(2);
+    });
+
+    it('carries label, icon and type so the grid can render a column', async () => {
+      const res = await post('/entities/get-entity-records', { entityId });
+      const body = (await res.json()) as {
+        view: { fields: { label: string; type: string; isEditable: boolean }[] };
+      };
+      const tenure = body.view.fields.find((f) => f.label === 'Tenure');
+
+      expect(tenure?.type).toBe('number');
+      // projected from market, so the client renders it read-only
+      expect(tenure?.isEditable).toBe(false);
+    });
+
+    it('ships no cells for a hidden column', async () => {
+      const created = await post('/entities/create-entity-record', {
+        entityId,
+        sourceKind: 'advisor',
+        sourceCrd: '910009',
+      });
+      const { id } = (await created.json()) as { id: string };
+
+      await post('/entities/update-record-values', {
+        recordId: id,
+        values: [
+          { attributeId: statusAttr, value: 'Visible' },
+          { attributeId: hiddenAttr, value: 'Should not ship' },
+        ],
+      });
+
+      const res = await post('/entities/get-entity-records', { entityId });
+      const body = (await res.json()) as {
+        records: { sourceCrd: string; cells: { attributeId: string }[] }[];
+      };
+      const row = body.records.find((r) => r.sourceCrd === '910009');
+
+      expect(row?.cells.map((c) => c.attributeId)).toEqual([statusAttr]);
+
+      await db.query('delete from app.entity_record where id = $1', [id]);
+    });
+
+    it('narrows to visibleFieldIds when the client sends them', async () => {
+      const first = await post('/entities/get-entity-records', { entityId });
+      const view = ((await first.json()) as { view: { fields: { fieldId: string; label: string }[] } })
+        .view;
+      const tenureField = view.fields.find((f) => f.label === 'Tenure')?.fieldId;
+
+      const res = await post('/entities/get-entity-records', {
+        entityId,
+        visibleFieldIds: [tenureField],
+      });
+      const body = (await res.json()) as { records: { cells: unknown[] }[] };
+
+      // tenure is projected, so narrowing to it means no eav cells at all
+      expect(body.records.every((r) => r.cells.length === 0)).toBe(true);
+    });
+
+    it('404s for a view id from another entity', async () => {
+      const res = await post('/entities/get-entity-records', {
+        entityId,
+        viewId: '00000000-0000-4000-8000-000000000000',
       });
 
       expect(res.status).toBe(404);

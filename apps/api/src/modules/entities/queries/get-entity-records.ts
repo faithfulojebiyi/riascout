@@ -10,6 +10,7 @@ import type { AttributeMeta } from '@feature/entities/relationship-edges.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
+import type { FilterTree, SortAst } from '@feature/entities/filter-sort/ast.js';
 import type { GetEntityRecordsDto, GetEntityRecordsResponseDto } from '../dto/entities.dto.js';
 
 export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
@@ -45,7 +46,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
     }
 
     const attributes = await this.appPrismaService.entityAttribute.findMany({
-      where: { entityId: entity.id, workspaceId },
+      where: { entityId: entity.id, workspaceId, isArchived: false },
       select: {
         id: true,
         entityId: true,
@@ -55,6 +56,10 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
         isCanonicalSide: true,
         otherRelationshipSideAttributeId: true,
         referenceColumn: true,
+        label: true,
+        icon: true,
+        group: true,
+        isEditable: true,
       },
     });
 
@@ -62,20 +67,25 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       attributes.map((a) => [a.id, a satisfies AttributeMeta]),
     );
 
+    const view = await this.loadView(dto, entity.id, workspaceId, attributes);
+
+    /**
+     * A request filter replaces the view's rather than merging: intersecting a
+     * saved filter with an ad-hoc one gives results neither asked for, and the
+     * user cannot see why a row is missing.
+     */
+    const filter = (dto.filter ?? (view?.filterTree as FilterTree | null)) ?? null;
+    const sort = dto.sort.length > 0 ? dto.sort : ((view?.sort as SortAst | null) ?? []);
+
     const shared = {
       workspaceId,
       entityId: entity.id,
       sourceKind: entity.sourceKind,
       attributesById,
-      filter: dto.filter,
+      filter,
     };
 
-    const page = buildGridPageQuery({
-      ...shared,
-      sort: dto.sort,
-      limit: dto.limit,
-      offset: dto.offset,
-    });
+    const page = buildGridPageQuery({ ...shared, sort, limit: dto.limit, offset: dto.offset });
     const count = buildGridCountQuery(shared);
 
     const [rows, totals] = await Promise.all([
@@ -85,12 +95,24 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
 
     const recordIds = rows.map((row) => row.id);
 
+    /**
+     * Only columns the grid will paint are fetched. lazy fields are excluded
+     * too — the cell renderer asks for those on demand rather than making
+     * every page carry them.
+     */
+    const requested = new Set(dto.visibleFieldIds);
+    const fetchAttributeIds = view?.summary.fields
+      .filter((f) => f.isVisible && !f.lazy)
+      .filter((f) => requested.size === 0 || requested.has(f.fieldId))
+      .map((f) => f.attributeId);
+
     const [cells, edges] = await Promise.all([
-      readCellsForRecords(this.executor, recordIds, workspaceId),
-      readEdgesForRecords(this.executor, recordIds, workspaceId),
+      readCellsForRecords(this.executor, recordIds, workspaceId, fetchAttributeIds),
+      readEdgesForRecords(this.executor, recordIds, workspaceId, fetchAttributeIds),
     ]);
 
     return {
+      view: view?.summary ?? null,
       records: rows.map((row) => ({
         id: row.id,
         // bigint does not survive JSON, and a CRD is an identifier not a number
@@ -101,6 +123,82 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       total: Number(totals[0]?.total ?? 0),
       limit: dto.limit,
       offset: dto.offset,
+    };
+  }
+
+  /** the requested view, else the entity's default; null when it has none */
+  private async loadView(
+    dto: GetEntityRecordsDto,
+    entityId: string,
+    workspaceId: string,
+    attributes: { id: string; label: string; icon: string | null; type: string; group: string | null; isEditable: boolean }[],
+  ) {
+    const view = await this.appPrismaService.entityView.findFirst({
+      where: dto.viewId
+        ? { id: dto.viewId, entityId, workspaceId }
+        : { entityId, workspaceId, isDefault: true },
+      select: {
+        id: true,
+        name: true,
+        isDefault: true,
+        filterTree: true,
+        sort: true,
+        fields: {
+          select: {
+            id: true,
+            position: true,
+            isVisible: true,
+            isPinned: true,
+            width: true,
+            lazy: true,
+            paths: { select: { attributeId: true }, orderBy: { position: 'asc' }, take: 1 },
+          },
+          orderBy: { position: 'asc' },
+        },
+      },
+    });
+
+    if (!view) {
+      if (dto.viewId) {
+        throw new NotFoundException('View not found');
+      }
+
+      return null;
+    }
+
+    const attributeById = new Map(attributes.map((a) => [a.id, a]));
+
+    const fields = view.fields.flatMap((field) => {
+      const attributeId = field.paths[0]?.attributeId;
+      const attribute = attributeId ? attributeById.get(attributeId) : undefined;
+
+      // an archived attribute leaves its field row orphaned; drop it silently
+      if (!attributeId || !attribute) {
+        return [];
+      }
+
+      return [
+        {
+          fieldId: field.id,
+          attributeId,
+          label: attribute.label,
+          icon: attribute.icon,
+          type: attribute.type,
+          group: attribute.group,
+          position: field.position,
+          isVisible: field.isVisible,
+          isPinned: field.isPinned,
+          width: field.width,
+          lazy: field.lazy,
+          isEditable: attribute.isEditable,
+        },
+      ];
+    });
+
+    return {
+      filterTree: view.filterTree,
+      sort: view.sort,
+      summary: { id: view.id, name: view.name, isDefault: view.isDefault, fields },
     };
   }
 
