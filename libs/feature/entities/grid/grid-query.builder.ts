@@ -1,5 +1,6 @@
 import type { SourceKind } from '@orm/app';
 
+import { resolveReferenceColumn } from '../attribute-types/reference-columns.js';
 import type { FilterTree, SortAst } from '../filter-sort/ast.js';
 import { compileFilterTree } from '../filter-sort/filter-compiler.js';
 import { compileSort } from '../filter-sort/sort-compiler.js';
@@ -27,7 +28,12 @@ export type GridQueryInput = {
   sort: SortAst;
   limit: number;
   offset: number;
+  /** reference attributes to project; omit for none */
+  referenceAttributeIds?: string[];
 };
+
+/** value of a projected market column, keyed by the attribute that names it */
+export const REFERENCE_PREFIX = 'ref_';
 
 export type BuiltQuery = { sql: string; params: unknown[] };
 
@@ -90,9 +96,26 @@ export const buildGridPageQuery = (input: GridQueryInput): BuiltQuery => {
   // id tiebreak keeps paging stable when the sort column has duplicates
   const orderBy = [...sort.orderParts, `${RECORD_ALIAS}.id ASC`].join(', ');
 
+  /**
+   * Reference attributes have no cell to hydrate — their value lives on the
+   * projection. Selecting them here is what makes them render at all; the join
+   * alone only enables filtering and sorting.
+   */
+  const referenceSelects = (input.referenceAttributeIds ?? [])
+    .flatMap((attributeId) => {
+      const attribute = input.attributesById.get(attributeId);
+      const ref = attribute?.referenceColumn
+        ? resolveReferenceColumn(attribute.referenceColumn)
+        : null;
+
+      return ref && referenceAlias
+        ? [`${referenceAlias}.${ref.column} AS "${REFERENCE_PREFIX}${attributeId}"`]
+        : [];
+    });
+
   const sql = `SELECT ${RECORD_ALIAS}.id,
        ${RECORD_ALIAS}.source_crd,
-       ${sort.sortValueExpr} AS sort_value
+       ${sort.sortValueExpr} AS sort_value${referenceSelects.length ? ',\n       ' + referenceSelects.join(',\n       ') : ''}
   FROM app.entity_record ${RECORD_ALIAS}
   ${joins.join('\n  ')}
  WHERE ${where.join('\n   AND ')}

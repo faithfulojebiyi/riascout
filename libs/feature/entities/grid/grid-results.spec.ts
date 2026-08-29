@@ -322,4 +322,66 @@ describe('grid results', () => {
 
     expect(rows).toEqual([]);
   });
+
+  describe('projected columns', () => {
+    /**
+     * The join alone only enables filtering and sorting. Until these values are
+     * selected, every reference column renders blank — which reads as a broken
+     * renderer rather than a missing SELECT.
+     */
+    it('returns the market value for a reference attribute', async () => {
+      const { sql, params } = buildGridPageQuery({
+        workspaceId: ws,
+        entityId: entity,
+        sourceKind: 'advisor',
+        attributesById,
+        filter: null,
+        sort: [],
+        limit: 50,
+        offset: 0,
+        referenceAttributeIds: [tenureAttr, aumAttr],
+      });
+
+      const { rows } = await db.query<Record<string, unknown>>(sql, params);
+
+      expect(sql).toContain(`ref_${tenureAttr}`);
+
+      const byCrd = new Map(rows.map((r) => [String(r.source_crd), r]));
+
+      expect(Number(byCrd.get('900001')?.[`ref_${tenureAttr}`])).toBe(120);
+      expect(Number(byCrd.get('900003')?.[`ref_${aumAttr}`])).toBe(90000000);
+    });
+
+    it('selects nothing extra when no reference attributes are asked for', async () => {
+      const { sql } = buildGridPageQuery({
+        workspaceId: ws,
+        entityId: entity,
+        sourceKind: 'advisor',
+        attributesById,
+        filter: null,
+        sort: [],
+        limit: 10,
+        offset: 0,
+      });
+
+      expect(sql).not.toContain('ref_');
+    });
+
+    it('ignores an eav attribute asked for as a reference', async () => {
+      const { sql } = buildGridPageQuery({
+        workspaceId: ws,
+        entityId: entity,
+        sourceKind: 'advisor',
+        attributesById,
+        filter: null,
+        sort: [],
+        limit: 10,
+        offset: 0,
+        referenceAttributeIds: [statusAttr],
+      });
+
+      // statusAttr has no referenceColumn, so there is nothing on the projection
+      expect(sql).not.toContain(`ref_${statusAttr}`);
+    });
+  });
 });

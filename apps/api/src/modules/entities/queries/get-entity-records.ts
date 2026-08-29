@@ -5,6 +5,7 @@ import { readCellsForRecords, readEdgesForRecords } from '@feature/entities/cell
 import {
   buildGridCountQuery,
   buildGridPageQuery,
+  REFERENCE_PREFIX,
 } from '@feature/entities/grid/grid-query.builder.js';
 import type { AttributeMeta } from '@feature/entities/relationship-edges.js';
 import { AlsService } from '@system/als/als.service.js';
@@ -19,7 +20,24 @@ export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
   }
 }
 
-type PageRow = { id: string; source_crd: string | null };
+type PageRow = { id: string; source_crd: string | null } & Record<string, unknown>;
+
+/**
+ * CRDs are bigint in postgres and JSON has no bigint. They are identifiers
+ * rather than quantities, so they cross the boundary as strings — a number
+ * would silently lose precision above 2^53 and invite arithmetic besides.
+ */
+const toJsonValue = (value: unknown): unknown => {
+  if (typeof value === 'bigint') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(toJsonValue);
+  }
+
+  return value;
+};
 
 @QueryHandler(GetEntityRecordsQuery)
 export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityRecordsQuery> {
@@ -85,7 +103,22 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       filter,
     };
 
-    const page = buildGridPageQuery({ ...shared, sort, limit: dto.limit, offset: dto.offset });
+    const requestedFields = new Set(dto.visibleFieldIds);
+
+    /** projected columns are selected on the page query, not hydrated as cells */
+    const referenceAttributeIds = (view?.summary.fields ?? [])
+      .filter((f) => f.isVisible && !f.lazy)
+      .filter((f) => requestedFields.size === 0 || requestedFields.has(f.fieldId))
+      .map((f) => f.attributeId)
+      .filter((id) => attributesById.get(id)?.referenceColumn !== null);
+
+    const page = buildGridPageQuery({
+      ...shared,
+      sort,
+      limit: dto.limit,
+      offset: dto.offset,
+      referenceAttributeIds,
+    });
     const count = buildGridCountQuery(shared);
 
     const [rows, totals] = await Promise.all([
@@ -100,10 +133,9 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
      * too — the cell renderer asks for those on demand rather than making
      * every page carry them.
      */
-    const requested = new Set(dto.visibleFieldIds);
     const fetchAttributeIds = view?.summary.fields
       .filter((f) => f.isVisible && !f.lazy)
-      .filter((f) => requested.size === 0 || requested.has(f.fieldId))
+      .filter((f) => requestedFields.size === 0 || requestedFields.has(f.fieldId))
       .map((f) => f.attributeId);
 
     const [cells, edges] = await Promise.all([
@@ -117,7 +149,17 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
         id: row.id,
         // bigint does not survive JSON, and a CRD is an identifier not a number
         sourceCrd: row.source_crd === null ? null : String(row.source_crd),
-        cells: cells.get(row.id) ?? [],
+        cells: [
+          ...(cells.get(row.id) ?? []),
+          // a projected value is read-only, so it carries no version to edit against
+          ...referenceAttributeIds.flatMap((attributeId) => {
+            const value = row[`${REFERENCE_PREFIX}${attributeId}`];
+
+            return value === undefined || value === null
+              ? []
+              : [{ attributeId, value: toJsonValue(value), source: 'market', version: 0 }];
+          }),
+        ],
         edges: edges.get(row.id) ?? [],
       })),
       total: Number(totals[0]?.total ?? 0),
