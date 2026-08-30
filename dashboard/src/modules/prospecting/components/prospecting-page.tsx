@@ -21,25 +21,35 @@ import { TopBar, type ProspectTab } from './results/top-bar';
  * Keyed by allowlist key, not label: a label is display text a user may rename,
  * and matching on it silently yields no columns.
  */
-const TABLE_COLUMNS = [
-  'advisor.full_name',
-  'advisor.current_firm_name',
-  'advisor.state',
-  'advisor.tenure_years',
-];
+const TABLE_COLUMNS: Record<SourceKind, string[]> = {
+  advisor: [
+    'advisor.full_name',
+    'advisor.current_firm_name',
+    'advisor.state',
+    'advisor.tenure_years',
+  ],
+  firm: ['firm.firm_name', 'firm.state', 'firm.aum_band', 'firm.advisor_count'],
+};
 
-export const ProspectingPage = () => {
+export type SourceKind = 'advisor' | 'firm';
+
+export type ProspectingPageProps = { sourceKind?: SourceKind };
+
+/** the same page for both; only the source kind and default columns differ */
+export const ProspectingPage = ({
+  sourceKind = 'advisor',
+}: ProspectingPageProps) => {
   const [selection, setSelection] = useState<FacetSelection>({});
   const [tab, setTab] = useState<ProspectTab>('search');
   const [openRow, setOpenRow] = useState<ProspectRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const facetsQuery = useFetchFacets('advisor');
+  const facetsQuery = useFetchFacets(sourceKind);
   const entitiesQuery = useFetchEntities();
 
   /** the list a save lands in belongs to the advisor entity, not the facets */
   const entityId =
-    entitiesQuery.data?.entities.find((e) => e.sourceKind === 'advisor')?.id ??
+    entitiesQuery.data?.entities.find((e) => e.sourceKind === sourceKind)?.id ??
     null;
   const facets = useMemo(
     () => facetsQuery.data?.facets ?? [],
@@ -48,12 +58,12 @@ export const ProspectingPage = () => {
 
   const columns = useMemo(
     () =>
-      TABLE_COLUMNS.flatMap((allowKey) => {
+      TABLE_COLUMNS[sourceKind].flatMap((allowKey) => {
         const match = facets.find((facet) => facet.allowKey === allowKey);
 
         return match ? [match] : [];
       }),
-    [facets],
+    [facets, sourceKind],
   );
 
   const filter = useMemo(() => buildFilterTree(selection), [selection]);
@@ -65,7 +75,7 @@ export const ProspectingPage = () => {
    */
   const search = useSearchProspects(
     {
-      sourceKind: 'advisor',
+      sourceKind,
       filter,
       sort: [],
       selectAttributeIds: facets.map((facet) => facet.attributeId),
@@ -121,6 +131,7 @@ export const ProspectingPage = () => {
             <SaveToList entityId={entityId} sourceCrds={[...selected]} />
           }
           isFetching={search.isFetching}
+          noun={sourceKind === 'firm' ? 'firms' : 'advisors'}
           onTabChange={setTab}
           tab={tab}
           total={search.data?.total ?? null}

@@ -13,6 +13,8 @@ export type TopBarProps = {
   isFetching: boolean;
   /** save-to-list and any future bulk action */
   actions?: React.ReactNode;
+  /** what the count is counting; "advisors" and "firms" read differently */
+  noun: string;
 };
 
 export const TopBar = ({
@@ -21,6 +23,7 @@ export const TopBar = ({
   total,
   isFetching,
   actions,
+  noun,
 }: TopBarProps) => (
   <Flex
     align="center"
@@ -41,7 +44,7 @@ export const TopBar = ({
     </Tabs>
 
     <Span fontSize="sm" fontWeight="medium">
-      {total === null ? '—' : `${total.toLocaleString()} advisors`}
+      {total === null ? '—' : `${total.toLocaleString()} ${noun}`}
     </Span>
     {isFetching ? (
       <Span color="text.placeholder" fontSize="sm">
