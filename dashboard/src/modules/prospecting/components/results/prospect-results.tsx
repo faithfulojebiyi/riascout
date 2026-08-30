@@ -1,5 +1,7 @@
 import { Box } from '@riascout-ui/styled-system/jsx';
 
+import { Checkbox } from '../../../../ui/primitives/checkbox/checkbox';
+
 import {
   Table,
   TableBody,
@@ -16,6 +18,9 @@ export type ProspectResultsProps = {
   rows: ProspectRow[];
   columns: FacetDefinition[];
   onRowClick: (row: ProspectRow) => void;
+  selected: Set<string>;
+  onToggle: (sourceCrd: string) => void;
+  onToggleAll: () => void;
 };
 
 /**
@@ -26,11 +31,20 @@ export const ProspectResults = ({
   rows,
   columns,
   onRowClick,
+  selected,
+  onToggle,
+  onToggleAll,
 }: ProspectResultsProps) => (
   <Box flex="1" overflow="auto">
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>
+            <Checkbox
+              checked={rows.length > 0 && selected.size === rows.length}
+              onCheckedChange={onToggleAll}
+            />
+          </TableHead>
           <TableHead>In CRM</TableHead>
           {columns.map((column) => (
             <TableHead key={column.attributeId}>{column.label}</TableHead>
@@ -44,6 +58,12 @@ export const ProspectResults = ({
             onClick={() => onRowClick(row)}
             style={{ cursor: 'pointer' }}
           >
+            <TableCell onClick={(event) => event.stopPropagation()}>
+              <Checkbox
+                checked={selected.has(row.sourceCrd)}
+                onCheckedChange={() => onToggle(row.sourceCrd)}
+              />
+            </TableCell>
             <TableCell>
               {row.recordId ? (
                 <Span color="text.placeholder" fontSize="xs">

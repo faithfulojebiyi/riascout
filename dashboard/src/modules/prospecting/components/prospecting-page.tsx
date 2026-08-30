@@ -9,6 +9,8 @@ import type {
   FacetValue,
   ProspectRow,
 } from '../types/prospecting';
+import { useFetchEntities } from '../../entities/queries/use-fetch-entities';
+import { SaveToList } from '../../lists/components/save-to-list';
 import { FacetRail } from './facet-rail/facet-rail';
 import { ProspectDetailSheet } from './results/prospect-detail-sheet';
 import { ProspectResults } from './results/prospect-results';
@@ -30,8 +32,15 @@ export const ProspectingPage = () => {
   const [selection, setSelection] = useState<FacetSelection>({});
   const [tab, setTab] = useState<ProspectTab>('search');
   const [openRow, setOpenRow] = useState<ProspectRow | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const facetsQuery = useFetchFacets('advisor');
+  const entitiesQuery = useFetchEntities();
+
+  /** the list a save lands in belongs to the advisor entity, not the facets */
+  const entityId =
+    entitiesQuery.data?.entities.find((e) => e.sourceKind === 'advisor')?.id ??
+    null;
   const facets = useMemo(
     () => facetsQuery.data?.facets ?? [],
     [facetsQuery.data],
@@ -77,6 +86,24 @@ export const ProspectingPage = () => {
     });
 
   const rows = search.data?.rows ?? [];
+
+  const toggle = (sourceCrd: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+
+      if (next.has(sourceCrd)) next.delete(sourceCrd);
+      else next.add(sourceCrd);
+
+      return next;
+    });
+
+  // all means all loaded, not all matching — the page is what was fetched
+  const toggleAll = () =>
+    setSelected((current) =>
+      current.size === rows.length
+        ? new Set()
+        : new Set(rows.map((row) => row.sourceCrd)),
+    );
   const hasFilters = Object.keys(selection).length > 0;
 
   return (
@@ -90,6 +117,9 @@ export const ProspectingPage = () => {
       />
       <VStack alignItems="stretch" flex="1" gap="0" minW="0">
         <TopBar
+          actions={
+            <SaveToList entityId={entityId} sourceCrds={[...selected]} />
+          }
           isFetching={search.isFetching}
           onTabChange={setTab}
           tab={tab}
@@ -101,7 +131,10 @@ export const ProspectingPage = () => {
           <ProspectResults
             columns={columns}
             onRowClick={setOpenRow}
+            onToggle={toggle}
+            onToggleAll={toggleAll}
             rows={rows}
+            selected={selected}
           />
         )}
       </VStack>

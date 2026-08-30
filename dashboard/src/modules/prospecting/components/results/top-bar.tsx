@@ -1,3 +1,4 @@
+import type React from 'react';
 import { Flex } from '@riascout-ui/styled-system/jsx';
 
 import { Tabs, TabsList, TabTrigger } from '../../../../ui/primitives/tabs';
@@ -10,6 +11,8 @@ export type TopBarProps = {
   onTabChange: (tab: ProspectTab) => void;
   total: number | null;
   isFetching: boolean;
+  /** save-to-list and any future bulk action */
+  actions?: React.ReactNode;
 };
 
 export const TopBar = ({
@@ -17,6 +20,7 @@ export const TopBar = ({
   onTabChange,
   total,
   isFetching,
+  actions,
 }: TopBarProps) => (
   <Flex
     align="center"
@@ -44,5 +48,9 @@ export const TopBar = ({
         Updating…
       </Span>
     ) : null}
+
+    <Flex gap="2" ml="auto">
+      {actions}
+    </Flex>
   </Flex>
 );
