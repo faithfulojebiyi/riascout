@@ -54,6 +54,9 @@ lerna-debug.log*
 # ETL working files (large; sourced from ASSET_DATA_DIR)
 /etl/.staging
 
+# uploaded user assets — STORAGE_LOCAL_DIR's default target, never committed
+/storage
+
 # temp directory
 .temp
 .tmp

@@ -10,8 +10,12 @@ import type {
   GetEntitiesResponse,
   GetEntityRecords,
   GetEntityRecordsResponse,
+  MoveViewField,
+  MoveViewFieldResponse,
   UpdateRecordValues,
-  UpdateRecordValuesResponse
+  UpdateRecordValuesResponse,
+  UpdateViewField,
+  UpdateViewSort
 } from '../rIAScoutAPI.schemas';
 
 import { apiClient } from '../../client';
@@ -56,7 +60,40 @@ import { apiClient } from '../../client';
     },
       );
     }
+  export const entitiesControllerUpdateViewField = (
+    updateViewField: UpdateViewField,
+ ) => {
+      return apiClient<void>(
+      {url: `/entities/update-view-field`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updateViewField
+    },
+      );
+    }
+  export const entitiesControllerMoveViewField = (
+    moveViewField: MoveViewField,
+ ) => {
+      return apiClient<MoveViewFieldResponse>(
+      {url: `/entities/move-view-field`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: moveViewField
+    },
+      );
+    }
+  export const entitiesControllerUpdateViewSort = (
+    updateViewSort: UpdateViewSort,
+ ) => {
+      return apiClient<void>(
+      {url: `/entities/update-view-sort`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updateViewSort
+    },
+      );
+    }
   export type EntitiesControllerGetEntitiesResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerGetEntities>>>
 export type EntitiesControllerGetEntityRecordsResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerGetEntityRecords>>>
 export type EntitiesControllerCreateEntityRecordResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerCreateEntityRecord>>>
 export type EntitiesControllerUpdateRecordValuesResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerUpdateRecordValues>>>
+export type EntitiesControllerUpdateViewFieldResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerUpdateViewField>>>
+export type EntitiesControllerMoveViewFieldResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerMoveViewField>>>
+export type EntitiesControllerUpdateViewSortResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerUpdateViewSort>>>

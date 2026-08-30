@@ -298,6 +298,65 @@ export interface UpdateRecordValuesResponse {
   results: UpdateRecordValuesResponseResultsItem[];
 }
 
+export interface UpdateViewField {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  viewId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  fieldId: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  label?: string;
+  isVisible?: boolean;
+  isPinned?: boolean;
+  /**
+     * @minimum 60
+     * @maximum 1200
+     */
+  width?: number;
+}
+
+export type MoveViewFieldDirection = typeof MoveViewFieldDirection[keyof typeof MoveViewFieldDirection];
+
+
+export const MoveViewFieldDirection = {
+  left: 'left',
+  right: 'right',
+} as const;
+
+export interface MoveViewField {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  viewId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  fieldId: string;
+  direction: MoveViewFieldDirection;
+}
+
+export interface MoveViewFieldResponse {
+  position: string;
+}
+
+/**
+ * @nullable
+ */
+export type UpdateViewSortDirection = typeof UpdateViewSortDirection[keyof typeof UpdateViewSortDirection] | null;
+
+
+export const UpdateViewSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface UpdateViewSort {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  viewId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+  /** @nullable */
+  direction: UpdateViewSortDirection;
+}
+
 export interface GetLists {
   /**
      * @nullable
@@ -414,6 +473,273 @@ export interface AddToListResponse {
      * @maximum 9007199254740991
      */
   requested: number;
+}
+
+export const GetFirmFlowsWindowDays = {  NUMBER_30: 30,
+  NUMBER_90: 90,
+  NUMBER_180: 180,
+  NUMBER_365: 365,
+} as const
+export type GetFirmFlowsDirection = typeof GetFirmFlowsDirection[keyof typeof GetFirmFlowsDirection];
+
+
+export const GetFirmFlowsDirection = {
+  gaining: 'gaining',
+  losing: 'losing',
+} as const;
+
+export interface GetFirmFlows {
+  windowDays?: typeof GetFirmFlowsWindowDays[keyof typeof GetFirmFlowsWindowDays];
+  direction?: GetFirmFlowsDirection;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  limit?: number;
+}
+
+export interface FirmFlow {
+  firmCrd: string;
+  /** @nullable */
+  firmName: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  advisorsGained: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  advisorsLost: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  netFlow: number;
+}
+
+export type GetFirmFlowsResponseBasis = typeof GetFirmFlowsResponseBasis[keyof typeof GetFirmFlowsResponseBasis];
+
+
+export const GetFirmFlowsResponseBasis = {
+  occurred_on: 'occurred_on',
+} as const;
+
+export interface GetFirmFlowsResponse {
+  firms: FirmFlow[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  windowDays: number;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+     */
+  dataAsOf: string | null;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+     */
+  rangeStart: string | null;
+  basis: GetFirmFlowsResponseBasis;
+}
+
+export const GetFirmMovesWindowDays = {  NUMBER_30: 30,
+  NUMBER_90: 90,
+  NUMBER_180: 180,
+  NUMBER_365: 365,
+} as const
+export type GetFirmMovesDirection = typeof GetFirmMovesDirection[keyof typeof GetFirmMovesDirection];
+
+
+export const GetFirmMovesDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+export interface GetFirmMoves {
+  /** @pattern ^\d+$ */
+  firmCrd: string;
+  windowDays?: typeof GetFirmMovesWindowDays[keyof typeof GetFirmMovesWindowDays];
+  direction?: GetFirmMovesDirection;
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  limit?: number;
+}
+
+export interface FirmMove {
+  advisorCrd: string;
+  /** @nullable */
+  advisorName: string | null;
+  /** @nullable */
+  counterpartyCrd: string | null;
+  /** @nullable */
+  counterpartyName: string | null;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+     */
+  occurredOn: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  tenureDays: number | null;
+}
+
+export interface GetFirmMovesResponse {
+  moves: FirmMove[];
+}
+
+export type OnboardingPreferencesUseCasesItem = typeof OnboardingPreferencesUseCasesItem[keyof typeof OnboardingPreferencesUseCasesItem];
+
+
+export const OnboardingPreferencesUseCasesItem = {
+  recruiting: 'recruiting',
+  succession: 'succession',
+  asset_management_sales: 'asset_management_sales',
+  platform_sales: 'platform_sales',
+  consulting: 'consulting',
+  investing: 'investing',
+  marketing: 'marketing',
+  other: 'other',
+} as const;
+
+export interface OnboardingPreferences {
+  /** @maxItems 8 */
+  useCases: OnboardingPreferencesUseCasesItem[];
+}
+
+export type OnboardingStateUser = {
+  name: string;
+  /** @pattern ^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  /** @nullable */
+  image: string | null;
+  marketingOptIn: boolean;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+     */
+  onboardedAt: string | null;
+};
+
+export type OnboardingStateWorkspace = {
+  id: string;
+  name: string;
+  /** @nullable */
+  logo: string | null;
+};
+
+export interface OnboardingState {
+  user: OnboardingStateUser;
+  workspace: OnboardingStateWorkspace;
+  preferences: OnboardingPreferences;
+  /** @items.pattern ^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  pendingInvites: string[];
+}
+
+export interface SaveProfile {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  firstName: string;
+  /** @maxLength 80 */
+  lastName?: string;
+  /** @nullable */
+  image?: string | null;
+  marketingOptIn?: boolean;
+}
+
+export interface SaveWorkspace {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @nullable */
+  logo?: string | null;
+}
+
+export type SavePreferencesUseCasesItem = typeof SavePreferencesUseCasesItem[keyof typeof SavePreferencesUseCasesItem];
+
+
+export const SavePreferencesUseCasesItem = {
+  recruiting: 'recruiting',
+  succession: 'succession',
+  asset_management_sales: 'asset_management_sales',
+  platform_sales: 'platform_sales',
+  consulting: 'consulting',
+  investing: 'investing',
+  marketing: 'marketing',
+  other: 'other',
+} as const;
+
+export interface SavePreferences {
+  /** @maxItems 8 */
+  useCases: SavePreferencesUseCasesItem[];
+}
+
+export type InviteTeammatesInvitesItemRole = typeof InviteTeammatesInvitesItemRole[keyof typeof InviteTeammatesInvitesItemRole];
+
+
+export const InviteTeammatesInvitesItemRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export type InviteTeammatesInvitesItem = {
+  /** @pattern ^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  role?: InviteTeammatesInvitesItemRole;
+};
+
+export interface InviteTeammates {
+  /** @maxItems 10 */
+  invites: InviteTeammatesInvitesItem[];
+}
+
+export interface InviteTeammatesResponse {
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  invited: number;
+  /** @items.pattern ^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  skipped: string[];
+}
+
+export type UploadImageContentType = typeof UploadImageContentType[keyof typeof UploadImageContentType];
+
+
+export const UploadImageContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface UploadImage {
+  contentType: UploadImageContentType;
+  /**
+     * @maxLength 6990508
+     * @pattern ^[A-Za-z0-9+/]+={0,2}$
+     */
+  data: string;
+}
+
+export interface UploadImageResponse {
+  url: string;
+}
+
+export interface CompleteOnboardingResponse {
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$ */
+  onboardedAt: string;
 }
 
 export type SearchAdvisorsSchema0 = {
