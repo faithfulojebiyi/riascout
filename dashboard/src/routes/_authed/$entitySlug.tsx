@@ -7,8 +7,15 @@ import {
 } from '../../api/generated/entities/entities';
 import { EntityGrid } from '../../modules/entities/components/grid/grid-shell';
 
+type Search = { view?: string };
+
 export const Route = createFileRoute('/_authed/$entitySlug')({
-  loader: async ({ params }) => {
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    view: typeof search.view === 'string' ? search.view : undefined,
+  }),
+  // without this the loader would not re-run when only the view changes
+  loaderDeps: ({ search }) => ({ view: search.view }),
+  loader: async ({ params, deps }) => {
     const { entities } = await entitiesControllerGetEntities();
     const entity = entities.find((e) => e.slug === params.entitySlug);
 
@@ -19,6 +26,7 @@ export const Route = createFileRoute('/_authed/$entitySlug')({
     // one page purely to obtain the view definition; ag-grid fetches the rest
     const seed = await entitiesControllerGetEntityRecords({
       entityId: entity.id,
+      viewId: deps.view ?? null,
       limit: 1,
     });
 
@@ -55,7 +63,8 @@ function EntityPage() {
 
       <div className={css({ flex: '1', minH: '0' })}>
         {view ? (
-          <EntityGrid entityId={entity.id} view={view} />
+          // keyed so switching views rebuilds the grid rather than reusing its columns
+          <EntityGrid entityId={entity.id} key={view.id} view={view} />
         ) : (
           <p>No view configured</p>
         )}
