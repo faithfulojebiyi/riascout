@@ -40,3 +40,29 @@ export const SearchAdvisorsResponseSchema = z
     offset: z.number().int(),
   })
   .meta({ id: 'SearchAdvisorsResponse' });
+
+export const GetFacetsSchema = z
+  .object({ sourceKind: z.enum(['advisor', 'firm']).default('advisor') })
+  .meta({ id: 'GetFacets' });
+
+const FacetOptionSchema = z
+  .object({ value: z.string(), label: z.string() })
+  .meta({ id: 'FacetOption' });
+
+const FacetDefinitionSchema = z
+  .object({
+    attributeId: z.uuid(),
+    label: z.string(),
+    icon: z.string().nullable(),
+    group: z.string(),
+    kind: z.enum(['multiSelect', 'search', 'number', 'boolean', 'date']),
+    operators: z.array(z.string()),
+    isArray: z.boolean(),
+    /** empty for search facets, which fetch options on demand */
+    options: z.array(FacetOptionSchema),
+  })
+  .meta({ id: 'FacetDefinition' });
+
+export const GetFacetsResponseSchema = z
+  .object({ facets: z.array(FacetDefinitionSchema) })
+  .meta({ id: 'GetFacetsResponse' });
