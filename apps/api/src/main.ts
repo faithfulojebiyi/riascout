@@ -1,8 +1,11 @@
 import './load-env.js';
 
+import { mkdir } from 'node:fs/promises';
+
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
+import fastifyStatic from '@fastify/static';
 import { NestFactory } from '@nestjs/core';
 import { serve } from 'inngest/fastify';
 import {
@@ -12,6 +15,10 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 
+import {
+  STORAGE_URL_PREFIX,
+  storageRoot,
+} from '@providers/storage/storage.service.js';
 import { auth } from '@system/auth/auth.js';
 import { AppLogger } from '@system/logger/logger.service.js';
 
@@ -22,7 +29,8 @@ import { ApiModule } from './api.module.js';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     ApiModule,
-    new FastifyAdapter(),
+    // raised from fastify's 1MB default so a base64 profile image fits
+    new FastifyAdapter({ bodyLimit: 8 * 1024 * 1024 }),
     {
       bufferLogs: true,
       logger: new AppLogger('api'),
@@ -32,6 +40,27 @@ async function bootstrap(): Promise<void> {
   await app.register(helmet);
   await app.register(cookie);
   await app.register(compress);
+
+  const uploadsRoot = storageRoot();
+
+  // @fastify/static throws on a missing root, and nothing has uploaded yet
+  await mkdir(uploadsRoot, { recursive: true });
+
+  await app.register(fastifyStatic, {
+    root: uploadsRoot,
+    prefix: `${STORAGE_URL_PREFIX}/`,
+    decorateReply: false,
+  });
+
+  // helmet's same-origin default would block the dashboard loading an upload
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', async (request, reply) => {
+      if (request.url.startsWith(`${STORAGE_URL_PREFIX}/`)) {
+        reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+      }
+    });
 
   const prefix = process.env.API_PREFIX ?? '';
 
@@ -45,7 +74,15 @@ async function bootstrap(): Promise<void> {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  app.enableCors({ origin: origins, credentials: true });
+  /**
+   * methods is explicit because @fastify/cors defaults to GET,HEAD,POST — a
+   * PATCH route silently fails preflight in the browser while curl succeeds.
+   */
+  app.enableCors({
+    origin: origins,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE'],
+  });
 
   /**
    * Raw fastify route: better-auth owns its own request/response handling and
