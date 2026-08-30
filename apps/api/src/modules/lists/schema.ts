@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { filterTreeSchema } from '@feature/entities/filter-sort/ast.js';
 import { dateToString } from '@system/schema/utils.js';
 
 /** beyond this the add is queued, so a large save never holds a request open */
@@ -44,8 +45,22 @@ export const AddToListSchema = z
   .object({
     listId: z.uuid(),
     /** market CRDs; the records are created if they do not exist yet */
-    sourceCrds: z.array(z.string().regex(/^\d+$/)).min(1).max(BULK_ADD_MAX),
+    sourceCrds: z
+      .array(z.string().regex(/^\d+$/))
+      .min(1)
+      .max(BULK_ADD_MAX)
+      .optional(),
+    /**
+     * Save everything the filter matches, rather than what fits on a page. The
+     * count is unknown up front, so this always queues.
+     */
+    filter: filterTreeSchema.nullable().optional(),
   })
+  // exactly one of the two, never both and never neither
+  .refine(
+    (value) => Boolean(value.sourceCrds?.length) !== Boolean(value.filter),
+    { message: 'provide either sourceCrds or filter, not both' },
+  )
   .meta({ id: 'AddToList' });
 
 export const AddToListResponseSchema = z

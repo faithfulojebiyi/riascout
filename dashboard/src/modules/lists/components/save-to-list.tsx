@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Flex } from '@riascout-ui/styled-system/jsx';
 
+import type { AddToList } from '../../../api/generated/rIAScoutAPI.schemas';
 import { Button } from '../../../ui/primitives/button';
 import { Input } from '../../../ui/primitives/input';
 import {
@@ -17,9 +18,17 @@ export type SaveToListProps = {
   entityId: string | null;
   /** market CRDs of the selected rows */
   sourceCrds: string[];
+  /** set when saving everything the filter matches rather than the selection */
+  allFilter?: AddToList['filter'];
+  matchingTotal?: number;
 };
 
-export const SaveToList = ({ entityId, sourceCrds }: SaveToListProps) => {
+export const SaveToList = ({
+  entityId,
+  sourceCrds,
+  allFilter,
+  matchingTotal,
+}: SaveToListProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
 
@@ -28,10 +37,14 @@ export const SaveToList = ({ entityId, sourceCrds }: SaveToListProps) => {
   const createList = useCreateList();
 
   const lists = listsQuery.data?.lists ?? [];
-  const disabled = sourceCrds.length === 0;
+  const savingAll = sourceCrds.length === 0 && allFilter !== undefined;
+  const disabled = sourceCrds.length === 0 && !savingAll;
 
   const addTo = (listId: string) => {
-    addToList.mutate({ listId, sourceCrds });
+    // a filter saves everything it matches; ids save exactly what was ticked
+    addToList.mutate(
+      savingAll ? { listId, filter: allFilter } : { listId, sourceCrds },
+    );
     setOpen(false);
   };
 
@@ -48,7 +61,9 @@ export const SaveToList = ({ entityId, sourceCrds }: SaveToListProps) => {
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button disabled={disabled} size="sm">
-          Save {sourceCrds.length > 0 ? sourceCrds.length : ''} to list
+          {savingAll
+            ? `Save all ${(matchingTotal ?? 0).toLocaleString()} to list`
+            : `Save ${sourceCrds.length > 0 ? sourceCrds.length : ''} to list`}
         </Button>
       </PopoverTrigger>
       <PopoverContent>

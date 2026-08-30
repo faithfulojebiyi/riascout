@@ -1,29 +1,55 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { listsControllerAddToList } from '../../../api/generated/lists/lists';
-import type { AddToList } from '../../../api/generated/rIAScoutAPI.schemas';
+import type {
+  AddToList,
+  AddToListResponse,
+} from '../../../api/generated/rIAScoutAPI.schemas';
 import { toast } from '../../../ui/primitives/toast/toast';
 
 /**
- * Re-adding is idempotent, so a zero result is "already there", not a failure.
- * Saying "added 0" would read as an error the user needs to act on.
+ * A queued add reports zero counts because they are not known yet, so
+ * `completed` has to be read before the numbers. Treating zero as "already
+ * there" would tell someone their save did nothing at the moment it started.
  */
+const message = (result: AddToListResponse): string => {
+  if (!result.completed) {
+    return `Adding ${result.requested.toLocaleString()} in the background`;
+  }
+
+  if (result.membersAdded === 0) {
+    return `All ${result.requested.toLocaleString()} already in this list`;
+  }
+
+  const already = result.requested - result.membersAdded;
+
+  return already > 0
+    ? `Added ${result.membersAdded.toLocaleString()}, ${already.toLocaleString()} already there`
+    : `Added ${result.membersAdded.toLocaleString()}`;
+};
+
 export const useAddToList = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (body: AddToList) => listsControllerAddToList(body),
     onSuccess: (result) => {
-      const already = result.requested - result.membersAdded;
+      toast.success(message(result));
 
-      toast.success(
-        result.membersAdded === 0
-          ? `All ${result.requested} already in this list`
-          : `Added ${result.membersAdded}${already > 0 ? `, ${already} already there` : ''}`,
-      );
+      /**
+       * A queued add is still running, so the member count is stale the moment
+       * it returns. Refetching later is what makes it settle without polling.
+       */
+      const invalidate = () => {
+        void queryClient.invalidateQueries({ queryKey: ['lists'] });
+        void queryClient.invalidateQueries({ queryKey: ['prospect-search'] });
+      };
 
-      void queryClient.invalidateQueries({ queryKey: ['lists'] });
-      void queryClient.invalidateQueries({ queryKey: ['prospect-search'] });
+      invalidate();
+
+      if (!result.completed) {
+        setTimeout(invalidate, 4000);
+      }
     },
     onError: () => toast.error('Could not add to that list'),
   });

@@ -360,18 +360,45 @@ export interface CreateListResponse {
   name: string;
 }
 
+export type AddToListSchema0 = {
+  kind: 'condition';
+  /**
+     * @minItems 1
+     * @maxItems 3
+     */
+  path: ({
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+})[];
+  operator: 'is' | 'isNot' | 'contains' | 'notContains' | 'startsWith' | 'endsWith' | 'isEmpty' | 'isNotEmpty' | 'isLessThan' | 'isGreaterThan' | 'isBefore' | 'isAfter' | 'isBetween' | 'isWithinLastNDays' | 'isAnyOf' | 'isNoneOf';
+  value: unknown;
+} | {
+  kind: 'and';
+  /** @minItems 1 */
+  children: AddToListSchema0[];
+} | {
+  kind: 'or';
+  /** @minItems 1 */
+  children: AddToListSchema0[];
+} | {
+  kind: 'not';
+  child: AddToListSchema0;
+};
+
 export interface AddToList {
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   listId: string;
   /**
      * @minItems 1
-     * @maxItems 5000
+     * @maxItems 50000
      * @items.pattern ^\d+$
      */
-  sourceCrds: string[];
+  sourceCrds?: string[];
+  filter?: AddToListSchema0 | null;
 }
 
 export interface AddToListResponse {
+  completed: boolean;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991

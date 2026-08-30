@@ -1,10 +1,12 @@
 import { Logger } from '@nestjs/common';
 import type { InngestFunction } from 'inngest';
 
+import { filterTreeSchema } from '@feature/entities/filter-sort/ast.js';
 import {
   buildInsertMembers,
   buildUpsertRecords,
 } from '@feature/lists/bulk-add.builder.js';
+import { resolveCrdsForFilter } from '@feature/lists/resolve-crds.js';
 import type { AppPrismaService } from '@system/database/database.service.js';
 import { EVENTS, INNGEST_OPTIONS } from '@system/queues/events.config.js';
 
@@ -35,7 +37,24 @@ export const bulkAddToList = ({
       triggers: [EVENTS.LIST_BULK_ADD],
     },
     async ({ event, step }) => {
-      const { listId, entityId, sourceKind, sourceCrds, user } = event.data;
+      const { listId, entityId, sourceKind, user } = event.data;
+
+      /**
+       * Resolving here rather than in the api keeps the event small and means a
+       * "save everything matching" does not have to enumerate the set twice.
+       */
+      const sourceCrds = event.data.sourceCrds?.length
+        ? event.data.sourceCrds
+        : await resolveCrdsForFilter({
+            appPrismaService,
+            entityId,
+            workspaceId: user.workspaceId,
+            sourceKind,
+            filter: filterTreeSchema
+              .nullable()
+              .parse(event.data.filter ?? null),
+          });
+
       const chunks: string[][] = [];
 
       for (let i = 0; i < sourceCrds.length; i += CHUNK) {

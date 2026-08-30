@@ -64,8 +64,29 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
       workspaceId,
       sourceKind: entity.sourceKind,
       userId,
-      sourceCrds: [...new Set(dto.sourceCrds)],
+      sourceCrds: [...new Set(dto.sourceCrds ?? [])],
     };
+
+    /** the filter's size is unknown until it runs, so it never blocks a request */
+    if (dto.filter) {
+      await this.eventPublisherService.sendEvent({
+        name: EVENT_KEYS.LIST_BULK_ADD,
+        data: {
+          listId: input.listId,
+          entityId: input.entityId,
+          sourceKind: input.sourceKind,
+          filter: dto.filter,
+        },
+        user: { userId, workspaceId },
+      });
+
+      return {
+        completed: false,
+        recordsCreated: 0,
+        membersAdded: 0,
+        requested: 0,
+      };
+    }
 
     /**
      * A save from a filtered search can be tens of thousands of advisors, which
