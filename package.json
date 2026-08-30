@@ -60,6 +60,7 @@
     "better-auth": "^1.7.2",
     "dotenv": "^17.4.2",
     "fastify": "5.12.1",
+    "inngest": "4.7.0",
     "joi": "^18.0.2",
     "lexorank": "^1.0.5",
     "nestjs-cls": "^6.2.0",

@@ -14,9 +14,11 @@ import { EntitiesModule } from './modules/entities/entities.module.js';
 import { ListsModule } from './modules/lists/lists.module.js';
 import { ProspectingModule } from './modules/prospecting/prospecting.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { EventPublisherModule } from './modules/event-publisher/event-publisher.module.js';
 
 @Module({
   imports: [
+    EventPublisherModule,
     ConfigModule.forRoot({ isGlobal: true, validationSchema: apiEnvSchema }),
     AlsModule,
     AuthModule,

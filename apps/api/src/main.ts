@@ -4,6 +4,7 @@ import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
+import { serve } from 'inngest/fastify';
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -14,6 +15,8 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { auth } from '@system/auth/auth.js';
 import { AppLogger } from '@system/logger/logger.service.js';
 
+import { inngest } from './modules/event-publisher/event-publisher.service.js';
+import { getInngestRegistry } from './modules/event-publisher/inngest.registry.js';
 import { ApiModule } from './api.module.js';
 
 async function bootstrap(): Promise<void> {
@@ -90,6 +93,20 @@ async function bootstrap(): Promise<void> {
 
   // cleanupOpenApiDoc makes the zod-generated 3.1 doc consumable by orval
   SwaggerModule.setup('docs', app, cleanupOpenApiDoc(document));
+
+  /**
+   * Both apps serve /api/inngest with their own client id. The dev server
+   * discovers each one, so a function registered on the worker is invoked
+   * there rather than on the api.
+   */
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .route({
+      method: ['GET', 'POST', 'PUT'],
+      url: `${prefix}/api/inngest`,
+      handler: serve({ client: inngest, functions: getInngestRegistry() }),
+    });
 
   const port = Number(process.env.PORT ?? 3320);
   await app.listen({ port, host: '0.0.0.0' });

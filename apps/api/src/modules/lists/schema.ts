@@ -2,12 +2,11 @@ import { z } from 'zod';
 
 import { dateToString } from '@system/schema/utils.js';
 
-/**
- * A cap rather than a job queue. The add is two set-based statements whatever
- * the size, so this bounds request time rather than round trips — the legacy
- * defect was one request per advisor, which this cannot reproduce.
- */
-export const BULK_ADD_MAX = 5000;
+/** beyond this the add is queued, so a large save never holds a request open */
+export const SYNC_ADD_MAX = 1000;
+
+/** the outer bound on one request either way */
+export const BULK_ADD_MAX = 50000;
 
 export const GetListsSchema = z
   .object({ entityId: z.uuid().nullable().default(null) })
@@ -51,6 +50,8 @@ export const AddToListSchema = z
 
 export const AddToListResponseSchema = z
   .object({
+    /** false when the add was queued, in which case the counts are not yet known */
+    completed: z.boolean(),
     /** records newly brought into the CRM by this add */
     recordsCreated: z.number().int(),
     /** memberships added; lower than requested when some were already members */
