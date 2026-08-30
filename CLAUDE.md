@@ -271,8 +271,15 @@ await this.eventPublisherService.sendEvent({
 ```
 
 Event names and zod schemas are centralized in `@system/queues/events.config` (`EVENT_KEYS`, `EVENTS`). Add
-new events there so types flow through. Consumer functions live under
-`apps/<app>/src/modules/event-publisher/` and are registered in that app's `inngest.registry.ts`.
+new events there so types flow through.
+
+**Consumers stay thin — they dispatch a CQRS command; the handler holds the work.** A consumer receives
+`{ commandBus, queryBus }` resolved from DI in `main.ts`, never a service, so the same work stays reachable
+without an event and cannot drift from the synchronous path.
+
+Feature consumers live in `apps/<app>/src/modules/<feature>/queues/`, beside the commands they dispatch.
+Only cross-cutting functions (`failed-events`) stay in `modules/event-publisher/`. Every consumer is
+registered in that app's `inngest.registry.ts` or it never runs.
 
 The worker has no ALS, so **identity rides in the event payload** — every event schema extends a base
 carrying `user: { userId, workspaceId }`.

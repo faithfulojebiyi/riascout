@@ -1,10 +1,14 @@
 import type { InngestFunction } from 'inngest';
 
-import { bulkAddToList } from './bulk-add-to-list.function.js';
+import { bulkAddToList } from '../lists/queues/bulk-add-to-list.js';
 import type { InngestFunctionDto } from './event-publisher.dto.js';
 import { failedEvents } from './failed-events.function.js';
 
-/** the worker consumes; every function is registered here or it never runs */
+/**
+ * Feature consumers live beside the commands they dispatch, in each module's
+ * queues folder; only cross-cutting functions stay here. Every one is
+ * registered below or it never runs.
+ */
 export const getInngestRegistry = (
   deps: InngestFunctionDto,
 ): InngestFunction.Any[] => [bulkAddToList(deps), failedEvents()];

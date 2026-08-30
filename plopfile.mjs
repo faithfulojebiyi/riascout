@@ -142,9 +142,10 @@ export default function plopfile(plop) {
 
   // inngest functions are plain functions — deps injected from main.ts, no cqrs inside
   plop.setGenerator('inngest', {
-    description: 'New Inngest function (reminder: register it in inngest.registry.ts)',
+    description: 'New Inngest queue consumer (reminder: register it in inngest.registry.ts)',
     prompts: [
       appPrompt,
+      featurePrompt,
       {
         type: 'input',
         name: 'name',
@@ -161,11 +162,11 @@ export default function plopfile(plop) {
     actions: [
       {
         type: 'add',
-        path: 'apps/{{app}}/src/modules/event-publisher/{{dashCase name}}.function.ts',
+        path: 'apps/{{app}}/src/modules/{{feature}}/queues/{{dashCase name}}.ts',
         templateFile: 'plop-templates/inngest/function.hbs',
       },
       () =>
-        'Now: add the key + zod schema to libs/system/queues/events.config.ts, then register the function in the app\'s inngest.registry.ts',
+        'Now: add the key + zod schema to libs/system/queues/events.config.ts, add the command it dispatches, then register the consumer in the app\'s inngest.registry.ts',
     ],
   })
 }

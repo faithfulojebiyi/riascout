@@ -1,14 +1,21 @@
-import { EVENTS, INNGEST_OPTIONS } from '@system/queues/events.config';
+import type { InngestFunction } from 'inngest';
 
-import { inngest } from './event-publisher.service';
+import { EVENTS, INNGEST_OPTIONS } from '@system/queues/events.config.js';
 
-// deps resolved from DI in main.ts — no @nestjs/cqrs inside inngest functions
-export const {{camelCase name}} = (deps: { /* services */ }) =>
+import type { InngestFunctionDto } from '../../event-publisher/event-publisher.dto.js';
+import { inngest } from '../../event-publisher/event-publisher.service.js';
+
+/**
+ * Consumers stay thin: dispatch a command, let the handler hold the work. That
+ * keeps the same work reachable without an event.
+ */
+export const {{camelCase name}} = ({
+  commandBus,
+}: InngestFunctionDto): InngestFunction.Any =>
   inngest.createFunction(
     { id: '{{dashCase name}}', ...INNGEST_OPTIONS, triggers: [EVENTS.{{eventKey}}] },
-    async ({ event, step }) => {
-      await step.run('{{dashCase name}}', async () => {
+    async ({ event, step }) =>
+      step.run('{{dashCase name}}', async () => {
         throw new Error('not implemented');
-      });
-    },
+      }),
   );

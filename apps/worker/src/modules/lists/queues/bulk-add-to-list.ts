@@ -2,9 +2,9 @@ import type { InngestFunction } from 'inngest';
 
 import { EVENTS, INNGEST_OPTIONS } from '@system/queues/events.config.js';
 
-import { BulkAddToListCommand } from '../lists/commands/bulk-add-to-list.js';
-import type { InngestFunctionDto } from './event-publisher.dto.js';
-import { inngest } from './event-publisher.service.js';
+import type { InngestFunctionDto } from '../../event-publisher/event-publisher.dto.js';
+import { inngest } from '../../event-publisher/event-publisher.service.js';
+import { BulkAddToListCommand } from '../commands/bulk-add-to-list.js';
 
 /**
  * One step, so a retry replays the whole command. Both statements underneath
