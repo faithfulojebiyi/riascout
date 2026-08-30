@@ -12,6 +12,8 @@ export const apiEnvSchema = Joi.object({
   BETTER_AUTH_SECRET: Joi.string().min(32).required(),
   BETTER_AUTH_URL: Joi.string().uri().required(),
   BETTER_AUTH_TRUSTED_ORIGINS: Joi.string().optional(),
+  STORAGE_LOCAL_DIR: Joi.string().optional(),
+  STORAGE_PUBLIC_URL: Joi.string().uri().optional(),
 });
 
 export type ApiEnv = BaseEnv & {
@@ -21,4 +23,6 @@ export type ApiEnv = BaseEnv & {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   BETTER_AUTH_TRUSTED_ORIGINS?: string;
+  STORAGE_LOCAL_DIR?: string;
+  STORAGE_PUBLIC_URL?: string;
 };

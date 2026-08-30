@@ -8,6 +8,8 @@ export type AuthShellProps = {
   children: ReactNode;
   /** the right pane: marketing copy on sign-in, a product preview in onboarding */
   aside?: ReactNode;
+  /** onboarding only — a way out of a half-finished account */
+  onSignOut?: () => void;
 };
 
 const FOOTER_LINKS = [
@@ -20,7 +22,7 @@ const FOOTER_LINKS = [
  * aside. Every auth and onboarding screen is this shell with different
  * contents, so the card never moves between steps.
  */
-export const AuthShell = ({ children, aside }: AuthShellProps) => (
+export const AuthShell = ({ children, aside, onSignOut }: AuthShellProps) => (
   <VStack
     bg="background.app"
     gap="0"
@@ -78,6 +80,18 @@ export const AuthShell = ({ children, aside }: AuthShellProps) => (
           <a href={link.href}>{link.label}</a>
         </Text>
       ))}
+      {onSignOut ? (
+        <Text
+          asChild
+          color="text.muted"
+          fontSize="2"
+          textDecoration="underline"
+        >
+          <button onClick={onSignOut} type="button">
+            Sign out
+          </button>
+        </Text>
+      ) : null}
     </Flex>
   </VStack>
 );
@@ -96,5 +110,6 @@ export const WelcomeAside = () => (
       Filter by state, credential, tenure or AUM band, save a shortlist, and
       work it as a pipeline.
     </Text>
+    <Text color="text.muted">Let us begin</Text>
   </VStack>
 );

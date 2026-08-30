@@ -45,6 +45,21 @@ export const auth = betterAuth({
   database: prismaAdapter(authPrisma, { provider: 'postgresql' }),
   emailAndPassword: { enabled: true },
   /**
+   * input: false — the onboarding endpoints own these, so a client cannot mark
+   * itself onboarded by posting to better-auth's own update-user route.
+   */
+  user: {
+    additionalFields: {
+      onboardedAt: { type: 'date', required: false, input: false },
+      marketingOptIn: {
+        type: 'boolean',
+        required: false,
+        input: false,
+        defaultValue: false,
+      },
+    },
+  },
+  /**
    * Counters are in-memory, so this is per-instance and stops being a real
    * limit the moment the api runs more than one replica. Move to redis before
    * scaling out — see docs/plans/06.

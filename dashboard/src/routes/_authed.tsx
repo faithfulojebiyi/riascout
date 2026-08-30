@@ -19,6 +19,11 @@ export const Route = createFileRoute('/_authed')({
       throw redirect({ to: '/sign-in', search: { redirect: location.href } });
     }
 
+    // a half-set-up account would land on a grid it has not named a workspace for
+    if (!data.user.onboardedAt) {
+      throw redirect({ to: '/onboarding' });
+    }
+
     return { user: data.user, workspaceId: data.session.activeOrganizationId };
   },
   component: AuthedLayout,
