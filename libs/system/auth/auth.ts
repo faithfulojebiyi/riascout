@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { organization } from 'better-auth/plugins';
+import { emailOTP, organization } from 'better-auth/plugins';
 
 import { provisionWorkspace } from '@feature/entities/data/provision-workspace.js';
 import { PrismaClient } from '@orm/app';
@@ -53,10 +53,32 @@ export const auth = betterAuth({
       '/sign-in/email': { window: 60, max: 5 },
       '/sign-up/email': { window: 60, max: 5 },
       '/forget-password': { window: 300, max: 3 },
+      // a code is guessable by brute force in a way a password is not
+      '/email-otp/send-verification-otp': { window: 300, max: 3 },
+      '/sign-in/email-otp': { window: 300, max: 5 },
     },
   },
   advanced: { useSecureCookies: process.env.NODE_ENV !== 'development' },
   plugins: [
+    /**
+     * The code is logged rather than sent: there is no mail provider yet, and
+     * a silent failure would look like a working flow that never delivers.
+     * Swap the body for the provider when libs/providers/resend lands — nothing
+     * else about the flow changes.
+     */
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 300,
+      async sendVerificationOTP({ email, otp, type }) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(
+            'No mail provider configured; refusing to issue an OTP that cannot be delivered',
+          );
+        }
+
+        console.info(`[auth] ${type} OTP for ${email}: ${otp}`);
+      },
+    }),
     organization({
       teams: { enabled: true },
       organizationHooks: {

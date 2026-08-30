@@ -1,9 +1,14 @@
-import { css } from '@riascout-ui/styled-system/css';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, type ComponentProps } from 'react';
+import { VStack } from '@riascout-ui/styled-system/jsx';
 
 import { authClient } from '../lib/auth-client';
+import { AuthShell, WelcomeAside } from '../modules/auth/components/auth-shell';
+import { OtpStep } from '../modules/auth/components/otp-step';
 import { Button } from '../ui/primitives/button';
+import { Input } from '../ui/primitives/input';
+import { Separator } from '../ui/primitives/separator';
+import { Span, Text } from '../ui/primitives/text';
 
 type Search = { redirect?: string };
 
@@ -15,19 +20,6 @@ export const Route = createFileRoute('/sign-in')({
   component: SignIn,
 });
 
-const inputStyles = css({
-  bg: 'brand.primary.1',
-  borderColor: 'brand.primary.6',
-  borderRadius: 'lg',
-  borderWidth: '1px',
-  color: 'brand.primary.12',
-  fontSize: 'sm',
-  h: '2.25rem',
-  px: '3',
-  _focusVisible: { borderColor: 'brand.primary.8', outline: 'none' },
-  _placeholder: { color: 'brand.primary.11' },
-});
-
 function SignIn() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
@@ -35,10 +27,40 @@ function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** password is the default; a code is the alternative for anyone without one */
+  const [method, setMethod] = useState<'password' | 'otp'>('password');
+  const [awaitingCode, setAwaitingCode] = useState(false);
 
-  /** derived from the element so it tracks react's types instead of the deprecated FormEvent */
+  const sendCode = async () => {
+    setPending(true);
+    setError(null);
+
+    const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({
+      email,
+      type: 'sign-in',
+    });
+
+    setPending(false);
+
+    if (sendError) {
+      setError(sendError.message ?? 'Could not send a code');
+
+      return;
+    }
+
+    setAwaitingCode(true);
+  };
+
+  /** derived from the element so it tracks react's types rather than the deprecated FormEvent */
   const onSubmit: ComponentProps<'form'>['onSubmit'] = async (event) => {
     event.preventDefault();
+
+    if (method === 'otp') {
+      await sendCode();
+
+      return;
+    }
+
     setPending(true);
     setError(null);
 
@@ -58,70 +80,81 @@ function SignIn() {
     await navigate({ to: redirect ?? '/' });
   };
 
+  if (awaitingCode) {
+    return (
+      <AuthShell aside={<WelcomeAside />}>
+        <OtpStep
+          email={email}
+          onBack={() => setAwaitingCode(false)}
+          onVerified={() => void navigate({ to: redirect ?? '/' })}
+        />
+      </AuthShell>
+    );
+  }
+
   return (
-    <div
-      className={css({
-        alignItems: 'center',
-        bg: 'brand.primary.2',
-        display: 'flex',
-        justifyContent: 'center',
-        minH: '100dvh',
-      })}
-    >
-      <form
-        onSubmit={onSubmit}
-        className={css({
-          bg: 'brand.primary.1',
-          borderColor: 'brand.primary.5',
-          borderRadius: 'xl',
-          borderWidth: '1px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '3',
-          p: '8',
-          w: '22rem',
-        })}
-      >
-        <h1
-          className={css({
-            color: 'brand.primary.12',
-            fontSize: 'xl',
-            fontWeight: '600',
-          })}
-        >
-          Sign in
-        </h1>
+    <AuthShell aside={<WelcomeAside />}>
+      <form onSubmit={onSubmit}>
+        <VStack alignItems="stretch" gap="3">
+          {/**
+           * A single provider button would sit here above the divider. Nothing
+           * but email is configured, so showing an inert one would be a lie.
+           */}
+          <Input
+            autoComplete="email"
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Enter your work email address"
+            required
+            type="email"
+            value={email}
+          />
+          {method === 'password' ? (
+            <Input
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Password"
+              required
+              type="password"
+              value={password}
+            />
+          ) : null}
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Work email"
-          required
-          className={inputStyles}
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-          className={inputStyles}
-        />
+          <Button disabled={pending || email === ''} size="md" type="submit">
+            {pending
+              ? 'Working…'
+              : method === 'password'
+                ? 'Sign in'
+                : 'Email me a code'}
+          </Button>
 
-        <Button type="submit" size="md" disabled={pending}>
-          {pending ? 'Signing in…' : 'Continue'}
-        </Button>
-
-        {error ? (
-          <p
-            role="alert"
-            className={css({ color: 'brand.error.11', fontSize: 'sm' })}
+          <Button
+            onClick={() => {
+              setMethod(method === 'password' ? 'otp' : 'password');
+              setError(null);
+            }}
+            size="sm"
+            type="button"
+            variant="ghost"
           >
-            {error}
-          </p>
-        ) : null}
+            {method === 'password'
+              ? 'Sign in with a code instead'
+              : 'Use a password instead'}
+          </Button>
+
+          {error ? (
+            <Text color="brand.error.11" fontSize="sm" role="alert">
+              {error}
+            </Text>
+          ) : null}
+
+          <Separator my="2" />
+
+          <Span color="text.placeholder" fontSize="xs">
+            By continuing you agree that RIAScout may contact you about the
+            product. Coverage is SEC-registered and exempt reporting advisers.
+          </Span>
+        </VStack>
       </form>
-    </div>
+    </AuthShell>
   );
 }
