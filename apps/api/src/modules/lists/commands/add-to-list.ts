@@ -1,10 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
-import {
-  buildInsertMembers,
-  buildUpsertRecords,
-} from '@feature/lists/bulk-add.builder.js';
+import { performBulkAdd } from '@feature/lists/perform-bulk-add.js';
 import { AlsService } from '@system/als/als.service.js';
 import { EVENT_KEYS } from '@system/queues/events.config.js';
 
@@ -19,8 +16,6 @@ export class AddToListCommand extends Command<AddToListResponseDto> {
     super();
   }
 }
-
-type UpsertRow = { id: string; source_crd: bigint; inserted: boolean };
 
 @CommandHandler(AddToListCommand)
 export class AddToListCommandHandler implements ICommandHandler<AddToListCommand> {
@@ -114,32 +109,13 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
       };
     }
 
-    /**
-     * One transaction: a record created without its membership would leave an
-     * advisor in the CRM that nobody asked to save.
-     */
-    return this.appPrismaService.$transaction(async (tx) => {
-      const upsert = buildUpsertRecords(input);
-      const records = await tx.$queryRawUnsafe<UpsertRow[]>(
-        upsert.sql,
-        ...upsert.params,
-      );
+    const result = await performBulkAdd(this.appPrismaService, input);
 
-      const members = buildInsertMembers(
-        input,
-        records.map((r) => r.id),
-      );
-      const added = await tx.$queryRawUnsafe<{ record_id: string }[]>(
-        members.sql,
-        ...members.params,
-      );
-
-      return {
-        completed: true,
-        recordsCreated: records.filter((r) => r.inserted).length,
-        membersAdded: added.length,
-        requested: input.sourceCrds.length,
-      };
-    });
+    return {
+      completed: true,
+      recordsCreated: result.created,
+      membersAdded: result.added,
+      requested: result.requested,
+    };
   }
 }

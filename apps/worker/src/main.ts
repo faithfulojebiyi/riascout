@@ -3,7 +3,7 @@ import './load-env.js';
 import { NestFactory } from '@nestjs/core';
 import { serve } from 'inngest/fastify';
 
-import { AppPrismaService } from '@system/database/database.service.js';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   FastifyAdapter,
   type NestFastifyApplication,
@@ -31,7 +31,8 @@ async function bootstrap(): Promise<void> {
     app.setGlobalPrefix(prefix);
   }
 
-  const appPrismaService = app.get(AppPrismaService);
+  const commandBus = app.get(CommandBus);
+  const queryBus = app.get(QueryBus);
 
   app
     .getHttpAdapter()
@@ -41,7 +42,7 @@ async function bootstrap(): Promise<void> {
       url: `${prefix}/api/inngest`,
       handler: serve({
         client: inngest,
-        functions: getInngestRegistry({ appPrismaService }),
+        functions: getInngestRegistry({ commandBus, queryBus }),
       }),
     });
 

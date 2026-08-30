@@ -10,11 +10,13 @@ import { AllExceptionsFilter } from '@system/interceptors/error.interceptor.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { workerEnvSchema } from './worker.env.schema.js';
 import { EventPublisherModule } from './modules/event-publisher/event-publisher.module.js';
+import { ListsModule } from './modules/lists/lists.module.js';
 
 // no AlsModule here — ALS is HTTP-request-scoped and depcruise forbids the import
 @Module({
   imports: [
     EventPublisherModule,
+    ListsModule,
     ConfigModule.forRoot({ isGlobal: true, validationSchema: workerEnvSchema }),
     AppCqrsModule,
     DatabaseModule,
