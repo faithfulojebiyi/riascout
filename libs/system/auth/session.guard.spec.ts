@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AlsService } from '@system/als/als.service.js';
 
+import * as authModule from './auth.js';
 import { auth } from './auth.js';
 import { SessionGuard } from './session.guard.js';
 
@@ -74,11 +75,36 @@ describe('SessionGuard', () => {
     expect(store.get('workspaceId')).toBe('org-1');
   });
 
-  it('allows a session with no active workspace but records none', async () => {
+  /**
+   * A session issued before its membership existed carries no active
+   * organization. Without this the user is 403'd from every route until they
+   * sign out and back in, with nothing telling them why.
+   */
+  it('resolves a workspace when the session carries none', async () => {
     vi.spyOn(auth.api, 'getSession').mockResolvedValue({
       user: { id: 'user-2' },
-      session: { activeOrganizationId: null },
+      session: { activeOrganizationId: null, token: 'tok-2' },
     } as never);
+    const resolve = vi
+      .spyOn(authModule, 'resolveActiveWorkspace')
+      .mockResolvedValue('org-recovered');
+
+    const { guard, store } = guardWith(false);
+
+    await expect(guard.canActivate(contextFor({ headers: {} }))).resolves.toBe(
+      true,
+    );
+    expect(resolve).toHaveBeenCalledWith('user-2', 'tok-2');
+    expect(store.get('workspaceId')).toBe('org-recovered');
+  });
+
+  /** a user with genuinely no workspace still gets nothing, not someone else's */
+  it('records no workspace when the user has none to resolve', async () => {
+    vi.spyOn(auth.api, 'getSession').mockResolvedValue({
+      user: { id: 'user-4' },
+      session: { activeOrganizationId: null, token: 'tok-4' },
+    } as never);
+    vi.spyOn(authModule, 'resolveActiveWorkspace').mockResolvedValue(undefined);
 
     const { guard, store } = guardWith(false);
 
@@ -86,6 +112,19 @@ describe('SessionGuard', () => {
       true,
     );
     expect(store.get('workspaceId')).toBeUndefined();
+  });
+
+  it('does not resolve when the session already has a workspace', async () => {
+    vi.spyOn(auth.api, 'getSession').mockResolvedValue({
+      user: { id: 'user-5' },
+      session: { activeOrganizationId: 'org-5', token: 'tok-5' },
+    } as never);
+    const resolve = vi.spyOn(authModule, 'resolveActiveWorkspace');
+
+    const { guard } = guardWith(false);
+
+    await guard.canActivate(contextFor({ headers: {} }));
+    expect(resolve).not.toHaveBeenCalled();
   });
 
   it('never reads the workspace from a request header', async () => {

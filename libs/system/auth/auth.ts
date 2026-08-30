@@ -160,5 +160,36 @@ export const auth = betterAuth({
   ],
 });
 
+/**
+ * activeOrganizationId is written once, when the session is created, so a
+ * session issued before its membership existed stays null forever and every
+ * workspace-scoped route answers 403. Resolving it here and writing it back
+ * costs one query once per session rather than one per request.
+ *
+ * Returns undefined when the user genuinely has no workspace, which keeps the
+ * 403 for that case rather than inventing access.
+ */
+export const resolveActiveWorkspace = async (
+  userId: string,
+  sessionToken: string,
+): Promise<string | undefined> => {
+  const membership = await authPrisma.member.findFirst({
+    where: { userId },
+    select: { organizationId: true },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (!membership) {
+    return undefined;
+  }
+
+  await authPrisma.session.updateMany({
+    where: { token: sessionToken },
+    data: { activeOrganizationId: membership.organizationId },
+  });
+
+  return membership.organizationId;
+};
+
 export type Auth = typeof auth;
 export type AuthSession = Awaited<ReturnType<Auth['api']['getSession']>>;

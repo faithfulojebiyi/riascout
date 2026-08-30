@@ -9,7 +9,7 @@ import { fromNodeHeaders } from 'better-auth/node';
 
 import { AlsService } from '@system/als/als.service.js';
 
-import { auth, type AuthSession } from './auth.js';
+import { auth, resolveActiveWorkspace, type AuthSession } from './auth.js';
 import { IS_PUBLIC_KEY } from './auth.decorators.js';
 
 type SessionRequest = {
@@ -50,12 +50,18 @@ export class SessionGuard implements CanActivate {
 
     request.session = session;
 
+    /**
+     * A session issued before its membership existed carries no active
+     * organization, and nothing refreshes it — so resolve it here rather than
+     * leaving the user permanently 403'd until they sign out and back in.
+     */
+    const workspaceId =
+      session.session.activeOrganizationId ??
+      (await resolveActiveWorkspace(session.user.id, session.session.token));
+
     // identity flows through ALS so handlers never take it from the client
     this.als.ctx.set('userId', session.user.id);
-    this.als.ctx.set(
-      'workspaceId',
-      session.session.activeOrganizationId ?? undefined,
-    );
+    this.als.ctx.set('workspaceId', workspaceId ?? undefined);
 
     return true;
   }
