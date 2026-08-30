@@ -46,6 +46,12 @@ const STAGES: Stage[] = [
     engine: 'postgres',
   },
   {
+    key: 'movement',
+    file: '047-advisor-movement.sql',
+    label: 'advisor movement',
+    engine: 'postgres',
+  },
+  {
     key: 'firm-derived',
     file: '046-firm-derived.sql',
     label: 'firm ratios, bands, channel',

@@ -167,11 +167,24 @@ select a.advisor_crd,
       from market.firm_fact_owner o
      where o.filing_id = fn.filing_id and o.owner_advisor_crd = a.advisor_crd
   ) own on true
+  /**
+   * Entering the industry is not a move, so FIRST_REGISTRATION is excluded from
+   * both — otherwise "moved in the last 90 days" returns 8,167 people who have
+   * never worked anywhere else.
+   *
+   * The count is on occurred_on, not detected_on: the bootstrap detected every
+   * move today, so a detection window would return a whole career as recent.
+   */
   left join lateral (
-    select max(m.occurred_on)  as last_moved_on,
-           max(m.detected_on)  as last_detected_on,
-           (array_agg(m.from_firm_crd order by m.detected_on desc))[1] as previous_firm_crd,
-           count(*) filter (where m.detected_on > current_date - interval '5 years')::int as move_count_5y
+    select max(m.occurred_on) filter (where m.event_type <> 'FIRST_REGISTRATION')
+             as last_moved_on,
+           max(m.detected_on) as last_detected_on,
+           (array_agg(m.from_firm_crd order by m.occurred_on desc)
+              filter (where m.from_firm_crd is not null))[1] as previous_firm_crd,
+           count(*) filter (
+             where m.event_type <> 'FIRST_REGISTRATION'
+               and m.occurred_on > current_date - interval '5 years'
+           )::int as move_count_5y
       from market.advisor_movement m
      where m.advisor_crd = a.advisor_crd
   ) mv on true;

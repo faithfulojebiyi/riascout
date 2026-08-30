@@ -155,6 +155,28 @@ growth_emp as (
          case when abs(cagr) < 1000000 then cagr::numeric(12, 6) end as cagr
     from growth_emp_raw
 ),
+/**
+ * Attrition over the last 90 days, on occurred_on rather than detected_on:
+ * these were all detected at once by the bootstrap, so detection dates would
+ * put every move in the same window.
+ */
+flows as (
+  select firm_crd,
+         count(*) filter (where direction = 'in')  as gained,
+         count(*) filter (where direction = 'out') as lost
+    from (
+      select to_firm_crd as firm_crd, 'in' as direction
+        from market.advisor_movement
+       where to_firm_crd is not null
+         and occurred_on > current_date - interval '90 days'
+      union all
+      select from_firm_crd, 'out'
+        from market.advisor_movement
+       where from_firm_crd is not null
+         and occurred_on > current_date - interval '90 days'
+    ) d
+   group by firm_crd
+),
 filing_span as (
   select firm_crd,
          min(submitted_at)::date as first_filing_date,
@@ -207,11 +229,9 @@ select f.firm_crd,
 
        ow.owner_count, ow.owner_advisor_count, ow.ownership_concentration,
 
-       -- null until the movement engine lands; never 0, which would read as
-       -- "no advisors moved" rather than "we do not know yet"
-       null::int as advisors_gained_90d,
-       null::int as advisors_lost_90d,
-       null::int as net_advisor_flow_90d,
+       coalesce(flow.gained, 0)                              as advisors_gained_90d,
+       coalesce(flow.lost, 0)                                as advisors_lost_90d,
+       coalesce(flow.gained, 0) - coalesce(flow.lost, 0)     as net_advisor_flow_90d,
 
        fs.first_filing_date, fs.latest_filing_date, fs.filing_count,
 
@@ -239,7 +259,8 @@ select f.firm_crd,
   left join growth_aum     g1 on g1.firm_crd  = f.firm_crd and g1.horizon = 1
   left join growth_aum     g3 on g3.firm_crd  = f.firm_crd and g3.horizon = 3
   left join growth_aum     g5 on g5.firm_crd  = f.firm_crd and g5.horizon = 5
-  left join growth_emp     ge on ge.firm_crd  = f.firm_crd;
+  left join growth_emp     ge on ge.firm_crd  = f.firm_crd
+  left join flows          flow on flow.firm_crd = f.firm_crd;
 truncate market.firm_search;
 
 -- named rather than `select *`: a positional insert silently shifts every
