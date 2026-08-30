@@ -101,6 +101,7 @@ function SignIn() {
            * but email is configured, so showing an inert one would be a lie.
            */}
           <Input
+            size="sm"
             autoComplete="email"
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Enter your work email address"
@@ -110,6 +111,7 @@ function SignIn() {
           />
           {method === 'password' ? (
             <Input
+              size="sm"
               autoComplete="current-password"
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Password"
@@ -119,7 +121,7 @@ function SignIn() {
             />
           ) : null}
 
-          <Button disabled={pending || email === ''} size="md" type="submit">
+          <Button disabled={pending || email === ''} size="sm" type="submit">
             {pending
               ? 'Working…'
               : method === 'password'

@@ -53,8 +53,9 @@ export const OtpStep = ({ email, onBack, onVerified }: OtpStepProps) => {
           We sent a six digit code to {email}.
         </Text>
 
-        <Input disabled readOnly value={email} />
+        <Input disabled readOnly size="sm" value={email} />
         <Input
+          size="sm"
           autoComplete="one-time-code"
           autoFocus
           inputMode="numeric"
@@ -65,7 +66,7 @@ export const OtpStep = ({ email, onBack, onVerified }: OtpStepProps) => {
           value={code}
         />
 
-        <Button disabled={pending || code.length < 6} size="md" type="submit">
+        <Button disabled={pending || code.length < 6} size="sm" type="submit">
           {pending ? 'Verifying…' : 'Continue'}
         </Button>
 
