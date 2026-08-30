@@ -32,6 +32,13 @@ export const GetFirmFlowsResponseSchema = z
     firms: z.array(FirmFlowSchema),
     /** the window these numbers describe, so a caller cannot mislabel them */
     windowDays: z.number().int(),
+    /**
+     * Latest move the data contains. Windows are measured back from here, not
+     * from today — the source lags by days, so a one-day window anchored on now
+     * is always empty and reads as "nobody moved".
+     */
+    dataAsOf: z.iso.date().nullable(),
+    rangeStart: z.iso.date().nullable(),
     /** valid time, not detection: every bootstrap move was detected on one day */
     basis: z.literal('occurred_on'),
   })

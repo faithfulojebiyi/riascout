@@ -45,7 +45,7 @@ export class GetFirmMovesQueryHandler implements IQueryHandler<GetFirmMovesQuery
          LEFT JOIN market.advisor_search a ON a.advisor_crd = m.advisor_crd
          LEFT JOIN market.firm_search  f ON f.firm_crd = m.${counterparty}
         WHERE m.${subject} = $1::bigint
-          AND m.occurred_on > current_date - $2::int
+          AND m.occurred_on > (SELECT max(occurred_on) FROM market.advisor_move) - $2::int
         ORDER BY m.occurred_on DESC
         LIMIT $3`,
       dto.firmCrd,
