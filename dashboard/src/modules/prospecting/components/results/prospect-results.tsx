@@ -15,13 +15,18 @@ import type { FacetDefinition, ProspectRow } from '../../types/prospecting';
 export type ProspectResultsProps = {
   rows: ProspectRow[];
   columns: FacetDefinition[];
+  onRowClick: (row: ProspectRow) => void;
 };
 
 /**
  * A plain table, not ag-grid: results are a capped page rather than 510k rows,
  * so the SSRM machinery would buy nothing here.
  */
-export const ProspectResults = ({ rows, columns }: ProspectResultsProps) => (
+export const ProspectResults = ({
+  rows,
+  columns,
+  onRowClick,
+}: ProspectResultsProps) => (
   <Box flex="1" overflow="auto">
     <Table>
       <TableHeader>
@@ -34,7 +39,11 @@ export const ProspectResults = ({ rows, columns }: ProspectResultsProps) => (
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.sourceCrd}>
+          <TableRow
+            key={row.sourceCrd}
+            onClick={() => onRowClick(row)}
+            style={{ cursor: 'pointer' }}
+          >
             <TableCell>
               {row.recordId ? (
                 <Span color="text.placeholder" fontSize="xs">

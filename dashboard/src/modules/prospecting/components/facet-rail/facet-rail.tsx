@@ -15,14 +15,23 @@ import type {
   FacetValue,
 } from '../../types/prospecting';
 import { FacetInput } from '../facets/facet-input';
+import { FilterHeader } from './filter-header';
 
 export type FacetRailProps = {
   facets: FacetDefinition[];
   selection: FacetSelection;
+  activeCount: number;
   onChange: (attributeId: string, value: FacetValue | undefined) => void;
+  onClear: () => void;
 };
 
-export const FacetRail = ({ facets, selection, onChange }: FacetRailProps) => {
+export const FacetRail = ({
+  facets,
+  selection,
+  activeCount,
+  onChange,
+  onClear,
+}: FacetRailProps) => {
   /** grouped by attribute group, so the rail matches the grid's columns */
   const groups = useMemo(() => {
     const byGroup = new Map<string, FacetDefinition[]>();
@@ -47,6 +56,7 @@ export const FacetRail = ({ facets, selection, onChange }: FacetRailProps) => {
       py="2"
       w="30rem"
     >
+      <FilterHeader activeCount={activeCount} onClear={onClear} />
       <Accordion collapsible type="single">
         {groups.map(([group, groupFacets]) => {
           const active = groupFacets.filter(
