@@ -573,3 +573,22 @@ export interface GetFacetsResponse {
   facets: FacetDefinition[];
 }
 
+export interface SearchFacetOptions {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  allowKey: string;
+  /** @maxLength 120 */
+  query?: string;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  limit?: number;
+}
+
+export interface SearchFacetOptionsResponse {
+  options: FacetOption[];
+}
+

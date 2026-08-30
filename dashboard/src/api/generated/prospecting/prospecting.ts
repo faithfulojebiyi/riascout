@@ -8,7 +8,9 @@ import type {
   GetFacets,
   GetFacetsResponse,
   SearchAdvisors,
-  SearchAdvisorsResponse
+  SearchAdvisorsResponse,
+  SearchFacetOptions,
+  SearchFacetOptionsResponse
 } from '../rIAScoutAPI.schemas';
 
 import { apiClient } from '../../client';
@@ -35,5 +37,16 @@ import { apiClient } from '../../client';
     },
       );
     }
+  export const prospectingControllerSearchFacetOptions = (
+    searchFacetOptions: SearchFacetOptions,
+ ) => {
+      return apiClient<SearchFacetOptionsResponse>(
+      {url: `/prospecting/facet-options`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: searchFacetOptions
+    },
+      );
+    }
   export type ProspectingControllerSearchAdvisorsResult = NonNullable<Awaited<ReturnType<typeof prospectingControllerSearchAdvisors>>>
 export type ProspectingControllerGetFacetsResult = NonNullable<Awaited<ReturnType<typeof prospectingControllerGetFacets>>>
+export type ProspectingControllerSearchFacetOptionsResult = NonNullable<Awaited<ReturnType<typeof prospectingControllerSearchFacetOptions>>>

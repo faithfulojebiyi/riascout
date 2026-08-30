@@ -3,6 +3,8 @@ import { createZodDto } from 'nestjs-zod';
 import {
   GetFacetsResponseSchema,
   GetFacetsSchema,
+  SearchFacetOptionsResponseSchema,
+  SearchFacetOptionsSchema,
   SearchAdvisorsResponseSchema,
   SearchAdvisorsSchema,
 } from '../schema.js';
@@ -18,5 +20,13 @@ export class SearchAdvisorsResponseDto extends createZodDto(
 export class GetFacetsDto extends createZodDto(GetFacetsSchema) {}
 export class GetFacetsResponseDto extends createZodDto(
   GetFacetsResponseSchema,
+  { codec: true },
+) {}
+
+export class SearchFacetOptionsDto extends createZodDto(
+  SearchFacetOptionsSchema,
+) {}
+export class SearchFacetOptionsResponseDto extends createZodDto(
+  SearchFacetOptionsResponseSchema,
   { codec: true },
 ) {}

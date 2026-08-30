@@ -732,6 +732,23 @@ model AdvisorLocation {
 }
 
 /// Rebuilt by the projection refresh, not hand-maintained.
+/// Distinct values per allowlisted column, so a facet never scans the
+/// projection. 510k rows hold about 12k firm names; searching the 12k is the
+/// difference between a type-ahead and an 848ms wait.
+model FacetOption {
+  allowKey String @map("allow_key")
+  value    String
+  label    String
+  /// rows carrying this value, for ordering by prevalence rather than alphabet
+  rowCount Int    @map("row_count")
+
+  @@id([allowKey, value])
+  @@index([allowKey, label])
+  @@index([allowKey, rowCount(sort: Desc)])
+  @@schema("market")
+  @@map("facet_option")
+}
+
 model AdvisorDerived {
   advisorCrd              BigInt   @id @map("advisor_crd")
   experienceMonths        Int?     @map("experience_months")

@@ -8,14 +8,19 @@ import { join } from 'node:path';
 import { runDuck, type DuckOptions } from './lib/duck.js';
 import { acquire } from './lib/lock.js';
 import { runPsql } from './lib/postgres.js';
+import { refreshFacetOptions } from './refresh-facet-options.js';
 import { preflight } from './lib/preflight.js';
 
-/** duck stages read the seed; postgres stages only reshape what is already loaded */
+/**
+ * duck stages read the seed; postgres stages only reshape what is already
+ * loaded; a node stage needs the allowlist, which lives in typescript.
+ */
 type Stage = {
   key: string;
-  file: string;
+  file?: string;
   label: string;
-  engine?: 'duck' | 'postgres';
+  engine?: 'duck' | 'postgres' | 'node';
+  run?: (postgresUrl: string) => Promise<unknown>;
 };
 
 /**
@@ -57,6 +62,12 @@ const STAGES: Stage[] = [
     file: '051-firm-search.sql',
     label: 'firm_search projection',
     engine: 'postgres',
+  },
+  {
+    key: 'facet-options',
+    label: 'facet option values',
+    engine: 'node',
+    run: refreshFacetOptions,
   },
 ];
 
@@ -104,7 +115,9 @@ async function main(): Promise<void> {
   const selected = STAGES.filter((s) =>
     only ? only.has(s.key) : s.key !== 'reset',
   );
-  const needsSeed = selected.some((s) => s.engine !== 'postgres');
+  const needsSeed = selected.some(
+    (s) => s.engine !== 'postgres' && s.engine !== 'node',
+  );
 
   const pre = await preflight(needsSeed);
 
@@ -123,16 +136,21 @@ async function main(): Promise<void> {
   const startedAll = Date.now();
 
   for (const stage of selected) {
-    const sql = readFileSync(join(SQL_DIR, stage.file), 'utf8');
     const started = Date.now();
 
     process.stdout.write(`  ${stage.key.padEnd(12)} ${stage.label} … `);
 
     try {
-      if (stage.engine === 'postgres') {
-        await runPsql(sql, pre.postgresUrl);
+      if (stage.engine === 'node') {
+        await stage.run?.(pre.postgresUrl);
       } else {
-        await runDuck(sql, opts);
+        const sql = readFileSync(join(SQL_DIR, stage.file ?? ''), 'utf8');
+
+        if (stage.engine === 'postgres') {
+          await runPsql(sql, pre.postgresUrl);
+        } else {
+          await runDuck(sql, opts);
+        }
       }
 
       console.log(seconds(Date.now() - started));

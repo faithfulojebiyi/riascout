@@ -47,7 +47,7 @@ export const GetFacetsSchema = z
   .object({ sourceKind: z.enum(['advisor', 'firm']).default('advisor') })
   .meta({ id: 'GetFacets' });
 
-const FacetOptionSchema = z
+export const FacetOptionSchema = z
   .object({ value: z.string(), label: z.string() })
   .meta({ id: 'FacetOption' });
 
@@ -70,3 +70,16 @@ const FacetDefinitionSchema = z
 export const GetFacetsResponseSchema = z
   .object({ facets: z.array(FacetDefinitionSchema) })
   .meta({ id: 'GetFacetsResponse' });
+
+export const SearchFacetOptionsSchema = z
+  .object({
+    /** allowlist key, validated against the registry before it reaches SQL */
+    allowKey: z.string().min(1).max(120),
+    query: z.string().max(120).default(''),
+    limit: z.number().int().min(1).max(50).default(20),
+  })
+  .meta({ id: 'SearchFacetOptions' });
+
+export const SearchFacetOptionsResponseSchema = z
+  .object({ options: z.array(FacetOptionSchema) })
+  .meta({ id: 'SearchFacetOptionsResponse' });

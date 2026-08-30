@@ -4,7 +4,8 @@ import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
 import { buildFacetDefinitions } from '@feature/prospecting/facets/facet-definitions.js';
 import {
   attachOptions,
-  buildOptionQuery,
+  OPTIONS_SQL,
+  type OptionRow,
 } from '@feature/prospecting/facets/facet-options.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
@@ -19,8 +20,6 @@ export class GetFacetsQuery extends Query<GetFacetsResponseDto> {
     super();
   }
 }
-
-type OptionRow = { k: number; value: string; label: string };
 
 @QueryHandler(GetFacetsQuery)
 export class GetFacetsQueryHandler implements IQueryHandler<GetFacetsQuery> {
@@ -59,16 +58,16 @@ export class GetFacetsQueryHandler implements IQueryHandler<GetFacetsQuery> {
     });
 
     const facets = buildFacetDefinitions(attributes);
-    const optionQuery = buildOptionQuery(facets);
 
-    if (!optionQuery) {
+    if (facets.length === 0) {
       return { facets };
     }
 
     const rows = await this.appPrismaService.$queryRawUnsafe<OptionRow[]>(
-      optionQuery.sql,
+      OPTIONS_SQL,
+      facets.map((facet) => facet.allowKey),
     );
 
-    return { facets: attachOptions(facets, rows, optionQuery.keys) };
+    return { facets: attachOptions(facets, rows) };
   }
 }

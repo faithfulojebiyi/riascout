@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildFacetDefinitions } from './facet-definitions.js';
-import {
-  attachOptions,
-  buildOptionQuery,
-  OPTION_CAP,
-} from './facet-options.js';
+import { attachOptions, OPTION_CAP } from './facet-options.js';
 
 const attr = (id: string, referenceColumn: string) => ({
   id,
@@ -60,47 +56,13 @@ describe('buildFacetDefinitions', () => {
   });
 });
 
-describe('buildOptionQuery', () => {
-  it('caps every branch so one wide column cannot dominate', () => {
-    const facets = buildFacetDefinitions([attr('a', 'advisor.state')]);
-    const query = buildOptionQuery(facets);
-
-    expect(query?.sql).toContain(`LIMIT ${OPTION_CAP + 1}`);
-  });
-
-  it('parenthesises branches, since a bare limit binds to the union', () => {
-    const facets = buildFacetDefinitions([
-      attr('a', 'advisor.state'),
-      attr('b', 'advisor.exam_codes'),
-    ]);
-    const query = buildOptionQuery(facets);
-
-    expect(query?.sql).toContain('UNION ALL');
-    expect(query?.sql.trimStart().startsWith('(')).toBe(true);
-  });
-
-  it('prefers a dim table, which also lists values with no rows yet', () => {
-    const facets = buildFacetDefinitions([attr('a', 'advisor.firm_aum_band')]);
-
-    expect(buildOptionQuery(facets)?.sql).toContain('market.dim_aum_band');
-  });
-
-  it('has nothing to ask when no facet enumerates', () => {
-    const facets = buildFacetDefinitions([attr('a', 'advisor.tenure_years')]);
-
-    expect(buildOptionQuery(facets)).toBeNull();
-  });
-});
-
 describe('attachOptions', () => {
   const facets = buildFacetDefinitions([attr('a', 'advisor.state')]);
 
   it('attaches options under the cap', () => {
-    const result = attachOptions(
-      facets,
-      [{ k: 0, value: 'CA', label: 'CA' }],
-      ['advisor.state'],
-    );
+    const result = attachOptions(facets, [
+      { allow_key: 'advisor.state', value: 'CA', label: 'CA' },
+    ]);
 
     expect(result[0]?.kind).toBe('multiSelect');
     expect(result[0]?.options).toEqual([{ value: 'CA', label: 'CA' }]);
@@ -109,12 +71,12 @@ describe('attachOptions', () => {
   /** what classifies full_name, without anyone maintaining a list of names */
   it('demotes a facet that hit the cap rather than truncating it', () => {
     const rows = Array.from({ length: OPTION_CAP + 1 }, (_, i) => ({
-      k: 0,
+      allow_key: 'advisor.state',
       value: `v${i}`,
       label: `v${i}`,
     }));
 
-    const result = attachOptions(facets, rows, ['advisor.state']);
+    const result = attachOptions(facets, rows);
 
     expect(result[0]?.kind).toBe('search');
     expect(result[0]?.options).toEqual([]);
