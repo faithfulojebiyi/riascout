@@ -61,6 +61,8 @@ const ViewSchema = z
     id: z.uuid(),
     name: z.string(),
     isDefault: z.boolean(),
+    /** the column header needs it to mark which column is sorted, and which way */
+    sort: sortAstSchema,
     /** every attribute has a field row, so hiding one is a flag, not a delete */
     fields: z.array(ViewFieldSchema),
   })

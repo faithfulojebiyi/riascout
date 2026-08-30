@@ -120,6 +120,28 @@ export interface GetEntityRecords {
   offset?: number;
 }
 
+export type EntityViewSummarySortItemPathItem = {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+};
+
+export type EntityViewSummarySortItemDirection = typeof EntityViewSummarySortItemDirection[keyof typeof EntityViewSummarySortItemDirection];
+
+
+export const EntityViewSummarySortItemDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type EntityViewSummarySortItem = {
+  /**
+     * @minItems 1
+     * @maxItems 3
+     */
+  path: EntityViewSummarySortItemPathItem[];
+  direction: EntityViewSummarySortItemDirection;
+};
+
 export interface EntityAttributeChoice {
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   id: string;
@@ -158,6 +180,7 @@ export interface EntityViewSummary {
   id: string;
   name: string;
   isDefault: boolean;
+  sort: EntityViewSummarySortItem[];
   fields: EntityViewField[];
 }
 

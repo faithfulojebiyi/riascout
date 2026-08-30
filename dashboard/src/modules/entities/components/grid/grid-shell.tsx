@@ -23,7 +23,19 @@ export type EntityGridProps = {
  */
 export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
   const updateRecordValues = useUpdateRecordValues();
-  const columnDefs = useMemo(() => buildColumnDefs(view.fields), [view.fields]);
+
+  // single-column sort is what the header menu offers; the rest is view settings
+  const activeSort = view.sort[0];
+
+  const columnDefs = useMemo(
+    () =>
+      buildColumnDefs(view.fields, {
+        viewId: view.id,
+        sortedAttributeId: activeSort?.path[0]?.attributeId ?? null,
+        sortDirection: activeSort?.direction ?? null,
+      }),
+    [view.fields, view.id, activeSort],
+  );
 
   // read at call time rather than captured, so scrolling to a new column
   // widens the fetch without rebuilding the datasource
@@ -77,6 +89,16 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
       <AgGridReact<GridRow>
         cacheBlockSize={100}
         columnDefs={columnDefs}
+        /**
+         * Our header owns sorting and column actions. ag-grid's own menu offers
+         * pinning, autosize and "choose columns", none of which reach the view,
+         * so anything done through it is lost on reload.
+         */
+        defaultColDef={{
+          enableCellChangeFlash: false,
+          sortable: false,
+          suppressHeaderMenuButton: true,
+        }}
         getRowId={(params) => params.data.id}
         maxBlocksInCache={10}
         onCellValueChanged={onCellValueChanged}

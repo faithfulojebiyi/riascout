@@ -303,6 +303,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
         id: view.id,
         name: view.name,
         isDefault: view.isDefault,
+        sort: (view.sort as SortAst | null) ?? [],
         fields,
       },
     };

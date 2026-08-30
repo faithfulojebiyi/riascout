@@ -4,6 +4,7 @@ import { isTypeEditable } from '../attribute-inputs/input-map';
 import type { EntityViewField, GridRow } from '../../types/grid';
 import { CellEditorAdapter } from './cell-editor-adapter';
 import { CellRendererAdapter } from './cell-renderer-adapter';
+import { GridColumnHeader } from './grid-column-header';
 
 const DEFAULT_WIDTH = 180;
 
@@ -24,12 +25,28 @@ const WIDTH_BY_TYPE: Record<string, number> = {
  * Columns come from the view, never from a hand-written config. The legacy app
  * had two ~8,000-line grid-config files with 140 duplicated fields between them.
  */
-export const buildColumnDefs = (fields: EntityViewField[]): ColDef<GridRow>[] =>
+export const buildColumnDefs = (
+  fields: EntityViewField[],
+  header: {
+    viewId: string;
+    sortedAttributeId: string | null;
+    sortDirection: 'asc' | 'desc' | null;
+  },
+): ColDef<GridRow>[] =>
   fields
     .filter((field) => field.isVisible)
     .map((field) => ({
       colId: field.fieldId,
       headerName: field.label,
+      headerComponent: GridColumnHeader,
+      headerComponentParams: {
+        field,
+        viewId: header.viewId,
+        sortDirection:
+          header.sortedAttributeId === field.attributeId
+            ? header.sortDirection
+            : null,
+      },
       // ag-grid needs a field path for sorting; the renderer reads the map itself
       field: `cellsByAttributeId.${field.attributeId}` as never,
       width: field.width ?? WIDTH_BY_TYPE[field.type] ?? DEFAULT_WIDTH,
@@ -37,7 +54,7 @@ export const buildColumnDefs = (fields: EntityViewField[]): ColDef<GridRow>[] =>
       // projected market columns have no cell to write, and a type with no
       // registered input cannot be edited safely
       editable: field.isEditable && isTypeEditable(field.type),
-      sortable: true,
+      // the header menu sorts, and persists it to the view
       resizable: true,
       cellRenderer: CellRendererAdapter,
       cellRendererParams: {
