@@ -2,7 +2,10 @@ import { type CellValueChangedEvent, themeAlpine } from 'ag-grid-enterprise';
 import { AgGridReact } from 'ag-grid-react';
 import { useCallback, useMemo, useRef } from 'react';
 
-import { GridWrapper } from '../../../../ui/primitives/data-grid';
+import {
+  GRID_ROW_HEIGHT,
+  GridWrapper,
+} from '../../../../ui/primitives/data-grid';
 import { useUpdateRecordValues } from '../../mutations/use-update-record-values';
 import type { EntityViewSummary, GridRow } from '../../types/grid';
 import { buildColumnDefs } from './column-defs';
@@ -100,6 +103,12 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
           suppressHeaderMenuButton: true,
         }}
         getRowId={(params) => params.data.id}
+        /**
+         * Equal heights: alpine defaults to a 48px header over 42px rows, which
+         * makes the header loom over the data instead of reading as one grid.
+         */
+        headerHeight={GRID_ROW_HEIGHT}
+        rowHeight={GRID_ROW_HEIGHT}
         maxBlocksInCache={10}
         onCellValueChanged={onCellValueChanged}
         onColumnVisible={onColumnVisible}

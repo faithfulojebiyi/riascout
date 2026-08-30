@@ -112,6 +112,7 @@ export const GridColumnHeader = (props: GridColumnHeaderProps) => {
           <Icon />
         </Span>
         <Span
+          fontSize="1"
           fontWeight="500"
           overflow="hidden"
           textOverflow="ellipsis"

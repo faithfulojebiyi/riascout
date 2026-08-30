@@ -1,0 +1,5 @@
+/**
+ * Header and rows share this. Alpine's defaults differ (48 vs 42), which reads
+ * as a header sitting on top of the data rather than part of the same grid.
+ */
+export const GRID_ROW_HEIGHT = 40;

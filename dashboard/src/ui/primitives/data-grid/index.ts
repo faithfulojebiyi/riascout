@@ -2,6 +2,7 @@
 
 // constants
 export { GRID_ANIMATION_DURATION } from './constants/animations';
+export { GRID_ROW_HEIGHT } from './constants/sizing';
 export type {
   AgGridReact,
   ColDef,

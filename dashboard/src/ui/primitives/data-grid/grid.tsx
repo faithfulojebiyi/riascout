@@ -117,7 +117,9 @@ export const GridWrapper = ({
 
         // popups
         '--ag-control-panel-background-color': 'transparent !important',
-        '--ag-font-family': 'var(--font-poppins) !important',
+        '--ag-font-family': 'var(--font-geist-sans) !important',
+        // alpine's 14px reads oversized against a 40px row
+        '--ag-font-size': '0.8125rem !important',
 
         // text — drives .ag-row-group and any element without an explicit color override
         '--ag-foreground-color': 'token(colors.text.app) !important',
