@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { prospectingControllerSearchAdvisors } from '../../../api/generated/prospecting/prospecting';
+import { QUERY_KEYS } from '../../../lib/query';
 import type { SearchAdvisors } from '../types/prospecting';
 
 /**
@@ -9,7 +10,7 @@ import type { SearchAdvisors } from '../types/prospecting';
  */
 export const useSearchProspects = (body: SearchAdvisors, enabled = true) =>
   useQuery({
-    queryKey: ['prospect-search', body] as const,
+    queryKey: [QUERY_KEYS.prospectSearch, body] as const,
     queryFn: () => prospectingControllerSearchAdvisors(body),
     placeholderData: keepPreviousData,
     enabled,

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { entitiesControllerCreateEntityRecord } from '../../../api/generated/entities/entities';
 import type { CreateEntityRecord } from '../../../api/generated/rIAScoutAPI.schemas';
+import { QUERY_KEYS } from '../../../lib/query';
 import { toast } from '../../../ui/primitives/toast/toast';
 
 /**
@@ -19,7 +20,9 @@ export const useCreateEntityRecord = () => {
       toast.success(
         result.created ? 'Saved to your CRM' : 'Already in your CRM',
       );
-      void queryClient.invalidateQueries({ queryKey: ['entity-records'] });
+      void queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.entityRecords],
+      });
     },
     onError: () => toast.error('Could not save that record'),
   });

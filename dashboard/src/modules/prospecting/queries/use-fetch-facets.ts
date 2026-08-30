@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { prospectingControllerGetFacets } from '../../../api/generated/prospecting/prospecting';
+import { QUERY_KEYS } from '../../../lib/query';
 
 /**
  * Definitions are global reference data keyed only by source kind, so they are
@@ -8,7 +9,7 @@ import { prospectingControllerGetFacets } from '../../../api/generated/prospecti
  */
 export const useFetchFacets = (sourceKind: 'advisor' | 'firm' = 'advisor') =>
   useQuery({
-    queryKey: ['prospecting-facets', sourceKind] as const,
+    queryKey: [QUERY_KEYS.prospectingFacets, sourceKind] as const,
     queryFn: () => prospectingControllerGetFacets({ sourceKind }),
     staleTime: Infinity,
   });

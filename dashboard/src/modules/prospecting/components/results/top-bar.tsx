@@ -43,11 +43,11 @@ export const TopBar = ({
       </TabsList>
     </Tabs>
 
-    <Span fontSize="sm" fontWeight="medium">
+    <Span fontSize="2" fontWeight="medium">
       {total === null ? '—' : `${total.toLocaleString()} ${noun}`}
     </Span>
     {isFetching ? (
-      <Span color="text.placeholder" fontSize="sm">
+      <Span color="text.placeholder" fontSize="2">
         Updating…
       </Span>
     ) : null}

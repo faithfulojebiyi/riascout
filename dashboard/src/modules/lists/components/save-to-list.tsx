@@ -77,13 +77,13 @@ export const SaveToList = ({
               variant="ghost"
             >
               <Span>{list.name}</Span>
-              <Span color="text.placeholder" fontSize="xs">
+              <Span color="text.placeholder" fontSize="1">
                 {list.memberCount}
               </Span>
             </Button>
           ))}
           {lists.length === 0 ? (
-            <Span color="text.placeholder" fontSize="sm" py="1">
+            <Span color="text.placeholder" fontSize="2" py="1">
               No lists yet
             </Span>
           ) : null}

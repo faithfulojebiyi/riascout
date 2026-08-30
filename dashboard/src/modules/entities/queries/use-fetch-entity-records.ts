@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 
 import { entitiesControllerGetEntityRecords } from '../../../api/generated/entities/entities';
 import type { GetEntityRecords } from '../../../api/generated/rIAScoutAPI.schemas';
+import { QUERY_KEYS } from '../../../lib/query';
 
 export const entityRecordsQueryKey = (body: GetEntityRecords) =>
-  ['entity-records', body] as const;
+  [QUERY_KEYS.entityRecords, body] as const;
 
 /**
  * The first page, used to seed the view definition before ag-grid mounts.

@@ -143,9 +143,11 @@ describe('auth', () => {
     it('seeds the advisor and firm entities on organization create', async () => {
       const { rows } = await db.query<{ slug: string; source_kind: string }>(
         `select e.slug, e.source_kind from app.entity e
-           join app.member m on m.organization_id = e.workspace_id
-           join app."user" u on u.id = m.user_id
-          where u.email = $1 order by e.slug`,
+          where e.workspace_id = (
+            select m.organization_id from app.member m
+              join app."user" u on u.id = m.user_id
+             where u.email = $1 order by m.created_at desc limit 1
+          ) order by e.slug`,
         [email],
       );
 

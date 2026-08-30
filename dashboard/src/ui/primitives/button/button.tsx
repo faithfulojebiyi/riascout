@@ -143,6 +143,11 @@ export const buttonStyle = cva({
         borderColor: 'colorPalette.2',
         color: 'colorPalette.12',
       },
+      /**
+       * colorPalette.1 rather than colorPalette.contrast: no palette defines a
+       * contrast step, so the token resolved to nothing and the label kept the
+       * inherited grey on a black button. Step 1 is the inverse of step 9.
+       */
       solid: {
         _hover: {
           _disabled: {
@@ -156,11 +161,11 @@ export const buttonStyle = cva({
 
         '&[data-state=active], &[data-state=on], &[data-state=open]': {
           bg: 'colorPalette.9',
-          color: 'colorPalette.contrast',
+          color: 'colorPalette.1',
           opacity: '1',
         },
         bg: 'colorPalette.9',
-        color: 'colorPalette.contrast',
+        color: 'colorPalette.1',
         colorPalette: 'brand.primary',
       },
       transparent: {

@@ -68,7 +68,7 @@ export const ProspectDetailSheet = ({
               <Span
                 color="text.muted"
                 display="block"
-                fontSize="xs"
+                fontSize="1"
                 fontWeight="medium"
                 mb="1"
                 textTransform="uppercase"
@@ -87,10 +87,10 @@ export const ProspectDetailSheet = ({
                     key={facet.attributeId}
                     py="1"
                   >
-                    <Span color="text.muted" fontSize="sm">
+                    <Span color="text.muted" fontSize="2">
                       {facet.label}
                     </Span>
-                    <Span fontSize="sm">
+                    <Span fontSize="2">
                       <Renderer value={value} />
                     </Span>
                   </Flex>

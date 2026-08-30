@@ -29,7 +29,7 @@ export const AuthShell = ({ children, aside }: AuthShellProps) => (
     px="4"
     py="8"
   >
-    <Heading as="h1" fontSize="2xl" fontWeight="600" letterSpacing="tight">
+    <Heading as="h1" fontSize="6" fontWeight="600" letterSpacing="tight">
       RIAScout
     </Heading>
 
@@ -37,19 +37,20 @@ export const AuthShell = ({ children, aside }: AuthShellProps) => (
       borderColor="border.subtle"
       borderRadius="2xl"
       borderWidth="1px"
-      maxW="90rem"
+      maxW="70.625rem"
+      minH="43.25rem"
       my="8"
       w="full"
     >
       <Flex
         align="stretch"
         direction={{ base: 'column', md: 'row' }}
-        gap="10"
-        minH="30rem"
+        gap="8"
+        minH="43.25rem"
         p={{ base: '6', md: '12' }}
       >
         <Flex align="center" flex="1" justify="center">
-          <Box maxW="30rem" w="full">
+          <Box maxW="26.25rem" w="full">
             {children}
           </Box>
         </Flex>
@@ -63,14 +64,14 @@ export const AuthShell = ({ children, aside }: AuthShellProps) => (
     </Box>
 
     <Flex align="center" gap="4" justify="center">
-      <Span color="text.placeholder" fontSize="sm">
+      <Span color="text.placeholder" fontSize="2">
         © {new Date().getFullYear()} RIAScout
       </Span>
       {FOOTER_LINKS.map((link) => (
         <Text
           asChild
           color="text.muted"
-          fontSize="sm"
+          fontSize="2"
           key={link.href}
           textDecoration="underline"
         >
@@ -84,7 +85,7 @@ export const AuthShell = ({ children, aside }: AuthShellProps) => (
 /** the right pane on sign-in: what this is, before anyone has seen it */
 export const WelcomeAside = () => (
   <VStack alignItems="flex-start" gap="4" maxW="32rem">
-    <Heading as="h2" fontSize="3xl" fontWeight="600" letterSpacing="tight">
+    <Heading as="h2" fontSize="7" fontWeight="600" letterSpacing="tight">
       Welcome to RIAScout.
     </Heading>
     <Text color="text.muted">

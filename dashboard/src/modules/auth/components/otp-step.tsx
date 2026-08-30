@@ -46,10 +46,10 @@ export const OtpStep = ({ email, onBack, onVerified }: OtpStepProps) => {
   return (
     <form onSubmit={onSubmit}>
       <VStack alignItems="stretch" gap="3">
-        <Heading as="h2" fontSize="2xl" fontWeight="600" textAlign="center">
+        <Heading as="h2" fontSize="6" fontWeight="600" textAlign="center">
           Check your inbox
         </Heading>
-        <Text color="text.muted" fontSize="sm" textAlign="center">
+        <Text color="text.muted" fontSize="2" textAlign="center">
           We sent a six digit code to {email}.
         </Text>
 
@@ -70,7 +70,7 @@ export const OtpStep = ({ email, onBack, onVerified }: OtpStepProps) => {
         </Button>
 
         {error ? (
-          <Text color="brand.error.11" fontSize="sm" role="alert">
+          <Text color="brand.error.11" fontSize="2" role="alert">
             {error}
           </Text>
         ) : null}
@@ -79,7 +79,7 @@ export const OtpStep = ({ email, onBack, onVerified }: OtpStepProps) => {
           Use a different email
         </Button>
 
-        <Span color="text.placeholder" fontSize="xs" textAlign="center">
+        <Span color="text.placeholder" fontSize="1" textAlign="center">
           No mail provider is configured yet — the code is written to the api
           log.
         </Span>

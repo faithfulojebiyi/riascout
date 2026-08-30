@@ -13,7 +13,7 @@ export const ProspectingEmptyState = ({ hasFilters }: EmptyStateProps) => (
     <Text fontWeight="medium">
       {hasFilters ? 'No advisors match these filters' : 'Start with a filter'}
     </Text>
-    <Span color="text.placeholder" fontSize="sm" textAlign="center">
+    <Span color="text.placeholder" fontSize="2" textAlign="center">
       {hasFilters
         ? 'Coverage is SEC-registered and exempt reporting advisers only, so state-registered firms will not appear.'
         : 'Pick a state, an exam or an AUM band from the rail to narrow 510,725 advisors.'}

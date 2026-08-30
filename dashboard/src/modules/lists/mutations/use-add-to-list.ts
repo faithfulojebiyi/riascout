@@ -5,6 +5,7 @@ import type {
   AddToList,
   AddToListResponse,
 } from '../../../api/generated/rIAScoutAPI.schemas';
+import { QUERY_KEYS } from '../../../lib/query';
 import { toast } from '../../../ui/primitives/toast/toast';
 
 /**
@@ -41,8 +42,10 @@ export const useAddToList = () => {
        * it returns. Refetching later is what makes it settle without polling.
        */
       const invalidate = () => {
-        void queryClient.invalidateQueries({ queryKey: ['lists'] });
-        void queryClient.invalidateQueries({ queryKey: ['prospect-search'] });
+        void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.lists] });
+        void queryClient.invalidateQueries({
+          queryKey: [QUERY_KEYS.prospectSearch],
+        });
       };
 
       invalidate();

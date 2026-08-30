@@ -142,14 +142,14 @@ function SignIn() {
           </Button>
 
           {error ? (
-            <Text color="brand.error.11" fontSize="sm" role="alert">
+            <Text color="brand.error.11" fontSize="2" role="alert">
               {error}
             </Text>
           ) : null}
 
           <Separator my="2" />
 
-          <Span color="text.placeholder" fontSize="xs">
+          <Span color="text.placeholder" fontSize="1">
             By continuing you agree that RIAScout may contact you about the
             product. Coverage is SEC-registered and exempt reporting advisers.
           </Span>

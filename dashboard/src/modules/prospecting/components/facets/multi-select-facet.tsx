@@ -45,7 +45,7 @@ export const MultiSelectFacet = ({
               checked={selected.includes(option.value)}
               onCheckedChange={() => toggle(option.value)}
             />
-            <Span fontSize="sm">{option.label}</Span>
+            <Span fontSize="2">{option.label}</Span>
           </Flex>
         </label>
       ))}

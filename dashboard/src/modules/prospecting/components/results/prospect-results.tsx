@@ -66,7 +66,7 @@ export const ProspectResults = ({
             </TableCell>
             <TableCell>
               {row.recordId ? (
-                <Span color="text.placeholder" fontSize="xs">
+                <Span color="text.placeholder" fontSize="1">
                   Saved
                 </Span>
               ) : null}

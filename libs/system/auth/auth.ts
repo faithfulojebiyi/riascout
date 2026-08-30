@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
@@ -27,6 +28,9 @@ export const authPrisma = new PrismaClient({
   }),
   errorFormat: 'minimal',
 });
+
+/** the code goes to the log until a mail provider exists; see sendVerificationOTP */
+const otpLogger = new Logger('AuthOtp');
 
 const trustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? '')
   .split(',')
@@ -59,6 +63,67 @@ export const auth = betterAuth({
     },
   },
   advanced: { useSecureCookies: process.env.NODE_ENV !== 'development' },
+  databaseHooks: {
+    /**
+     * A workspace on sign-up. Every route is workspace-scoped, so a user
+     * without one gets 403 from everything — there is no useful state between
+     * "account exists" and "workspace exists". provisionWorkspace runs from
+     * afterCreateOrganization, so entities and attributes come with it.
+     */
+    user: {
+      create: {
+        after: async (user) => {
+          const slug = `${user.email.split('@')[0] ?? 'workspace'}-${user.id
+            .slice(0, 6)
+            .toLowerCase()}`.replace(/[^a-z0-9-]/gi, '-');
+
+          const organization = await authPrisma.organization.create({
+            data: {
+              id: crypto.randomUUID(),
+              name: user.name || (user.email.split('@')[0] ?? 'My workspace'),
+              slug,
+            },
+            select: { id: true },
+          });
+
+          await authPrisma.member.create({
+            data: {
+              id: crypto.randomUUID(),
+              organizationId: organization.id,
+              userId: user.id,
+              role: 'owner',
+            },
+          });
+
+          await provisionWorkspace(authPrisma as never, organization.id);
+        },
+      },
+    },
+    /**
+     * Only the organization plugin's setActive sets this, which sign-in does
+     * not call — so it is resolved here for every method rather than one flow.
+     */
+    session: {
+      create: {
+        before: async (session) => {
+          const membership = await authPrisma.member.findFirst({
+            where: { userId: session.userId },
+            select: { organizationId: true },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          return membership
+            ? {
+                data: {
+                  ...session,
+                  activeOrganizationId: membership.organizationId,
+                },
+              }
+            : undefined;
+        },
+      },
+    },
+  },
   plugins: [
     /**
      * The code is logged rather than sent: there is no mail provider yet, and
@@ -76,7 +141,7 @@ export const auth = betterAuth({
           );
         }
 
-        console.info(`[auth] ${type} OTP for ${email}: ${otp}`);
+        otpLogger.log(`${type} code for ${email}: ${otp}`);
       },
     }),
     organization({

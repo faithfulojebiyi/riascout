@@ -67,11 +67,11 @@ export const FacetRail = ({
             <AccordionItem key={group} value={group}>
               <AccordionTrigger>
                 <Flex align="center" gap="1">
-                  <Span fontSize="sm" fontWeight="medium">
+                  <Span fontSize="2" fontWeight="medium">
                     {group}
                   </Span>
                   {active > 0 ? (
-                    <Span color="text.placeholder" fontSize="xs">
+                    <Span color="text.placeholder" fontSize="1">
                       {active}
                     </Span>
                   ) : null}
@@ -80,7 +80,7 @@ export const FacetRail = ({
               <AccordionContent>
                 {groupFacets.map((facet) => (
                   <Box key={facet.attributeId} mb="3">
-                    <Span display="block" fontSize="sm" mb="1">
+                    <Span display="block" fontSize="2" mb="1">
                       {facet.label}
                     </Span>
                     <FacetInput
