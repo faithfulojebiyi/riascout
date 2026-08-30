@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   filterTreeSchema,
   sortAstSchema,
+  sortDirectionSchema,
 } from '@feature/entities/filter-sort/ast.js';
 
 /**
@@ -149,6 +150,42 @@ export const CreateEntityRecordResponseSchema = z
     created: z.boolean(),
   })
   .meta({ id: 'CreateEntityRecordResponse' });
+
+/**
+ * Everything the column header menu can change. Every field is optional so one
+ * menu item sends one key rather than the client echoing back the whole column.
+ */
+export const UpdateViewFieldSchema = z
+  .object({
+    viewId: z.uuid(),
+    fieldId: z.uuid(),
+    label: z.string().trim().min(1).max(120).optional(),
+    isVisible: z.boolean().optional(),
+    isPinned: z.boolean().optional(),
+    width: z.number().int().min(60).max(1200).optional(),
+  })
+  .meta({ id: 'UpdateViewField' });
+
+export const MoveViewFieldSchema = z
+  .object({
+    viewId: z.uuid(),
+    fieldId: z.uuid(),
+    direction: z.enum(['left', 'right']),
+  })
+  .meta({ id: 'MoveViewField' });
+
+export const MoveViewFieldResponseSchema = z
+  .object({ position: z.string() })
+  .meta({ id: 'MoveViewFieldResponse' });
+
+/** null clears the sort back to the view's natural order */
+export const UpdateViewSortSchema = z
+  .object({
+    viewId: z.uuid(),
+    attributeId: z.uuid(),
+    direction: sortDirectionSchema.nullable(),
+  })
+  .meta({ id: 'UpdateViewSort' });
 
 /** the sidebar needs to know what exists before it can navigate anywhere */
 export const GetEntitiesSchema = z.object({}).meta({ id: 'GetEntities' });

@@ -7,8 +7,12 @@ import {
   CreateEntityRecordSchema,
   GetEntityRecordsResponseSchema,
   GetEntityRecordsSchema,
+  MoveViewFieldResponseSchema,
+  MoveViewFieldSchema,
   UpdateRecordValuesResponseSchema,
   UpdateRecordValuesSchema,
+  UpdateViewFieldSchema,
+  UpdateViewSortSchema,
 } from '../schema.js';
 
 export class GetEntityRecordsDto extends createZodDto(GetEntityRecordsSchema) {}
@@ -32,6 +36,14 @@ export class CreateEntityRecordDto extends createZodDto(
 ) {}
 export class CreateEntityRecordResponseDto extends createZodDto(
   CreateEntityRecordResponseSchema,
+  { codec: true },
+) {}
+
+export class UpdateViewFieldDto extends createZodDto(UpdateViewFieldSchema) {}
+export class UpdateViewSortDto extends createZodDto(UpdateViewSortSchema) {}
+export class MoveViewFieldDto extends createZodDto(MoveViewFieldSchema) {}
+export class MoveViewFieldResponseDto extends createZodDto(
+  MoveViewFieldResponseSchema,
   { codec: true },
 ) {}
 
