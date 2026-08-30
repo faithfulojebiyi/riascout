@@ -130,10 +130,6 @@ growth_aum_raw as (
      and h.on_date >= c.latest_on - make_interval(years => g.horizon, days => 180)
    where h.regulatory_aum > 0
      and c.aum_now > 0
-     -- TEMPORARY, remove after the seed rebuild: drops baselines whose exponent
-     -- a duckdb binder bug dropped. Also costs genuine >1000x ramps.
-     and c.aum_now < h.regulatory_aum * 1000
-     and h.regulatory_aum < c.aum_now * 1000
    order by c.firm_crd, g.horizon, h.on_date desc
 ),
 growth_aum as (
