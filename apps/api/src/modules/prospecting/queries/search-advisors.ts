@@ -118,14 +118,12 @@ export class SearchAdvisorsQueryHandler implements IQueryHandler<SearchAdvisorsQ
       rows: rows.map((row) => ({
         sourceCrd: String(row.source_crd),
         recordId: row.record_id,
-        values: Object.fromEntries(
-          Object.entries(row)
-            .filter(([key]) => key.startsWith(REFERENCE_PREFIX))
-            .map(([key, value]) => [
-              key.slice(REFERENCE_PREFIX.length),
-              toJsonValue(value),
-            ]),
-        ),
+        values: Object.entries(row)
+          .filter(([key]) => key.startsWith(REFERENCE_PREFIX))
+          .map(([key, value]) => ({
+            attributeId: key.slice(REFERENCE_PREFIX.length),
+            value: toJsonValue(value),
+          })),
       })),
     };
   }

@@ -298,3 +298,160 @@ export interface UpdateRecordValuesResponse {
   results: UpdateRecordValuesResponseResultsItem[];
 }
 
+export type SearchAdvisorsSchema0 = {
+  kind: 'condition';
+  /**
+     * @minItems 1
+     * @maxItems 3
+     */
+  path: ({
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+})[];
+  operator: 'is' | 'isNot' | 'contains' | 'notContains' | 'startsWith' | 'endsWith' | 'isEmpty' | 'isNotEmpty' | 'isLessThan' | 'isGreaterThan' | 'isBefore' | 'isAfter' | 'isBetween' | 'isWithinLastNDays' | 'isAnyOf' | 'isNoneOf';
+  value: unknown;
+} | {
+  kind: 'and';
+  /** @minItems 1 */
+  children: SearchAdvisorsSchema0[];
+} | {
+  kind: 'or';
+  /** @minItems 1 */
+  children: SearchAdvisorsSchema0[];
+} | {
+  kind: 'not';
+  child: SearchAdvisorsSchema0;
+};
+
+export type SearchAdvisorsSourceKind = typeof SearchAdvisorsSourceKind[keyof typeof SearchAdvisorsSourceKind];
+
+
+export const SearchAdvisorsSourceKind = {
+  advisor: 'advisor',
+  firm: 'firm',
+} as const;
+
+export type SearchAdvisorsSortItemPathItem = {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+};
+
+export type SearchAdvisorsSortItemDirection = typeof SearchAdvisorsSortItemDirection[keyof typeof SearchAdvisorsSortItemDirection];
+
+
+export const SearchAdvisorsSortItemDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type SearchAdvisorsSortItem = {
+  /**
+     * @minItems 1
+     * @maxItems 3
+     */
+  path: SearchAdvisorsSortItemPathItem[];
+  direction: SearchAdvisorsSortItemDirection;
+};
+
+export interface SearchAdvisors {
+  sourceKind?: SearchAdvisorsSourceKind;
+  filter?: SearchAdvisorsSchema0 | null;
+  sort?: SearchAdvisorsSortItem[];
+  /**
+     * @maxItems 60
+     * @items.pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+     */
+  selectAttributeIds?: string[];
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  limit?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  offset?: number;
+}
+
+export type ProspectRowValuesItem = {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+  value: unknown;
+};
+
+export interface ProspectRow {
+  sourceCrd: string;
+  /**
+     * @nullable
+     * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+     */
+  recordId: string | null;
+  values: ProspectRowValuesItem[];
+}
+
+export interface SearchAdvisorsResponse {
+  rows: ProspectRow[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  total: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  limit: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  offset: number;
+}
+
+export type GetFacetsSourceKind = typeof GetFacetsSourceKind[keyof typeof GetFacetsSourceKind];
+
+
+export const GetFacetsSourceKind = {
+  advisor: 'advisor',
+  firm: 'firm',
+} as const;
+
+export interface GetFacets {
+  sourceKind?: GetFacetsSourceKind;
+}
+
+export type FacetDefinitionKind = typeof FacetDefinitionKind[keyof typeof FacetDefinitionKind];
+
+
+export const FacetDefinitionKind = {
+  multiSelect: 'multiSelect',
+  search: 'search',
+  number: 'number',
+  boolean: 'boolean',
+  date: 'date',
+} as const;
+
+export interface FacetOption {
+  value: string;
+  label: string;
+}
+
+export interface FacetDefinition {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+  allowKey: string;
+  label: string;
+  /** @nullable */
+  icon: string | null;
+  group: string;
+  kind: FacetDefinitionKind;
+  operators: string[];
+  isArray: boolean;
+  options: FacetOption[];
+}
+
+export interface GetFacetsResponse {
+  facets: FacetDefinition[];
+}
+

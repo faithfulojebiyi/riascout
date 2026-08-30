@@ -27,7 +27,9 @@ const ProspectRowSchema = z
     sourceCrd: z.string(),
     /** set when this prospect is already saved in the workspace */
     recordId: z.uuid().nullable(),
-    values: z.record(z.string(), z.unknown()),
+    /** an array, not a map: OpenAPI 3.0 has no propertyNames, and this
+     *  matches the shape entity records already return */
+    values: z.array(z.object({ attributeId: z.uuid(), value: z.unknown() })),
   })
   .meta({ id: 'ProspectRow' });
 
@@ -52,6 +54,8 @@ const FacetOptionSchema = z
 const FacetDefinitionSchema = z
   .object({
     attributeId: z.uuid(),
+    /** stable identity; label is display text a user may rename */
+    allowKey: z.string(),
     label: z.string(),
     icon: z.string().nullable(),
     group: z.string(),
