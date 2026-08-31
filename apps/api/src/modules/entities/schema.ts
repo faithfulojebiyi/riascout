@@ -172,8 +172,17 @@ export const MoveViewFieldSchema = z
   .object({
     viewId: z.uuid(),
     fieldId: z.uuid(),
-    direction: z.enum(['left', 'right']),
+    /** one step, from the column header menu */
+    direction: z.enum(['left', 'right']).optional(),
+    /** an absolute slot, from dragging the column list in view settings */
+    toIndex: z.number().int().min(0).max(500).optional(),
   })
+  // exactly one of the two, never both and never neither
+  .refine(
+    (value) =>
+      (value.direction === undefined) !== (value.toIndex === undefined),
+    { message: 'Provide exactly one of direction or toIndex' },
+  )
   .meta({ id: 'MoveViewField' });
 
 export const MoveViewFieldResponseSchema = z

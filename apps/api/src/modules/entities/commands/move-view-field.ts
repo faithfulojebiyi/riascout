@@ -16,6 +16,23 @@ export class MoveViewFieldCommand extends Command<MoveViewFieldResponseDto> {
   }
 }
 
+/** the rank that lands a row between its two new neighbours, either absent */
+const rankBetween = (before?: string, after?: string): string => {
+  if (before && after) {
+    return LexoRank.parse(before).between(LexoRank.parse(after)).toString();
+  }
+
+  if (after) {
+    return LexoRank.parse(after).genPrev().toString();
+  }
+
+  if (before) {
+    return LexoRank.parse(before).genNext().toString();
+  }
+
+  return LexoRank.middle().toString();
+};
+
 @CommandHandler(MoveViewFieldCommand)
 export class MoveViewFieldCommandHandler implements ICommandHandler<MoveViewFieldCommand> {
   constructor(
@@ -43,31 +60,31 @@ export class MoveViewFieldCommandHandler implements ICommandHandler<MoveViewFiel
       orderBy: { position: 'asc' },
     });
 
-    const index = fields.findIndex((field) => field.id === dto.fieldId);
+    const from = fields.findIndex((field) => field.id === dto.fieldId);
 
-    if (index === -1) {
+    if (from === -1) {
       throw new NotFoundException('Column not found on this view');
     }
 
-    const step = dto.direction === 'left' ? -1 : 1;
-    const target = index + step;
+    /**
+     * Both cases reduce to "insert at index N of the list without this field",
+     * so direction only has to pick that index. Moving right by one means
+     * landing where the right neighbour currently sits, which is from + 1.
+     */
+    const others = fields.filter((field) => field.id !== dto.fieldId);
+    const requested =
+      dto.toIndex ?? (dto.direction === 'left' ? from - 1 : from + 1);
+    const at = Math.min(Math.max(requested, 0), others.length);
 
-    // already at the edge — a no-op rather than an error the menu has to handle
-    if (target < 0 || target >= fields.length) {
-      return { position: fields[index]!.position };
+    // already there — a no-op rather than an error the menu has to handle
+    if (at === from) {
+      return { position: fields[from]!.position };
     }
 
-    const neighbour = fields[target]!;
-    const beyond = fields[target + step];
-
-    const neighbourRank = LexoRank.parse(neighbour.position);
-    const position = (
-      beyond
-        ? neighbourRank.between(LexoRank.parse(beyond.position))
-        : dto.direction === 'left'
-          ? neighbourRank.genPrev()
-          : neighbourRank.genNext()
-    ).toString();
+    const position = rankBetween(
+      others[at - 1]?.position,
+      others[at]?.position,
+    );
 
     await this.appPrismaService.entityViewField.updateMany({
       where: { id: dto.fieldId, viewId: dto.viewId, workspaceId },

@@ -69,6 +69,8 @@ const triggerStyles = cva({
 
 type Props = React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
   inset?: boolean;
+  /** for a trigger that is already an affordance, like an ellipsis button */
+  hideCaret?: boolean;
 } & JsxStyleProps &
   RecipeVariantProps<typeof triggerStyles>;
 
@@ -76,6 +78,7 @@ const StyledTrigger = styled(DropdownMenuPrimitive.SubTrigger, triggerStyles);
 
 export const DropdownMenuSubTrigger = ({
   inset,
+  hideCaret,
   children,
   ...props
 }: Props) => {
@@ -87,7 +90,9 @@ export const DropdownMenuSubTrigger = ({
     >
       <>
         {children}
-        <Icons.caretRight color="text.muted" ml="auto" size={12} />
+        {hideCaret ? null : (
+          <Icons.caretRight color="text.muted" ml="auto" size={12} />
+        )}
       </>
     </StyledTrigger>
   );

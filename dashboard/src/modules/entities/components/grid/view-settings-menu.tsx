@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Flex } from '@riascout-ui/styled-system/jsx';
 
 import { Icons } from '../../../../ui/icons/base';
@@ -13,6 +14,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../../../../ui/primitives/dropdown-menu';
+import { SortableList } from '../../../../ui/primitives/sortable-lists';
 import { Span } from '../../../../ui/primitives/text';
 import {
   useMoveViewField,
@@ -24,6 +26,8 @@ import { attributeIcon } from './attribute-icon';
 export type ViewSettingsMenuProps = { view: EntityViewSummary };
 
 const UNGROUPED = 'Other';
+
+type Row = EntityViewField & { id: string };
 
 /** hidden columns, bucketed by the attribute group so the submenu is navigable */
 const groupHidden = (
@@ -44,7 +48,22 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
   const moveField = useMoveViewField();
 
   const visible = view.fields.filter((field) => field.isVisible);
+
+  /**
+   * Local order so the row follows the cursor; the server rank comes back on
+   * the next load. Resynced from the view, or a drop would be reverted by the
+   * refetch it triggers.
+   */
+  const [rows, setRows] = useState<Row[]>(() =>
+    visible.map((field) => ({ ...field, id: field.fieldId })),
+  );
+
+  useEffect(() => {
+    setRows(visible.map((field) => ({ ...field, id: field.fieldId })));
+  }, [view.fields]);
+
   const hiddenGroups = groupHidden(view.fields);
+  const hiddenCount = view.fields.length - visible.length;
 
   return (
     <DropdownMenu>
@@ -56,84 +75,46 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" css={{ minW: '17rem' }}>
+      <DropdownMenuContent align="end" css={{ minW: '14rem' }}>
         <DropdownMenuLabel>View settings</DropdownMenuLabel>
 
-        {visible.map((field) => {
-          const Icon = attributeIcon(field.icon, field.type);
-          // the grid cannot render a row with no columns at all
-          const isLast = visible.length === 1;
+        <SortableList
+          items={rows}
+          onChange={setRows}
+          onDragEndCallback={(_items, index) => {
+            const moved = _items[index];
 
-          return (
-            <DropdownMenuSub key={field.fieldId}>
-              <DropdownMenuSubTrigger>
-                <Flex align="center" gap="2" minW="0" w="full">
-                  <Span color="text.muted" flexShrink="0">
-                    <Icon />
-                  </Span>
-                  <Span
-                    flex="1"
-                    fontSize="2"
-                    overflow="hidden"
-                    textOverflow="ellipsis"
-                    whiteSpace="nowrap"
-                  >
-                    {field.label}
-                  </Span>
-                </Flex>
-              </DropdownMenuSubTrigger>
-
-              <DropdownMenuSubContent css={{ minW: '11rem' }}>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    moveField.mutate({
-                      viewId: view.id,
-                      fieldId: field.fieldId,
-                      direction: 'left',
-                    })
-                  }
-                >
-                  <Flex align="center" gap="2">
-                    <Icons.arrowLeft />
-                    <Span>Move left</Span>
-                  </Flex>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    moveField.mutate({
-                      viewId: view.id,
-                      fieldId: field.fieldId,
-                      direction: 'right',
-                    })
-                  }
-                >
-                  <Flex align="center" gap="2">
-                    <Icons.arrowRight />
-                    <Span>Move right</Span>
-                  </Flex>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  disabled={isLast}
-                  onSelect={() =>
-                    updateField.mutate({
-                      viewId: view.id,
-                      fieldId: field.fieldId,
-                      isVisible: false,
-                    })
-                  }
-                >
-                  <Flex align="center" gap="2">
-                    <Icons.eyeSlash />
-                    <Span>Hide from view</Span>
-                  </Flex>
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          );
-        })}
+            if (moved) {
+              moveField.mutate({
+                viewId: view.id,
+                fieldId: moved.fieldId,
+                toIndex: index,
+              });
+            }
+          }}
+          renderItem={(row) => (
+            <SortableList.Item id={row.id}>
+              <ColumnRow
+                canHide={rows.length > 1}
+                field={row}
+                onHide={() =>
+                  updateField.mutate({
+                    viewId: view.id,
+                    fieldId: row.fieldId,
+                    isVisible: false,
+                  })
+                }
+                onMove={(direction) =>
+                  moveField.mutate({
+                    viewId: view.id,
+                    fieldId: row.fieldId,
+                    direction,
+                  })
+                }
+              />
+            </SortableList.Item>
+          )}
+        />
 
         <DropdownMenuSeparator />
 
@@ -143,12 +124,12 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
               <Icons.add />
               <Span flex="1">Add column</Span>
               <Span color="text.placeholder" fontSize="1">
-                {view.fields.length - visible.length}
+                {hiddenCount}
               </Span>
             </Flex>
           </DropdownMenuSubTrigger>
 
-          <DropdownMenuSubContent css={{ maxH: '24rem', minW: '15rem' }}>
+          <DropdownMenuSubContent css={{ maxH: '24rem', minW: '14rem' }}>
             {hiddenGroups.length === 0 ? (
               <DropdownMenuItem disabled>
                 <Span>Every column is already shown</Span>
@@ -204,5 +185,90 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
         </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+};
+
+type ColumnRowProps = {
+  field: EntityViewField;
+  canHide: boolean;
+  onHide: () => void;
+  onMove: (direction: 'left' | 'right') => void;
+};
+
+/**
+ * The grip, icon and label are inert — only the ellipsis opens the submenu, so
+ * running the cursor down the list does not fire a menu per row. The row is one
+ * hover target, grip included.
+ */
+const ColumnRow = ({ field, canHide, onHide, onMove }: ColumnRowProps) => {
+  const Icon = attributeIcon(field.icon, field.type);
+
+  return (
+    <Flex
+      _hover={{ '& .row-menu': { opacity: '1' }, bg: 'background.muted' }}
+      align="center"
+      gap="1.5"
+      minW="0"
+      pr="1"
+      py="0.5"
+      rounded="lg"
+    >
+      <SortableList.DragHandle
+        css={{ color: 'text.placeholder', h: '5', px: '0', w: '4' }}
+      />
+
+      <Span color="text.muted" flexShrink="0">
+        <Icon />
+      </Span>
+      <Span
+        flex="1"
+        fontSize="2"
+        overflow="hidden"
+        textOverflow="ellipsis"
+        whiteSpace="nowrap"
+      >
+        {field.label}
+      </Span>
+
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger
+          className="row-menu"
+          css={{
+            color: 'text.placeholder',
+            flexShrink: '0',
+            opacity: '0',
+            px: '0.5',
+            transition: 'opacity 150ms',
+          }}
+          hideCaret
+        >
+          <Icons.ellipsisVertical size={14} />
+        </DropdownMenuSubTrigger>
+
+        <DropdownMenuSubContent css={{ minW: '11rem' }}>
+          <DropdownMenuItem onSelect={() => onMove('left')}>
+            <Flex align="center" gap="2">
+              <Icons.arrowLeft />
+              <Span>Move left</Span>
+            </Flex>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onMove('right')}>
+            <Flex align="center" gap="2">
+              <Icons.arrowRight />
+              <Span>Move right</Span>
+            </Flex>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem disabled={!canHide} onSelect={onHide}>
+            <Flex align="center" gap="2">
+              <Icons.eyeSlash />
+              <Span>Hide from view</Span>
+            </Flex>
+          </DropdownMenuItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </Flex>
   );
 };
