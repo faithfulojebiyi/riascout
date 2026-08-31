@@ -51,7 +51,7 @@ export const SearchFacet = ({ facet, value, onChange }: FacetInputProps) => {
           checked={selected.includes(optionValue)}
           onCheckedChange={() => toggle(optionValue)}
         />
-        <Span fontSize="2">{label}</Span>
+        <Span fontSize="1">{label}</Span>
       </Flex>
     </label>
   );
@@ -71,7 +71,7 @@ export const SearchFacet = ({ facet, value, onChange }: FacetInputProps) => {
         {query.length > 0 &&
         results.length === 0 &&
         !optionsQuery.isFetching ? (
-          <Span color="text.placeholder" fontSize="2">
+          <Span color="text.placeholder" fontSize="1">
             No matches
           </Span>
         ) : null}

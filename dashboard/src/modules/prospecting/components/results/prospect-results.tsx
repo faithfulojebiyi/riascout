@@ -75,9 +75,7 @@ export const ProspectResults = ({
               const cell = row.values.find(
                 (v) => v.attributeId === column.attributeId,
               );
-              const Renderer = rendererFor(
-                column.kind === 'number' ? 'number' : 'text',
-              );
+              const Renderer = rendererFor(column.type, column.isArray);
 
               return (
                 <TableCell key={column.attributeId}>

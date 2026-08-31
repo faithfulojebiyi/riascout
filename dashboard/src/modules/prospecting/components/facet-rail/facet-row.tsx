@@ -48,7 +48,7 @@ export const FacetRow = ({ facet, value, onChange }: FacetRowProps) => {
           <Span color="text.muted" flexShrink="0">
             <Icon />
           </Span>
-          <Span fontSize="2" whiteSpace="nowrap">
+          <Span fontSize="1" whiteSpace="nowrap">
             {facet.label}
           </Span>
         </Flex>

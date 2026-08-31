@@ -904,6 +904,33 @@ export const FacetDefinitionKind = {
   date: 'date',
 } as const;
 
+export type FacetDefinitionType = typeof FacetDefinitionType[keyof typeof FacetDefinitionType];
+
+
+export const FacetDefinitionType = {
+  text: 'text',
+  number: 'number',
+  checkbox: 'checkbox',
+  currency: 'currency',
+  date: 'date',
+  timestamp: 'timestamp',
+  rating: 'rating',
+  status: 'status',
+  select: 'select',
+  record: 'record',
+  relationship: 'relationship',
+  user: 'user',
+  location: 'location',
+  domain: 'domain',
+  email: 'email',
+  phone: 'phone',
+  url: 'url',
+  boolean: 'boolean',
+  percentage: 'percentage',
+  country: 'country',
+  file: 'file',
+} as const;
+
 export interface FacetOption {
   value: string;
   label: string;
@@ -918,6 +945,7 @@ export interface FacetDefinition {
   icon: string | null;
   group: string;
   kind: FacetDefinitionKind;
+  type: FacetDefinitionType;
   operators: string[];
   isArray: boolean;
   options: FacetOption[];

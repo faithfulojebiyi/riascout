@@ -9,7 +9,7 @@ import type { JsxStyleProps } from '@riascout-ui/styled-system/types';
 const tableCaptionStyles = cva({
   base: {
     color: 'text.muted',
-    fontSize: 'sm',
+    fontSize: '1',
     mt: '4',
   },
 });

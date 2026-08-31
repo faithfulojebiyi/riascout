@@ -14,7 +14,7 @@ const chip = css({
   bg: 'background.muted',
   borderRadius: 'md',
   display: 'inline-block',
-  fontSize: 'xs',
+  fontSize: '1',
   mr: '1',
   px: '1.5',
   py: '0.5',

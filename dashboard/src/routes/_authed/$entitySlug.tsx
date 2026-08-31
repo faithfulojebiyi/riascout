@@ -58,10 +58,10 @@ function EntityPage() {
           px: '3',
         })}
       >
-        <h1 className={css({ fontSize: 'sm', fontWeight: '600' })}>
+        <h1 className={css({ fontSize: '2', fontWeight: '600' })}>
           {entity.name}
         </h1>
-        <span className={css({ color: 'text.muted', fontSize: 'sm' })}>
+        <span className={css({ color: 'text.muted', fontSize: '1' })}>
           {total.toLocaleString()} records
         </span>
       </header>

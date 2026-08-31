@@ -28,7 +28,13 @@ const TABLE_COLUMNS: Record<SourceKind, string[]> = {
     'advisor.state',
     'advisor.tenure_years',
   ],
-  firm: ['firm.firm_name', 'firm.state', 'firm.aum_band', 'firm.advisor_count'],
+  // the actual AUM, not the band: a band is a filter control, not a fact
+  firm: [
+    'firm.firm_name',
+    'firm.state',
+    'firm.regulatory_aum',
+    'firm.advisor_count',
+  ],
 };
 
 export type SourceKind = 'advisor' | 'firm';

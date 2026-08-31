@@ -19,7 +19,7 @@ const tableContainerStyles = cva({
 const tableStyles = cva({
   base: {
     captionSide: 'bottom',
-    fontSize: 'sm',
+    fontSize: '1',
     w: 'full',
   },
 });
