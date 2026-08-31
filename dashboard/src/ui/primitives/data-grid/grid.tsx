@@ -223,10 +223,20 @@ export const GridWrapper = ({
           }),
         },
 
-        '& .ag-header-row': {
+        /**
+         * One line under the header, not two: ag-grid already borders .ag-header
+         * with --ag-border-color, so adding one to the row stacked them into 2px
+         * in a grey that did not match the page header above it.
+         */
+        '& .ag-header': {
           ...(borderless && {
-            borderBottom: '1px solid token(colors.colors.gray.4) !important',
+            // literal, not a constant — panda extracts these statically
+            borderBottom: '1px solid token(colors.brand.primary.5) !important',
           }),
+        },
+
+        '& .ag-header-row': {
+          ...(borderless && { borderBottom: 'none !important' }),
         },
 
         '& .ag-overlay-no-rows-center': {
