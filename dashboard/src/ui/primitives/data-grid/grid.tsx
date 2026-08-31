@@ -208,10 +208,25 @@ export const GridWrapper = ({
           },
         },
 
+        /**
+         * Borderless keeps only the divider between header cells and the line
+         * under the row — bordering all four sides draws a frame across the top
+         * and down both outer edges, which is the box borderless is meant to drop.
+         */
         '& .ag-header-cell': {
           border: '0.5px solid token(colors.colors.gray.4) !important',
           borderBottom: 'none !important',
           color: 'text.app !important',
+          ...(borderless && {
+            borderLeft: 'none !important',
+            borderTop: 'none !important',
+          }),
+        },
+
+        '& .ag-header-row': {
+          ...(borderless && {
+            borderBottom: '1px solid token(colors.colors.gray.4) !important',
+          }),
         },
 
         '& .ag-overlay-no-rows-center': {

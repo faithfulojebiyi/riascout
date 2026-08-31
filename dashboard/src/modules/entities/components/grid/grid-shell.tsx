@@ -88,7 +88,7 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
   );
 
   return (
-    <GridWrapper>
+    <GridWrapper borderless>
       <AgGridReact<GridRow>
         cacheBlockSize={100}
         columnDefs={columnDefs}
@@ -115,6 +115,9 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
         rowModelType="serverSide"
         serverSideDatasource={datasource}
         suppressCellFocus={false}
+        // right-click would otherwise open ag-grid's own context menu
+        suppressContextMenu
+        suppressServerSideFullWidthLoadingRow
         theme={themeAlpine}
       />
     </GridWrapper>
