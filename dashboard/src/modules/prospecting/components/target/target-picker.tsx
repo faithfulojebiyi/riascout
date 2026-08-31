@@ -3,20 +3,10 @@ import { Box, Grid } from '@riascout-ui/styled-system/jsx';
 
 import { Icons } from '../../../../ui/icons/base';
 import { Heading, Text } from '../../../../ui/primitives/text';
-import { useSearchProspects } from '../../queries/use-search-prospects';
 import { TargetCard } from './target-card';
-
-/** one row, limit 1 — the count is the only thing wanted from it */
-const COUNT_PROBE = { filter: null, selectAttributeIds: [], limit: 1 };
 
 export const TargetPicker = () => {
   const navigate = useNavigate();
-
-  const advisors = useSearchProspects({
-    ...COUNT_PROBE,
-    sourceKind: 'advisor',
-  });
-  const firms = useSearchProspects({ ...COUNT_PROBE, sourceKind: 'firm' });
 
   return (
     <Box maxW="72rem" mx="auto" px="6" py="10" w="full">
@@ -38,30 +28,24 @@ export const TargetPicker = () => {
         <TargetCard
           available
           color="indigo"
-          count={advisors.data?.total ?? null}
           description="By state, credential, tenure or current firm"
           icon={Icons.userSearch}
-          noun="advisors"
           onSelect={() => void navigate({ to: '/prospecting/advisors' })}
           title="Find advisors"
         />
         <TargetCard
           available
           color="teal"
-          count={firms.data?.total ?? null}
           description="By AUM band, headcount, state or ownership"
           icon={Icons.building}
-          noun="firms"
           onSelect={() => void navigate({ to: '/prospecting/firms' })}
           title="Find firms"
         />
         <TargetCard
           available={false}
           color="gray"
-          count={null}
           description="And the firms that clear through them"
           icon={Icons.bank}
-          noun="custodians"
           onSelect={() => undefined}
           title="Find custodians"
         />

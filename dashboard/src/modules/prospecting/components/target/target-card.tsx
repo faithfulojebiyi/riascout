@@ -3,16 +3,12 @@ import { Box, Flex, HStack } from '@riascout-ui/styled-system/jsx';
 import { ColorIconBox } from '../../../../ui/blocks/colored-elements';
 import type { TIcon } from '../../../../ui/icons/types';
 import { Badge } from '../../../../ui/primitives/badge';
-import { Skeleton } from '../../../../ui/primitives/skeleton';
-import { Span, Text } from '../../../../ui/primitives/text';
+import { Text } from '../../../../ui/primitives/text';
 
 export type TargetCardProps = {
   icon: TIcon;
   title: string;
   description: string;
-  /** null while the count is loading; not rendered at all when unavailable */
-  count: number | null;
-  noun: string;
   /** a USER_COLORS name; drives the tile tint and the icon colour together */
   color: string;
   available: boolean;
@@ -27,8 +23,6 @@ export const TargetCard = ({
   icon: Icon,
   title,
   description,
-  count,
-  noun,
   color,
   available,
   onSelect,
@@ -75,16 +69,6 @@ export const TargetCard = ({
       <Text color="text.muted" fontSize="1" mt="0.5">
         {description}
       </Text>
-
-      {available ? (
-        count === null ? (
-          <Skeleton h="0.75rem" mt="1" rounded="md" w="6rem" />
-        ) : (
-          <Span color="text.placeholder" fontSize="1">
-            {count.toLocaleString()} {noun}
-          </Span>
-        )
-      ) : null}
     </Box>
   </Flex>
 );
