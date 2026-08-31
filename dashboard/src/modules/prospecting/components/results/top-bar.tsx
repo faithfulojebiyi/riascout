@@ -1,14 +1,14 @@
 import type React from 'react';
+import { Link } from '@tanstack/react-router';
 import { Flex } from '@riascout-ui/styled-system/jsx';
 
-import { Tabs, TabsList, TabTrigger } from '../../../../ui/primitives/tabs';
+import { Icons } from '../../../../ui/icons/base';
+import { Button } from '../../../../ui/primitives/button';
 import { Span } from '../../../../ui/primitives/text';
 
-export type ProspectTab = 'search' | 'saved';
-
 export type TopBarProps = {
-  tab: ProspectTab;
-  onTabChange: (tab: ProspectTab) => void;
+  /** which target is being searched, for the heading beside the count */
+  title: string;
   total: number | null;
   isFetching: boolean;
   /** save-to-list and any future bulk action */
@@ -17,9 +17,12 @@ export type TopBarProps = {
   noun: string;
 };
 
+/**
+ * The Saved tab that used to sit here was permanently disabled — saved
+ * prospects are what lists and saved views already are.
+ */
 export const TopBar = ({
-  tab,
-  onTabChange,
+  title,
   total,
   isFetching,
   actions,
@@ -28,22 +31,22 @@ export const TopBar = ({
   <Flex
     align="center"
     borderBottomWidth="1px"
-    borderColor="border.subtle"
+    borderColor="brand.panel.4"
     gap="3"
     px="4"
     py="2"
   >
-    <Tabs onValueChange={(v) => onTabChange(v as ProspectTab)} value={tab}>
-      <TabsList>
-        <TabTrigger value="search">Search results</TabTrigger>
-        {/* saved needs the lists module; visible so the shape is honest */}
-        <TabTrigger disabled value="saved">
-          Saved
-        </TabTrigger>
-      </TabsList>
-    </Tabs>
+    <Button asChild variant="ghost">
+      <Link to="/prospecting">
+        <Icons.arrowLeft />
+      </Link>
+    </Button>
 
-    <Span fontSize="2" fontWeight="medium">
+    <Span fontSize="2" fontWeight="600">
+      {title}
+    </Span>
+
+    <Span color="text.muted" fontSize="2">
       {total === null ? '—' : `${total.toLocaleString()} ${noun}`}
     </Span>
     {isFetching ? (

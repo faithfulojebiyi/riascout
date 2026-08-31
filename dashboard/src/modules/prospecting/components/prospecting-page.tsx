@@ -15,7 +15,7 @@ import { FacetRail } from './facet-rail/facet-rail';
 import { ProspectDetailSheet } from './results/prospect-detail-sheet';
 import { ProspectResults } from './results/prospect-results';
 import { ProspectingEmptyState } from './results/prospecting-empty-state';
-import { TopBar, type ProspectTab } from './results/top-bar';
+import { TopBar } from './results/top-bar';
 
 /**
  * Keyed by allowlist key, not label: a label is display text a user may rename,
@@ -40,7 +40,6 @@ export const ProspectingPage = ({
   sourceKind = 'advisor',
 }: ProspectingPageProps) => {
   const [selection, setSelection] = useState<FacetSelection>({});
-  const [tab, setTab] = useState<ProspectTab>('search');
   const [openRow, setOpenRow] = useState<ProspectRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -132,8 +131,7 @@ export const ProspectingPage = ({
           }
           isFetching={search.isFetching}
           noun={sourceKind === 'firm' ? 'firms' : 'advisors'}
-          onTabChange={setTab}
-          tab={tab}
+          title={sourceKind === 'firm' ? 'Firms' : 'Advisors'}
           total={search.data?.total ?? null}
         />
         {rows.length === 0 && !search.isFetching ? (
