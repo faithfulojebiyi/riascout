@@ -45,19 +45,20 @@ function EntityPage() {
     <div
       className={css({ display: 'flex', flexDirection: 'column', h: '100dvh' })}
     >
+      {/* 2.75rem, as every other page-chrome header, so the rules all meet */}
       <header
         className={css({
-          alignItems: 'baseline',
-          // same divider as the grid below it, so the two lines read as one rule
+          alignItems: 'center',
           borderBottomWidth: '1px',
           borderColor: 'brand.panel.4',
           display: 'flex',
+          flexShrink: '0',
           gap: '3',
-          px: '5',
-          py: '3',
+          h: '2.75rem',
+          px: '3',
         })}
       >
-        <h1 className={css({ fontSize: 'lg', fontWeight: '600' })}>
+        <h1 className={css({ fontSize: 'sm', fontWeight: '600' })}>
           {entity.name}
         </h1>
         <span className={css({ color: 'text.muted', fontSize: 'sm' })}>
