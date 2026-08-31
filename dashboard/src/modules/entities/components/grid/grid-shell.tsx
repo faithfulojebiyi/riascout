@@ -1,4 +1,8 @@
-import { type CellValueChangedEvent, themeAlpine } from 'ag-grid-enterprise';
+import {
+  type CellValueChangedEvent,
+  type SelectionChangedEvent,
+  themeAlpine,
+} from 'ag-grid-enterprise';
 import { AgGridReact } from 'ag-grid-react';
 import { useCallback, useMemo, useRef } from 'react';
 
@@ -14,6 +18,8 @@ import { EntityGridDatasource } from './ssrm-datasource';
 export type EntityGridProps = {
   entityId: string;
   view: EntityViewSummary;
+  /** ticked rows, lifted so the toolbar can act on them */
+  onSelectionChange?: (sourceCrds: string[]) => void;
 };
 
 /**
@@ -24,7 +30,11 @@ export type EntityGridProps = {
  * sortable/resizable false and suppressColumnVirtualisation — all wrong for 63
  * columns over 510k rows. Only GridWrapper, the theme layer, is shared.
  */
-export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
+export const EntityGrid = ({
+  entityId,
+  view,
+  onSelectionChange,
+}: EntityGridProps) => {
   const updateRecordValues = useUpdateRecordValues();
 
   // single-column sort is what the header menu offers; the rest is view settings
@@ -54,6 +64,22 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
         visibleFieldIds: () => visibleFieldIdsRef.current,
       }),
     [entityId, view.id],
+  );
+
+  /**
+   * Only rows pointing at market have a CRD, so a manually created record is
+   * selectable but contributes nothing to a list add.
+   */
+  const onSelectionChanged = useCallback(
+    (event: SelectionChangedEvent<GridRow>) => {
+      onSelectionChange?.(
+        event.api
+          .getSelectedRows()
+          .map((row) => row.sourceCrd)
+          .filter((crd): crd is string => crd !== null),
+      );
+    },
+    [onSelectionChange],
   );
 
   const onColumnVisible = useCallback(() => {
@@ -112,7 +138,30 @@ export const EntityGrid = ({ entityId, view }: EntityGridProps) => {
         maxBlocksInCache={10}
         onCellValueChanged={onCellValueChanged}
         onColumnVisible={onColumnVisible}
+        onSelectionChanged={onSelectionChanged}
         rowModelType="serverSide"
+        /**
+         * selectAll is currentPage on purpose: with 510k rows behind the server
+         * model, a header tick cannot mean "every matching row" — saving those
+         * goes through the filter instead, which the list add already accepts.
+         */
+        rowSelection={{
+          checkboxes: true,
+          enableClickSelection: false,
+          headerCheckbox: true,
+          mode: 'multiRow',
+          selectAll: 'currentPage',
+        }}
+        /**
+         * Pinned left, or it lands after the primary column — that one is pinned
+         * and the selection column is not, so it drifted to second place.
+         */
+        selectionColumnDef={{
+          pinned: 'left',
+          resizable: false,
+          suppressMovable: true,
+          width: 44,
+        }}
         serverSideDatasource={datasource}
         suppressCellFocus={false}
         // right-click would otherwise open ag-grid's own context menu

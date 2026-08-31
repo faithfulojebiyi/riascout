@@ -32,6 +32,7 @@ const MENU_ITEM = {
   size: 'sm',
   variant: 'ghost',
   w: 'full',
+  gap: '1',
 } as const;
 
 /**

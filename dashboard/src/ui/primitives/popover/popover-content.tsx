@@ -25,6 +25,8 @@ export const popoverContentStyles = cva({
     bg: 'background.popover',
     border: 'subtle',
     glass: 'popup',
+    // the recipe had no padding, so every caller's content sat on the border
+    p: '2',
     rounded: 'xl',
     shadow: 'sSm',
     zIndex: '100',

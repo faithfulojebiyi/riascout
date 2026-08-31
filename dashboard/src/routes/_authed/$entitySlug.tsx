@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { css } from '@riascout-ui/styled-system/css';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -6,6 +7,7 @@ import {
   entitiesControllerGetEntityRecords,
 } from '../../api/generated/entities/entities';
 import { EntityGrid } from '../../modules/entities/components/grid/grid-shell';
+import { GridToolbar } from '../../modules/entities/components/grid/grid-toolbar';
 
 type Search = { view?: string };
 
@@ -37,6 +39,7 @@ export const Route = createFileRoute('/_authed/$entitySlug')({
 
 function EntityPage() {
   const { entity, view, total } = Route.useLoaderData();
+  const [selectedCrds, setSelectedCrds] = useState<string[]>([]);
 
   return (
     <div
@@ -62,10 +65,26 @@ function EntityPage() {
         </span>
       </header>
 
+      {view ? (
+        <GridToolbar
+          entityId={entity.id}
+          entitySlug={entity.slug}
+          onSortCleared={() => setSelectedCrds([])}
+          selectedCrds={selectedCrds}
+          view={view}
+          views={entity.views}
+        />
+      ) : null}
+
       <div className={css({ flex: '1', minH: '0' })}>
         {view ? (
           // keyed so switching views rebuilds the grid rather than reusing its columns
-          <EntityGrid entityId={entity.id} key={view.id} view={view} />
+          <EntityGrid
+            entityId={entity.id}
+            key={view.id}
+            onSelectionChange={setSelectedCrds}
+            view={view}
+          />
         ) : (
           <p>No view configured</p>
         )}

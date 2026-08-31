@@ -98,7 +98,7 @@ export const GridWrapper = ({
           '1px solid token(colors.brand.panel.4) !important',
         '--ag-cell-horizontal-padding': '0.8rem !important',
         // checkbox sizing & shape
-        '--ag-checkbox-border-radius': '6px !important',
+        '--ag-checkbox-border-radius': '4px !important',
         '--ag-checkbox-border-width': '1.5px !important',
 
         // checkbox checked state
@@ -196,10 +196,10 @@ export const GridWrapper = ({
             boxShadow: 'none !important',
           },
           '&.ag-checked': {
-            borderRadius: '6px !important',
+            borderRadius: '4px !important',
             overflow: 'hidden !important',
           },
-          borderRadius: '6px !important',
+          borderRadius: '4px !important',
         },
 
         '& .ag-floating-bottom': {
@@ -232,6 +232,15 @@ export const GridWrapper = ({
          * with --ag-border-color, so adding one to the row stacked them into 2px
          * in a grey that did not match the page header above it.
          */
+        /**
+         * The checkbox reads as part of the primary cell, not a column of its
+         * own, so the divider between the two is suppressed on both rows and
+         * header. Matches how attio presents it.
+         */
+        '& [col-id="ag-Grid-SelectionColumn"]': {
+          borderRight: 'none !important',
+        },
+
         '& .ag-header': {
           ...(borderless && {
             // literal, not a constant — panda extracts these statically
