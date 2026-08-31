@@ -25,7 +25,7 @@ export const BooleanFacet = ({ value, onChange }: FacetInputProps) => {
                 : { kind: 'boolean', value: option.next },
             )
           }
-          size="sm"
+
           variant={current === option.next ? 'solid' : 'outline'}
         >
           {option.label}

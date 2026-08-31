@@ -29,10 +29,13 @@ const contentStyles = cva({
     border: 'subtle',
     glass: 'popup',
     minW: '8rem',
-    mt: '-0.5rem',
-    mx: '1rem',
-    my: '0',
-    overflow: 'hidden',
+    /**
+     * No margin offset. A 1rem nudge away from the trigger left a dead gap that
+     * radix reads as leaving the trigger, so the submenu opened and shut again
+     * before the pointer could reach it.
+     */
+    overflowX: 'hidden',
+    overflowY: 'auto',
     p: '1',
     rounded: 'xl',
   },

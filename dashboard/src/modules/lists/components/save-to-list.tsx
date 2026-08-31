@@ -60,7 +60,7 @@ export const SaveToList = ({
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
-        <Button disabled={disabled} size="sm">
+        <Button disabled={disabled}>
           {savingAll
             ? `Save all ${(matchingTotal ?? 0).toLocaleString()} to list`
             : `Save ${sourceCrds.length > 0 ? sourceCrds.length : ''} to list`}
@@ -73,7 +73,7 @@ export const SaveToList = ({
               justifyContent="space-between"
               key={list.id}
               onClick={() => addTo(list.id)}
-              size="sm"
+
               variant="ghost"
             >
               <Span>{list.name}</Span>
@@ -105,7 +105,6 @@ export const SaveToList = ({
           <Button
             disabled={name.trim() === ''}
             onClick={() => void createAndAdd()}
-            size="sm"
           >
             Create
           </Button>

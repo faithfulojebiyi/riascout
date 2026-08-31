@@ -54,10 +54,15 @@ export class MoveViewFieldCommandHandler implements ICommandHandler<MoveViewFiel
       throw new ForbiddenException('No active workspace for this session');
     }
 
+    /**
+     * Pinned first, matching how ag-grid renders and how view settings lists
+     * them — ordering by position alone here would make toIndex refer to a
+     * different slot than the one the user dropped on.
+     */
     const fields = await this.appPrismaService.entityViewField.findMany({
       where: { viewId: dto.viewId, workspaceId, isVisible: true },
       select: { id: true, position: true },
-      orderBy: { position: 'asc' },
+      orderBy: [{ isPinned: 'desc' }, { position: 'asc' }],
     });
 
     const from = fields.findIndex((field) => field.id === dto.fieldId);

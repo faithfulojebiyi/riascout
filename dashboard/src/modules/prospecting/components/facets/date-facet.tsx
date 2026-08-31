@@ -30,7 +30,7 @@ export const DateFacet = ({ value, onChange }: FacetInputProps) => {
                     },
               )
             }
-            size="sm"
+
             variant={days === window ? 'solid' : 'outline'}
           >
             {window}d

@@ -22,6 +22,7 @@ import {
 } from '../../mutations/use-view-field-mutations';
 import type { EntityViewField, EntityViewSummary } from '../../types/grid';
 import { attributeIcon } from './attribute-icon';
+import { orderedVisibleFields, pinnedCount } from './field-order';
 
 export type ViewSettingsMenuProps = { view: EntityViewSummary };
 
@@ -47,7 +48,8 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
   const updateField = useUpdateViewField();
   const moveField = useMoveViewField();
 
-  const visible = view.fields.filter((field) => field.isVisible);
+  const visible = orderedVisibleFields(view.fields);
+  const locked = pinnedCount(view.fields);
 
   /**
    * Local order so the row follows the cursor; the server rank comes back on
@@ -68,7 +70,7 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button variant="outline">
           <Icons.columns />
           <Span>View settings</Span>
           <Icons.caretDown size={12} />
@@ -84,16 +86,17 @@ export const ViewSettingsMenu = ({ view }: ViewSettingsMenuProps) => {
           onDragEndCallback={(_items, index) => {
             const moved = _items[index];
 
+            // never above the pinned block — the grid would render it there anyway
             if (moved) {
               moveField.mutate({
                 viewId: view.id,
                 fieldId: moved.fieldId,
-                toIndex: index,
+                toIndex: Math.max(index, locked),
               });
             }
           }}
           renderItem={(row) => (
-            <SortableList.Item id={row.id}>
+            <SortableList.Item disabled={row.isPinned} id={row.id}>
               <ColumnRow
                 canHide={rows.length > 1}
                 field={row}
@@ -222,7 +225,7 @@ const ColumnRow = ({ field, canHide, onHide, onMove }: ColumnRowProps) => {
       </Span>
       <Span
         flex="1"
-        fontSize="2"
+        fontSize="1"
         overflow="hidden"
         textOverflow="ellipsis"
         whiteSpace="nowrap"

@@ -110,15 +110,15 @@ export const buttonStyle = cva({
         },
 
         '&[data-state=active], &[data-state=on], &[data-state=open]': {
-          bg: 'colorPalette.3',
+          bg: 'colorPalette.2',
           opacity: '1',
         },
         bg: 'transparent',
         border: '1px solid',
-        borderColor: 'colorPalette.4',
+        borderColor: 'colorPalette.3',
         color: 'colorPalette.12',
         colorPalette: 'colors.gray',
-        shadow: 'xs',
+        shadow: 'sm',
         shadowColor: 'colorPalette.4',
       },
       soft: {

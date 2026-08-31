@@ -65,7 +65,7 @@ export const GridToolbar = ({
       <Flex align="center" gap="2" justify="space-between" px="3" py="2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline">
+            <Button variant="outline">
               <Icons.grid />
               <Span>{view.name}</Span>
               <Icons.caretDown size={12} />
