@@ -45,8 +45,9 @@ function EntityPage() {
       <header
         className={css({
           alignItems: 'baseline',
+          // same divider as the grid below it, so the two lines read as one rule
           borderBottomWidth: '1px',
-          borderColor: 'brand.primary.5',
+          borderColor: 'brand.panel.4',
           display: 'flex',
           gap: '3',
           px: '5',

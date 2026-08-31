@@ -86,11 +86,16 @@ export const GridWrapper = ({
 
         // table
         '--ag-background-color': 'token(colors.background.app) !important',
-        '--ag-border-color': 'token(colors.colors.gray.4) !important',
+        /**
+         * Every divider is brand.panel.4 at 1px — the same pair borders.subtle
+         * composes. It is a translucent scale, so it holds up in both themes
+         * where a fixed grey does not.
+         */
+        '--ag-border-color': 'token(colors.brand.panel.4) !important',
         '--ag-border-radius': '0 !important',
         '--ag-card-shadow': 'none !important',
         '--ag-cell-column-border':
-          '0.2px solid token(colors.colors.gray.3) !important',
+          '1px solid token(colors.brand.panel.4) !important',
         '--ag-cell-horizontal-padding': '0.8rem !important',
         // checkbox sizing & shape
         '--ag-checkbox-border-radius': '6px !important',
@@ -145,7 +150,7 @@ export const GridWrapper = ({
           'token(colors.brand.primary.7) !important',
         '--ag-range-selection-border-style': 'dashed !important',
         '--ag-row-hover-color': 'token(colors.colors.gray.3) !important',
-        '--ag-secondary-border-color': 'token(colors.colors.gray.4) !important',
+        '--ag-secondary-border-color': 'token(colors.brand.panel.4) !important',
         '--ag-selected-row-background-color':
           'token(colors.colors.gray.2) !important',
 
@@ -173,8 +178,7 @@ export const GridWrapper = ({
             borderTop: 'focused !important',
             borderTopStyle: 'dashed !important',
           },
-          // borderY: '0.2px solid token(colors.colors.gray.3) !important',
-          borderX: '0.2px solid token(colors.colors.gray.3) !important',
+          borderX: '1px solid token(colors.brand.panel.4) !important',
           color: 'text.app !important',
           // fontFamily: 'var(--font-dm-mono) !important',
           fontSize: '1 !important',
@@ -214,7 +218,7 @@ export const GridWrapper = ({
          * and down both outer edges, which is the box borderless is meant to drop.
          */
         '& .ag-header-cell': {
-          border: '0.5px solid token(colors.colors.gray.4) !important',
+          border: '1px solid token(colors.brand.panel.4) !important',
           borderBottom: 'none !important',
           color: 'text.app !important',
           ...(borderless && {
@@ -231,7 +235,7 @@ export const GridWrapper = ({
         '& .ag-header': {
           ...(borderless && {
             // literal, not a constant — panda extracts these statically
-            borderBottom: '1px solid token(colors.brand.primary.5) !important',
+            borderBottom: '1px solid token(colors.brand.panel.4) !important',
           }),
         },
 
