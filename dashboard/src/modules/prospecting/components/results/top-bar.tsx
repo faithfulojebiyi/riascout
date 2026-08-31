@@ -28,13 +28,19 @@ export const TopBar = ({
   actions,
   noun,
 }: TopBarProps) => (
+  /**
+   * 2.75rem literally, matching FilterHeader in the rail — panda extracts these
+   * statically, so a shared constant would emit no css. Height is fixed rather
+   * than derived from padding, or the two rules only line up by coincidence.
+   */
   <Flex
     align="center"
     borderBottomWidth="1px"
     borderColor="brand.panel.4"
+    flexShrink="0"
     gap="3"
-    px="4"
-    py="2"
+    minH="2.75rem"
+    px="3"
   >
     <Button asChild variant="ghost">
       <Link to="/prospecting">

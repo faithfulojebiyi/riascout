@@ -9,19 +9,24 @@ export type FilterHeaderProps = {
 };
 
 export const FilterHeader = ({ activeCount, onClear }: FilterHeaderProps) => (
+  /**
+   * Same 1px brand.panel.4 as the results header and the grid, and the padding
+   * is inside the row so the rule reaches both edges of the rail.
+   */
   <Flex
     align="center"
     borderBottomWidth="1px"
-    borderColor="border.subtle"
+    borderColor="brand.panel.4"
+    flexShrink="0"
     justify="space-between"
-    px="2"
-    py="3"
+    minH="2.75rem"
+    px="3"
   >
-    <Heading as="h4" fontWeight="500">
+    <Heading as="h4" fontSize="2" fontWeight="500">
       Filters
     </Heading>
     {activeCount > 0 ? (
-      <Button onClick={onClear} size="xs" variant="outline">
+      <Button onClick={onClear} variant="outline">
         <Span>Clear {activeCount}</Span>
       </Button>
     ) : null}

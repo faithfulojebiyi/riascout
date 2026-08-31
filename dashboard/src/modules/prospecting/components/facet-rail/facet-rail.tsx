@@ -1,20 +1,12 @@
 import { useMemo } from 'react';
 import { Box, Flex } from '@riascout-ui/styled-system/jsx';
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '../../../../ui/primitives/accordion';
+import { Accordion } from '../../../../ui/primitives/accordion';
 import { Aside } from '../../../../ui/primitives/layout';
 import { Span } from '../../../../ui/primitives/text';
-import type {
-  FacetDefinition,
-  FacetSelection,
-  FacetValue,
-} from '../../types/prospecting';
-import { FacetInput } from '../facets/facet-input';
+import type { FacetSelection, FacetValue } from '../../types/prospecting';
+import type { FacetDefinition } from '../../types/prospecting';
+import { FacetRow } from './facet-row';
 import { FilterHeader } from './filter-header';
 
 export type FacetRailProps = {
@@ -48,53 +40,54 @@ export const FacetRail = ({
 
   return (
     <Aside
-      borderColor="border.subtle"
+      borderColor="brand.panel.4"
       borderRightWidth="1px"
+      display="flex"
+      flexDirection="column"
       h="full"
-      overflowY="auto"
-      px="3"
-      py="2"
-      w="30rem"
+      w="22rem"
     >
+      {/* no padding on the aside — the header rule has to reach both edges */}
       <FilterHeader activeCount={activeCount} onClear={onClear} />
-      <Accordion collapsible type="single">
-        {groups.map(([group, groupFacets]) => {
-          const active = groupFacets.filter(
-            (f) => selection[f.attributeId],
-          ).length;
 
-          return (
-            <AccordionItem key={group} value={group}>
-              <AccordionTrigger>
-                <Flex align="center" gap="1">
-                  <Span fontSize="2" fontWeight="medium">
-                    {group}
-                  </Span>
-                  {active > 0 ? (
-                    <Span color="text.placeholder" fontSize="1">
-                      {active}
-                    </Span>
-                  ) : null}
-                </Flex>
-              </AccordionTrigger>
-              <AccordionContent>
-                {groupFacets.map((facet) => (
-                  <Box key={facet.attributeId} mb="3">
-                    <Span display="block" fontSize="2" mb="1">
-                      {facet.label}
-                    </Span>
-                    <FacetInput
-                      facet={facet}
-                      onChange={(value) => onChange(facet.attributeId, value)}
-                      value={selection[facet.attributeId]}
-                    />
-                  </Box>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
+      <Box flex="1" minH="0" overflowY="auto">
+        {groups.map(([group, groupFacets]) => (
+          <Box key={group}>
+            <Flex
+              align="center"
+              bg="background.app"
+              justify="space-between"
+              position="sticky"
+              px="3"
+              py="1.5"
+              top="0"
+              zIndex="1"
+            >
+              <Span
+                color="text.placeholder"
+                fontSize="0.688"
+                fontWeight="600"
+                letterSpacing="wide"
+                textTransform="uppercase"
+              >
+                {group}
+              </Span>
+            </Flex>
+
+            {/* single, so opening one facet closes the last — 52 rows otherwise scroll away */}
+            <Accordion collapsible type="single">
+              {groupFacets.map((facet) => (
+                <FacetRow
+                  facet={facet}
+                  key={facet.attributeId}
+                  onChange={(value) => onChange(facet.attributeId, value)}
+                  value={selection[facet.attributeId]}
+                />
+              ))}
+            </Accordion>
+          </Box>
+        ))}
+      </Box>
     </Aside>
   );
 };
