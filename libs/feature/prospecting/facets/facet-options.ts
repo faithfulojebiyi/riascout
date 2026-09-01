@@ -28,7 +28,7 @@ SELECT k.allow_key, o.value, o.label
    SELECT value, label
      FROM market.facet_option f
     WHERE f.allow_key = k.allow_key
-    ORDER BY f.label
+    ORDER BY f.position NULLS LAST, f.label
     LIMIT ${OPTION_CAP + 1}
  ) o`;
 

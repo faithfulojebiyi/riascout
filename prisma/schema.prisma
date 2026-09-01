@@ -799,6 +799,9 @@ model FacetOption {
   label    String
   /// rows carrying this value, for ordering by prevalence rather than alphabet
   rowCount Int    @map("row_count")
+  /// an ordered vocabulary's own order — an AUM band sorts by magnitude, and
+  /// neither its label nor its code does. NULL means alphabetical is correct.
+  position Int?
 
   @@id([allowKey, value])
   @@index([allowKey, label])
