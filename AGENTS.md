@@ -41,6 +41,7 @@
 - NestJS boundaries use CQRS and zod-derived types. Keep `apps/api`, `apps/worker`, and `libs` dependency boundaries intact.
 - Never use `any`; narrow `unknown` with zod or a type guard. Preserve nullability through the API boundary.
 - Comments explain the technical reason directly, not what the code already says. Keep comments to at most three lines.
+- Do not explain code or design by contrasting it with another product or repository; state the technical reason directly.
 - Use `//` for one line and `/** ... */` for multiple lines.
 
 ## Verification and commits

@@ -82,11 +82,7 @@ const between = (
   },
 });
 
-/**
- * make_interval takes the day count as a bound parameter. Ghost built this as
- * INTERVAL '${n} days' — safe there because n is zod-parsed, but it puts a
- * value in the SQL text, which is the habit we do not want.
- */
+/** make_interval binds the day count, so values never enter SQL text. */
 const withinLastNDays: OperatorDescriptor = {
   parseValue: parse(positiveInt),
   emit: (ctx) =>

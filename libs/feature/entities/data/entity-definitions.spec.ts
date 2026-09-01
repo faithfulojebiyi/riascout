@@ -216,7 +216,7 @@ describe('default entities', () => {
     );
     const labels = contact.map((a) => a.label);
 
-    it('covers every channel ghost carries, plus a personal site', () => {
+    it('covers the supported social and contact channels, plus a personal site', () => {
       expect(labels).toEqual(
         expect.arrayContaining([
           'LinkedIn',
