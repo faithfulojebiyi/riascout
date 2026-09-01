@@ -38,7 +38,15 @@
 - Maintain constraints, expression indexes, views, functions, and other non-Prisma DDL in `prisma/ddl/`.
 - Run `bun run db:ddl:sync` to generate the migration for maintained DDL. Never handwrite or hand-edit a generated
   timestamped migration.
-- Never apply or reset migrations without explicit user approval.
+- After the user explicitly authorizes a local reset/rebuild, run these commands in order:
+  1. `bun run prisma:reset`
+  2. `bun run db:ddl:sync`
+  3. `bun run prisma:migrate` — apply the pending generated DDL migration through the local development workflow
+  4. `bun run prisma:seed`
+  5. `bun etl/load-market.ts` as a full load, without `--only`
+- Skipping DDL sync/deploy can leave Prisma-inexpressible views, functions, constraints, expression indexes, or
+  `NULLS NOT DISTINCT` semantics absent.
+- Never apply or reset migrations or run ETL without explicit user approval.
 
 ## Verification
 
