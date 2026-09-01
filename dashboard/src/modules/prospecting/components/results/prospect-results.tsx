@@ -2,7 +2,8 @@ import { Box } from '@riascout-ui/styled-system/jsx';
 
 import { Checkbox } from '../../../../ui/primitives/checkbox/checkbox';
 
-import { Skeleton } from '../../../../ui/primitives/skeleton';
+import { GRID_ROW_HEIGHT } from '../../../../ui/primitives/data-grid';
+import { TableSkeleton } from '../../../../ui/primitives/skeleton/table-skeleton';
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
   TableRow,
 } from '../../../../ui/primitives/table';
 import { Span } from '../../../../ui/primitives/text';
-import { rendererFor } from '../../../entities/components/attribute-renderers';
+import { rendererForColumn } from '../../../entities/components/attribute-renderers';
 import type { ProspectRow } from '../../types/prospecting';
 
 /** attributeId is null until the facets land; the column still holds its place */
@@ -35,30 +36,32 @@ export type ProspectResultsProps = {
   onToggleAll: () => void;
 };
 
-/** enough to fill a viewport, so the skeleton does not end mid-scroll */
-const SKELETON_ROWS = 12;
-
-/**
- * Pinned on both the skeleton and the data rows. Left to content, a skeleton
- * row is shorter than a real one — the checkbox is taller than a line of text —
- * and the whole table jumps when the first page arrives.
- */
-const ROW_H = '2.125rem';
+/** shared with the entity grid, so the two tables cannot drift apart */
+const ROW_H = `${GRID_ROW_HEIGHT}px`;
 
 const CHECKBOX_W = '2.75rem';
 const IN_CRM_W = '4.5rem';
+const MIN_W = '48rem';
 
-/** varied so the loading state reads as content, not as a progress bar */
-const BAR_W = ['72%', '54%', '81%', '63%'];
+/**
+ * Empty rows drawn as a gradient rather than DOM nodes, so the table still reads
+ * as a grid when a filter leaves three results. Measuring the container to emit
+ * real filler rows would need a ResizeObserver for no visible gain.
+ */
+const fillerRows = {
+  backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${GRID_ROW_HEIGHT - 1}px, token(colors.brand.panel.4) ${GRID_ROW_HEIGHT - 1}px, token(colors.brand.panel.4) ${GRID_ROW_HEIGHT}px)`,
+  flex: '1',
+  minH: '0',
+};
 
 /**
  * A plain table, not ag-grid: results are a capped page rather than 510k rows,
  * so the SSRM machinery would buy nothing here.
  *
- * Layout is fixed and the narrow columns declare their width, so the name
- * column absorbs the slack instead of the table overflowing. Auto layout
- * re-measured on every render, which moved the header when the facets resolved
- * and again when the rows replaced the skeleton.
+ * Layout is fixed and the narrow columns declare their width, so the name column
+ * absorbs the slack instead of the table overflowing. Auto layout re-measured on
+ * every render, which moved the header when the facets resolved and again when
+ * the rows replaced the skeleton.
  */
 export const ProspectResults = ({
   rows,
@@ -68,93 +71,101 @@ export const ProspectResults = ({
   onToggle,
   onToggleAll,
   selected,
-}: ProspectResultsProps) => (
-  <Box flex="1" overflow="auto">
-    {/* Table here is the unstyled primitive, so the size has to be set on it */}
-    <Table fontSize="1" minW="48rem" style={{ tableLayout: 'fixed' }} w="full">
-      <colgroup>
-        <col style={{ width: CHECKBOX_W }} />
-        <col style={{ width: IN_CRM_W }} />
-        {columns.map((column) => (
-          <col
-            key={column.allowKey}
-            style={column.width ? { width: column.width } : undefined}
-          />
-        ))}
-      </colgroup>
-      <TableHeader>
-        <TableRow h={ROW_H}>
-          <TableHead>
-            <Checkbox
-              checked={rows.length > 0 && selected.size === rows.length}
-              disabled={isLoading}
-              onCheckedChange={onToggleAll}
-            />
-          </TableHead>
-          <TableHead>In CRM</TableHead>
-          {columns.map((column) => (
-            <TableHead key={column.allowKey}>{column.label}</TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {isLoading
-          ? Array.from({ length: SKELETON_ROWS }, (_, row) => (
-              <TableRow h={ROW_H} key={`skeleton-${row}`}>
-                <TableCell>
-                  {/* the real control, so the row is exactly as tall as a data row */}
-                  <Checkbox checked={false} disabled />
-                </TableCell>
-                <TableCell />
-                {columns.map((column, index) => (
-                  <TableCell key={column.allowKey}>
-                    <Skeleton
-                      display="block"
-                      h="0.6875rem"
-                      loading
-                      w={BAR_W[(row + index) % BAR_W.length]}
-                    >
-                      <Span>&nbsp;</Span>
-                    </Skeleton>
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          : rows.map((row) => (
-              <TableRow
-                h={ROW_H}
-                key={row.sourceCrd}
-                onClick={() => onRowClick(row)}
-                style={{ cursor: 'pointer' }}
-              >
-                <TableCell onClick={(event) => event.stopPropagation()}>
-                  <Checkbox
-                    checked={selected.has(row.sourceCrd)}
-                    onCheckedChange={() => onToggle(row.sourceCrd)}
-                  />
-                </TableCell>
-                <TableCell>
-                  {row.recordId ? (
-                    <Span color="text.placeholder" fontSize="1">
-                      Saved
-                    </Span>
-                  ) : null}
-                </TableCell>
-                {columns.map((column) => {
-                  const cell = row.values.find(
-                    (v) => v.attributeId === column.attributeId,
-                  );
-                  const Renderer = rendererFor(column.type, column.isArray);
+}: ProspectResultsProps) => {
+  if (isLoading) {
+    return (
+      <TableSkeleton
+        columns={[
+          { isControl: true, key: 'select', width: CHECKBOX_W },
+          { key: 'in-crm', label: 'In CRM', width: IN_CRM_W },
+          ...columns.map((column) => ({
+            key: column.allowKey,
+            label: column.label,
+            width: column.width,
+          })),
+        ]}
+        minW={MIN_W}
+        rowHeight={ROW_H}
+      />
+    );
+  }
 
-                  return (
-                    <TableCell key={column.allowKey} overflow="hidden">
-                      <Renderer value={cell?.value} />
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
+  return (
+    <Box
+      display="flex"
+      flex="1"
+      flexDirection="column"
+      minH="0"
+      overflow="auto"
+    >
+      {/* Table here is the unstyled primitive, so the size has to be set on it */}
+      <Table fontSize="1" minW={MIN_W} style={{ tableLayout: 'fixed' }} w="full">
+        <colgroup>
+          <col style={{ width: CHECKBOX_W }} />
+          <col style={{ width: IN_CRM_W }} />
+          {columns.map((column) => (
+            <col
+              key={column.allowKey}
+              style={column.width ? { width: column.width } : undefined}
+            />
+          ))}
+        </colgroup>
+        <TableHeader>
+          <TableRow h={ROW_H}>
+            <TableHead>
+              <Checkbox
+                checked={rows.length > 0 && selected.size === rows.length}
+                onCheckedChange={onToggleAll}
+              />
+            </TableHead>
+            <TableHead>In CRM</TableHead>
+            {columns.map((column) => (
+              <TableHead key={column.allowKey}>{column.label}</TableHead>
             ))}
-      </TableBody>
-    </Table>
-  </Box>
-);
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow
+              h={ROW_H}
+              key={row.sourceCrd}
+              onClick={() => onRowClick(row)}
+              style={{ cursor: 'pointer' }}
+            >
+              <TableCell onClick={(event) => event.stopPropagation()}>
+                <Checkbox
+                  checked={selected.has(row.sourceCrd)}
+                  onCheckedChange={() => onToggle(row.sourceCrd)}
+                />
+              </TableCell>
+              <TableCell>
+                {row.recordId ? (
+                  <Span color="text.placeholder" fontSize="1">
+                    Saved
+                  </Span>
+                ) : null}
+              </TableCell>
+              {columns.map((column) => {
+                const cell = row.values.find(
+                  (v) => v.attributeId === column.attributeId,
+                );
+                const Renderer = rendererForColumn(
+                  column.allowKey,
+                  column.type,
+                  column.isArray,
+                );
+
+                return (
+                  <TableCell key={column.allowKey} overflow="hidden">
+                    <Renderer value={cell?.value} />
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Box css={fillerRows} />
+    </Box>
+  );
+};

@@ -8,6 +8,8 @@ import {
 } from '../../api/generated/entities/entities';
 import { EntityGrid } from '../../modules/entities/components/grid/grid-shell';
 import { GridToolbar } from '../../modules/entities/components/grid/grid-toolbar';
+import { GRID_DEFAULT_COL_WIDTH } from '../../ui/primitives/data-grid';
+import { TableSkeleton } from '../../ui/primitives/skeleton/table-skeleton';
 
 type Search = { view?: string };
 
@@ -17,6 +19,7 @@ export const Route = createFileRoute('/_authed/$entitySlug')({
   }),
   // without this the loader would not re-run when only the view changes
   loaderDeps: ({ search }) => ({ view: search.view }),
+  pendingComponent: EntityPageSkeleton,
   loader: async ({ params, deps }) => {
     const { entities } = await entitiesControllerGetEntities();
     const entity = entities.find((e) => e.slug === params.entitySlug);
@@ -36,6 +39,36 @@ export const Route = createFileRoute('/_authed/$entitySlug')({
   },
   component: EntityPage,
 });
+
+/**
+ * The loader blocks on the entity and its view, so the page was blank until both
+ * landed. Column count and widths are unknown at this point — the placeholder
+ * columns are deliberately generic rather than pretending to know the view.
+ */
+function EntityPageSkeleton() {
+  return (
+    <div
+      className={css({ display: 'flex', flexDirection: 'column', h: '100dvh' })}
+    >
+      <div
+        className={css({
+          borderBottomWidth: '1px',
+          borderColor: 'brand.panel.4',
+          flexShrink: '0',
+          h: '2.75rem',
+        })}
+      />
+      <div className={css({ display: 'flex', flex: '1', minH: '0' })}>
+        <TableSkeleton
+          columns={Array.from({ length: 6 }, (_, index) => ({
+            key: `pending-${index}`,
+            width: `${GRID_DEFAULT_COL_WIDTH}px`,
+          }))}
+        />
+      </div>
+    </div>
+  );
+}
 
 function EntityPage() {
   const { entity, view, total } = Route.useLoaderData();

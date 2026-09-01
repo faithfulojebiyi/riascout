@@ -122,9 +122,13 @@ export const ProspectingPage = ({
     });
 
   const rows = search.data?.rows ?? [];
-  /** facets gate the search, so "not started yet" is also loading */
+  /**
+   * Cold load only. Facets gate the search, so "not started yet" counts — but a
+   * refetch keeps the rows on screen; swapping in the skeleton made the table
+   * blink on every facet toggle. TopBar already shows isFetching.
+   */
   const isLoading =
-    facetsQuery.isPending || search.isPending || search.isFetching;
+    (facetsQuery.isPending || search.isPending) && rows.length === 0;
 
   const toggle = (sourceCrd: string) =>
     setSelected((current) => {

@@ -94,8 +94,6 @@ export const GridWrapper = ({
         '--ag-border-color': 'token(colors.brand.panel.4) !important',
         '--ag-border-radius': '0 !important',
         '--ag-card-shadow': 'none !important',
-        '--ag-cell-column-border':
-          '1px solid token(colors.brand.panel.4) !important',
         '--ag-cell-horizontal-padding': '0.8rem !important',
         // checkbox sizing & shape
         '--ag-checkbox-border-radius': '4px !important',
@@ -117,14 +115,12 @@ export const GridWrapper = ({
         '--ag-checkbox-unchecked-background-color': 'transparent !important',
         '--ag-checkbox-unchecked-border-color':
           'token(colors.colors.gray.4) !important',
-        '--ag-column-border-style': 'solid !important',
-        '--ag-column-border-width': '1px !important',
 
         // popups
         '--ag-control-panel-background-color': 'transparent !important',
         '--ag-font-family': 'var(--font-geist-sans) !important',
         // alpine's 14px reads oversized against a 40px row
-        '--ag-font-size': '0.8125rem !important',
+        '--ag-font-size': '0.75rem !important',
 
         // text — drives .ag-row-group and any element without an explicit color override
         '--ag-foreground-color': 'token(colors.text.app) !important',
@@ -178,7 +174,11 @@ export const GridWrapper = ({
             borderTop: 'focused !important',
             borderTopStyle: 'dashed !important',
           },
-          borderX: '1px solid token(colors.brand.panel.4) !important',
+          /**
+           * Right only. borderX drew both sides, so every pair of adjacent
+           * cells stacked a right and a left edge into one 2px divider.
+           */
+          borderRight: '1px solid token(colors.brand.panel.4) !important',
           color: 'text.app !important',
           // fontFamily: 'var(--font-dm-mono) !important',
           fontSize: '1 !important',

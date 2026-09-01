@@ -1,25 +1,13 @@
 import type { ColDef } from 'ag-grid-enterprise';
 
+import { GRID_DEFAULT_COL_WIDTH } from '../../../../ui/primitives/data-grid/constants/sizing';
+
 import { isTypeEditable } from '../attribute-inputs/input-map';
 import type { EntityViewField, GridRow } from '../../types/grid';
 import { CellEditorAdapter } from './cell-editor-adapter';
 import { CellRendererAdapter } from './cell-renderer-adapter';
 import { GridColumnHeader } from './grid-column-header';
 
-const DEFAULT_WIDTH = 180;
-
-/** numeric-ish types read better right-aligned and need less room */
-const WIDTH_BY_TYPE: Record<string, number> = {
-  number: 120,
-  currency: 140,
-  percentage: 110,
-  rating: 100,
-  boolean: 90,
-  checkbox: 90,
-  date: 130,
-  timestamp: 150,
-  url: 200,
-};
 
 /**
  * Columns come from the view, never from a hand-written config. The legacy app
@@ -49,7 +37,8 @@ export const buildColumnDefs = (
       },
       // ag-grid needs a field path for sorting; the renderer reads the map itself
       field: `cellsByAttributeId.${field.attributeId}` as never,
-      width: field.width ?? WIDTH_BY_TYPE[field.type] ?? DEFAULT_WIDTH,
+      // one flat starting width; a user-resized column persists field.width
+      width: field.width ?? GRID_DEFAULT_COL_WIDTH,
       pinned: field.isPinned ? ('left' as const) : undefined,
       // projected market columns have no cell to write, and a type with no
       // registered input cannot be edited safely
@@ -60,6 +49,7 @@ export const buildColumnDefs = (
       cellRendererParams: {
         attributeId: field.attributeId,
         attributeType: field.type,
+        referenceColumn: field.referenceColumn,
         isMultiValue: false,
       },
       cellEditor: CellEditorAdapter,
