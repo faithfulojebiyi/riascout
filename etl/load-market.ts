@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { runDuck, type DuckOptions } from './lib/duck.js';
+import { duckScalar, runDuck, type DuckOptions } from './lib/duck.js';
 import { acquire } from './lib/lock.js';
 import { runPsql } from './lib/postgres.js';
 import { refreshFacetOptions } from './refresh-facet-options.js';
@@ -21,6 +21,12 @@ type Stage = {
   label: string;
   engine?: 'duck' | 'postgres' | 'node';
   run?: (postgresUrl: string) => Promise<unknown>;
+  /**
+   * Skip when the release has no such table. A release published before a
+   * canonical table existed is still valid; failing the whole run on it would
+   * make every new table a breaking change.
+   */
+  requiresSeedTable?: string;
 };
 
 /**
@@ -39,6 +45,12 @@ const STAGES: Stage[] = [
   },
   { key: 'filings', file: '020-filings.sql', label: 'filing spine' },
   { key: 'firm-facts', file: '030-firm-facts.sql', label: 'firm facts' },
+  {
+    key: 'fee-methods',
+    file: '031-fee-methods.sql',
+    label: 'fee methods',
+    requiresSeedTable: 'filing_fee_methods',
+  },
   {
     key: 'custodians',
     file: '035-custodians.sql',
@@ -132,6 +144,18 @@ function parseOnly(argv: string[]): Set<string> | null {
 
 const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
+const hasSeedTable = async (
+  table: string,
+  opts: DuckOptions,
+): Promise<boolean> => {
+  const found = await duckScalar(
+    `select count(*) from information_schema.tables where table_name = '${table}';`,
+    opts,
+  );
+
+  return found.trim() !== '0';
+};
+
 async function main(): Promise<void> {
   if (process.argv.includes('--list')) {
     for (const s of STAGES) {
@@ -172,6 +196,14 @@ async function main(): Promise<void> {
     const started = Date.now();
 
     process.stdout.write(`  ${stage.key.padEnd(12)} ${stage.label} … `);
+
+    if (
+      stage.requiresSeedTable &&
+      !(await hasSeedTable(stage.requiresSeedTable, opts))
+    ) {
+      console.log(`skipped — the release has no ${stage.requiresSeedTable}`);
+      continue;
+    }
 
     try {
       if (stage.engine === 'node') {
