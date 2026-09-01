@@ -77,11 +77,19 @@ const OWNERSHIP_CODES = [
   ['F', '75% or more', 75, 100],
 ] as const;
 
+/**
+ * FINRA's own meaning per status. An allowlist, never a denylist: a code absent
+ * here classifies as unknown, which 090-quality reports, rather than silently
+ * counting as an adviser permitted to transact.
+ */
 const REGISTRATION_STATUSES = [
-  ['APPROVED', 'Approved'],
-  ['APPROVED_RES', 'Approved with restrictions'],
-  ['APP_PEND_IARCE', 'Application pending IARCE'],
-  ['PREVIOUS', 'Previous registration'],
+  ['APPROVED', 'Approved', true, true],
+  ['APPROVED_RES', 'Approved with restrictions', true, true],
+  ['APP_PEND_IARCE', 'Approved pending IAR continuing education', true, true],
+  ['TEMPREG', 'Temporary registration', true, true],
+  ['SUSPENSION', 'Suspended', true, false],
+  ['REQUAL', 'Must requalify by examination', true, false],
+  ['PREVIOUS', 'Previous registration', false, false],
 ] as const;
 
 /** Derivation rule lives in libs/feature/market — and is unit-tested. */
@@ -107,7 +115,9 @@ const AUM_BANDS = [
 
 const SOURCES = [
   ['sec_adv', 'SEC Form ADV', 'internal', 10],
+  ['sec_adv_monthly', 'SEC monthly adviser report', 'internal', 10],
   ['sec_iapd', 'SEC IAPD individual records', 'internal', 10],
+  ['sec_iapd_current', 'SEC IAPD current employment', 'internal', 10],
   ['derived', 'Derived by our own transforms', 'internal', 20],
   ['pattern_inference', 'Email pattern inference (identifier only)', 'internal', 60],
   ['user', 'Entered by a user', 'user', 5],
@@ -157,11 +167,16 @@ async function main(): Promise<void> {
 
   report('dim_fund_type', FUND_TYPES.length);
 
-  for (const [code, name] of REGISTRATION_STATUSES) {
+  for (const [
+    code,
+    name,
+    registrationCurrent,
+    canConductBusiness,
+  ] of REGISTRATION_STATUSES) {
     await prisma.dimRegistrationStatus.upsert({
       where: { code },
-      create: { code, name },
-      update: { name },
+      create: { code, name, registrationCurrent, canConductBusiness },
+      update: { name, registrationCurrent, canConductBusiness },
     });
   }
 

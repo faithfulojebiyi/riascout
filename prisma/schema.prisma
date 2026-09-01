@@ -37,6 +37,8 @@ model DimSource {
   contactPoints      AdvisorContactPoint[]
   enrichmentRequests EnrichmentRequest[]
   observations       AdvisorFirmObservation[]
+  firmNames          FirmNameObservation[]
+  observationRuns    ObservationRun[]
 
   @@schema("market")
   @@map("dim_source")
@@ -96,12 +98,45 @@ model DimOwnershipCode {
   @@map("dim_ownership_code")
 }
 
+/// The FINRA meaning of each status, mapped explicitly. NULL is "we have never
+/// classified this code" — a new status must raise a quality alert rather than
+/// default into counting as an active adviser permitted to transact.
 model DimRegistrationStatus {
-  code String @id
-  name String
+  code                String   @id
+  name                String
+  registrationCurrent Boolean? @map("registration_current")
+  canConductBusiness  Boolean? @map("can_conduct_business")
 
   @@schema("market")
   @@map("dim_registration_status")
+}
+
+/**
+ * One collection is one snapshot. Movement may only be derived between two
+ * complete runs — an interrupted collection would otherwise read as an exodus.
+ */
+model ObservationRun {
+  collectionId         String    @id @map("collection_id")
+  sourceCode           String    @map("source_code")
+  observedOn           DateTime  @map("observed_on") @db.Date
+  startedAt            DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt          DateTime? @map("completed_at") @db.Timestamptz(6)
+  expectedAdvisorCount Int?      @map("expected_advisor_count")
+  observedAdvisorCount Int?      @map("observed_advisor_count")
+  isComplete           Boolean   @default(false) @map("is_complete")
+  /// pending | processed | failed. A processed run that produced no movements
+  /// is still processed — that is what distinguishes "nothing moved" from "the
+  /// engine never ran", and readiness depends on the difference.
+  movementStatus       String    @default("pending") @map("movement_status")
+  movementProcessedAt  DateTime? @map("movement_processed_at") @db.Timestamptz(6)
+  movementCount        Int?      @map("movement_count")
+
+  source       DimSource                @relation(fields: [sourceCode], references: [code])
+  observations AdvisorFirmObservation[]
+
+  @@index([sourceCode, observedOn(sort: Desc)])
+  @@schema("market")
+  @@map("observation_run")
 }
 
 /// exam_name is functionally dependent on exam_code — stored once here,
@@ -177,6 +212,7 @@ model Firm {
   filings            Filing[]
   registrations      AdvisorRegistration[]
   registrationEvents FirmRegistrationEvent[]
+  names              FirmNameObservation[]
   domain             FirmDomain?
   search             FirmSearch?
 
@@ -521,6 +557,27 @@ model FirmWebPresence {
   @@map("firm_web_presence")
 }
 
+/// One row per distinct name per source, so a rename stays distinguishable from
+/// a typo. Covers all 61k CRDs — the 28,895 employer-only firms have no filing,
+/// and a registration's source_employer_name is the only name they have.
+model FirmNameObservation {
+  firmCrd          BigInt    @map("firm_crd")
+  sourceCode       String    @map("source_code")
+  firmName         String    @map("firm_name")
+  firstObservedOn  DateTime? @map("first_observed_on") @db.Date
+  lastObservedOn   DateTime? @map("last_observed_on") @db.Date
+  observationCount Int       @default(1) @map("observation_count")
+
+  firm   Firm      @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
+  source DimSource @relation(fields: [sourceCode], references: [code])
+
+  @@id([firmCrd, sourceCode, firmName])
+  @@index([firmCrd, lastObservedOn(sort: Desc)])
+  @@index([firmName])
+  @@schema("market")
+  @@map("firm_name_observation")
+}
+
 /// Derived: the canonical domain per firm, from the most recent filing that
 /// reports one. The join key for company enrichment and email inference.
 model FirmDomain {
@@ -725,6 +782,8 @@ model AdvisorLocation {
   registration AdvisorRegistration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
 
   @@index([advisorCrd])
+  /// unindexed, this FK made every registration delete scan the whole table
+  @@index([registrationId])
   @@index([city, regionRaw])
   @@index([postalCode])
   @@schema("market")
@@ -862,14 +921,29 @@ model AdvisorFirmObservation {
   firmCrd              BigInt?  @map("firm_crd")
   registrationCategory String?  @map("registration_category")
   sourceCode           String   @map("source_code")
+  /// the source's own string: APPROVED, APP_PEND_IARCE, SUSPENSION, …
+  statusCode           String?  @map("status_code")
+  /// the registration exists now; says nothing about permission to transact
+  registrationCurrent  Boolean? @map("registration_current")
+  /// FINRA permits the adviser to transact — false for SUSPENSION and REQUAL,
+  /// NULL when the status is not in dim_registration_status. Unknown is not no.
+  canConductBusiness   Boolean? @map("can_conduct_business")
+  /// the source reports one row per state, and they carry different statuses
+  jurisdiction         String?
+  /// which snapshot saw it. Append-only across runs — deleting a prior run's
+  /// rows is what makes movement underivable.
+  collectionId         String   @map("collection_id")
 
-  advisor Advisor   @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
-  source  DimSource @relation(fields: [sourceCode], references: [code])
+  advisor Advisor        @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
+  source  DimSource      @relation(fields: [sourceCode], references: [code])
+  run     ObservationRun @relation(fields: [collectionId], references: [collectionId])
 
   /// DDL rewrites this as NULLS NOT DISTINCT so a null firm cannot duplicate
-  @@unique([advisorCrd, observedOn, firmCrd], map: "advisor_firm_observation_key")
+  @@unique([collectionId, advisorCrd, firmCrd, jurisdiction], map: "advisor_firm_observation_key")
   @@index([observedOn])
   @@index([firmCrd, observedOn])
+  @@index([firmCrd, canConductBusiness])
+  @@index([collectionId, advisorCrd])
   @@schema("market")
   @@map("advisor_firm_observation")
 }
@@ -919,7 +993,13 @@ model AdvisorSearch {
   /// primary registration = the longest-running open one
   currentFirmCrd   BigInt?   @map("current_firm_crd")
   currentFirmName  String?   @map("current_firm_name")
+  /// NULL whenever the link is observation-only: no authentic start exists, and
+  /// a status-change date is not one
   currentFirmSince DateTime? @map("current_firm_since") @db.Date
+  /// registration | observation — which evidence the link rests on
+  currentFirmSource     String?   @map("current_firm_source")
+  /// know time for an observation-backed link; NULL for a registration
+  currentFirmObservedOn DateTime? @map("current_firm_observed_on") @db.Date
   currentFirmCount Int       @default(0) @map("current_firm_count")
 
   tenureMonths            Int?     @map("tenure_months")
@@ -1044,6 +1124,13 @@ model FirmSearch {
   officeCount           Int? @map("office_count")
   /// our count of open registrations, not the ADV's self-report
   advisorCount          Int? @map("advisor_count")
+  /// the same count plus current observations that carry no open interval, so
+  /// advisor_count never shifts under a saved view
+  observedAdvisorCount  Int? @map("observed_advisor_count")
+  /// linked | self_reported_only | unknown — so a null count is never read as
+  /// zero. self_reported_only means the firm reports advisory employees but no
+  /// individual record links to it.
+  advisorLinkageStatus  String? @map("advisor_linkage_status")
 
   aumPerAdvisor           Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
   aumPerClient            Decimal? @map("aum_per_client") @db.Decimal(20, 2)

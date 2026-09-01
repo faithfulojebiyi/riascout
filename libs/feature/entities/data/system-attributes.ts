@@ -20,6 +20,8 @@ export const ADVISOR_REFERENCE_ATTRIBUTES = {
   currentFirmCrd: '01a04af1-e858-7eac-a721-7900d72df2fd', // advisor.current_firm_crd
   currentFirmName: '01a04af1-e859-748b-a87e-c8572d832bab', // advisor.current_firm_name
   currentFirmSince: '01a04af1-e85a-7d6a-81b7-aee56650f517', // advisor.current_firm_since
+  currentFirmSource: '01a04b0c-4d23-7c88-9a10-71f5e2b8093c', // advisor.current_firm_source
+  currentFirmObservedOn: '01a04b0c-4d24-7d40-b6e2-84a0c7d51e29', // advisor.current_firm_observed_on
   currentFirmCount: '01a04af1-e85b-761e-bc11-9871fd42eabb', // advisor.current_firm_count
   tenureMonths: '01a04af1-e85c-7a7c-ab2d-cbf9f40fd445', // advisor.tenure_months
   experienceMonths: '01a04af1-e85d-7c88-ae36-b5e74f839dd8', // advisor.experience_months
@@ -85,6 +87,8 @@ export const FIRM_REFERENCE_ATTRIBUTES = {
   clientCount: '01a04af1-e885-7ee6-8bc6-ae10c013d04f', // firm.client_count
   employeeCount: '01a04af1-e886-7d9d-aab9-ed679f4db5aa', // firm.employee_count
   advisorCount: '01a04af1-e887-703a-897b-2574528425ec', // firm.advisor_count
+  advisorLinkageStatus: '01a04b0c-4d21-7a6e-9c3f-5b81e7402db4', // firm.advisor_linkage_status
+  observedAdvisorCount: '01a04b0c-4d22-7b13-8e57-2c9d6a4413f8', // firm.observed_advisor_count
   aumPerAdvisor: '01a04af1-e888-7097-856c-c8799b7ef4df', // firm.aum_per_advisor
   aumPerClient: '01a04af1-e889-7f5f-8bb8-ab8bad855866', // firm.aum_per_client
   aumCagr_3y: '01a04af1-e88a-7260-b668-928b4a2042c0', // firm.aum_cagr_3y

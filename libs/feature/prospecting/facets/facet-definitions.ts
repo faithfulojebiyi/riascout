@@ -1,3 +1,5 @@
+import type { AttributeType } from '@orm/app';
+
 import { resolveReferenceColumn } from '@feature/entities/attribute-types/reference-columns.js';
 import type { FilterOperator } from '@feature/entities/filter-sort/ast.js';
 import { COLUMN_META } from '@feature/entities/data/column-meta.js';
@@ -13,6 +15,8 @@ export type FacetDefinition = {
   icon: string | null;
   group: string;
   kind: FacetKind;
+  /** kind drives the filter control; type drives the cell renderer */
+  type: AttributeType;
   operators: FilterOperator[];
   isArray: boolean;
   /** populated for multiSelect; search facets fetch on demand */
@@ -52,6 +56,7 @@ export const buildFacetDefinitions = (
         icon: attribute.icon,
         group: COLUMN_META[allowKey]?.group ?? 'Identity',
         kind,
+        type: ref.type,
         operators: operatorsFor(kind),
         isArray: ref.isArray === true,
         options: [],

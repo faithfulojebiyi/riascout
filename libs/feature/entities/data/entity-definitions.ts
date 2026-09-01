@@ -74,6 +74,14 @@ const LABEL_OVERRIDES: Record<string, string> = {
   experience_years: 'Years of Experience',
   tenure_months: 'Tenure (Months)',
   experience_months: 'Experience (Months)',
+  /**
+   * Our own linkage from IAPD individual records, not the firm's self-reported
+   * headcount — "Advisor Count" read as the latter. The column keeps its name
+   * so saved views and the allowlist key stay valid.
+   */
+  advisor_count: 'Linked Active Advisers',
+  firm_advisor_count: 'Linked Active Advisers',
+  advisor_linkage_status: 'Adviser Linkage',
 };
 
 const humanise = (column: string): string =>

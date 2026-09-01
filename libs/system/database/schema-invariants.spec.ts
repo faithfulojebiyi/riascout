@@ -61,6 +61,15 @@ describe('schema invariants', () => {
     return rows[0]?.exists ?? false;
   };
 
+  const functionExists = async (signature: string): Promise<boolean> => {
+    const { rows } = await db.query<{ exists: boolean }>(
+      `select to_regprocedure($1) is not null as exists`,
+      [signature],
+    );
+
+    return rows[0]?.exists ?? false;
+  };
+
   it('has btree_gist installed', async () => {
     const { rows } = await db.query(
       `select 1 from pg_extension where extname = 'btree_gist'`,
@@ -114,6 +123,8 @@ describe('schema invariants', () => {
       'edge_one_to_many_target',
       'advisor_movement_key',
       'advisor_firm_observation_key',
+      // unindexed, this FK made every registration delete scan advisor_location
+      'advisor_location_registration_id_idx',
     ];
 
     it.each(indexes)('has %s', async (name) => {
@@ -193,8 +204,58 @@ describe('schema invariants', () => {
     it.each([
       ['market', 'firm_current_filing'],
       ['market', 'advisor_current_firm'],
+      ['market', 'firm_current_name'],
+      ['market', 'advisor_current_affiliation'],
     ])('has %s.%s', async (schema, name) => {
       await expect(viewExists(schema, name)).resolves.toBe(true);
+    });
+  });
+
+  /**
+   * Prisma cannot express a function at all, so this exists only in
+   * prisma/ddl/035-functions.sql and its mirrored migration. Losing it makes
+   * the movement stage fail rather than silently derive nothing — but only if
+   * something asserts it is here.
+   */
+  describe('functions', () => {
+    it('has market.derive_movements(text)', async () => {
+      await expect(
+        functionExists('market.derive_movements(text)'),
+      ).resolves.toBe(true);
+    });
+  });
+
+  /**
+   * NULLS NOT DISTINCT is the whole point of these keys: without it a null firm
+   * (the industry-exit sentinel) duplicates on every re-run, and Prisma emits a
+   * plain unique index that looks identical in the schema file.
+   */
+  describe('unique keys are NULLS NOT DISTINCT', () => {
+    it.each([['advisor_firm_observation_key'], ['advisor_movement_key']])(
+      '%s',
+      async (name) => {
+        const { rows } = await db.query<{ indexdef: string }>(
+          `select indexdef from pg_indexes
+            where schemaname = 'market' and indexname = $1`,
+          [name],
+        );
+
+        expect(rows[0]?.indexdef, `${name} is missing`).toBeDefined();
+        expect(
+          rows[0]?.indexdef.toLowerCase(),
+          `${name} is not NULLS NOT DISTINCT`,
+        ).toContain('nulls not distinct');
+      },
+    );
+
+    /** collection_id leads the key, or a second snapshot collides with the first */
+    it('advisor_firm_observation_key is keyed by collection', async () => {
+      const { rows } = await db.query<{ indexdef: string }>(
+        `select indexdef from pg_indexes
+          where schemaname = 'market' and indexname = 'advisor_firm_observation_key'`,
+      );
+
+      expect(rows[0]?.indexdef.toLowerCase()).toContain('collection_id');
     });
   });
 

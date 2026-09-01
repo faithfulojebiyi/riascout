@@ -15,6 +15,10 @@
 --
 -- Whether a firm has filings is the signal for "do we hold ADV data" — join to
 -- market.filing to find out. Do not infer it from presence in market.firm.
+-- firm_search applies exactly that test, so (2) is nameable and reachable
+-- through movement without ever appearing as a prospecting target.
+--
+-- Names for both populations come from 015-firm-names.sql, never from here.
 
 -- Insert-only, so the stage is idempotent without deleting rows that filings
 -- and registrations reference. Use the `reset` stage for a genuine full reload.
@@ -34,6 +38,18 @@ where r.employer_firm_crd is not null
   and not exists (select 1 from firms f where f.firm_crd = r.employer_firm_crd)
   and not exists (select 1 from pg.market.firm x where x.firm_crd = r.employer_firm_crd)
 group by r.employer_firm_crd;
+
+/**
+ * 661 employers appear only in individual_current_registrations. Someone is
+ * registered there right now, so the CRD is real and 040 needs the FK — but the
+ * table carries no employer name, so these are the only firms we cannot name.
+ */
+insert into pg.market.firm (firm_crd, first_seen, last_seen)
+select c.employer_firm_crd, min(c.status_posted_date), null
+from individual_current_registrations c
+where c.employer_firm_crd is not null
+  and not exists (select 1 from pg.market.firm x where x.firm_crd = c.employer_firm_crd)
+group by c.employer_firm_crd;
 
 insert into pg.market.advisor (advisor_crd, first_seen, last_seen)
 select i.individual_crd, i.first_seen_at::date, i.last_seen_at::date

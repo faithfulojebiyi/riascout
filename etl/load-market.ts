@@ -32,12 +32,34 @@ type Stage = {
 const STAGES: Stage[] = [
   { key: 'reset', file: '000-reset.sql', label: 'truncate (full reload only)' },
   { key: 'identity', file: '010-identity.sql', label: 'firms + advisors' },
+  {
+    key: 'firm-names',
+    file: '015-firm-names.sql',
+    label: 'canonical firm names',
+  },
   { key: 'filings', file: '020-filings.sql', label: 'filing spine' },
   { key: 'firm-facts', file: '030-firm-facts.sql', label: 'firm facts' },
+  {
+    key: 'custodians',
+    file: '035-custodians.sql',
+    label: 'custodian dimension',
+    engine: 'postgres',
+  },
+  {
+    key: 'geography',
+    file: '036-geography.sql',
+    label: 'country codes',
+    engine: 'postgres',
+  },
   {
     key: 'advisor',
     file: '040-advisor.sql',
     label: 'advisor detail + registrations',
+  },
+  {
+    key: 'current-affiliation',
+    file: '044-current-affiliation.sql',
+    label: 'current registration observations',
   },
   {
     key: 'advisor-derived',
@@ -45,10 +67,15 @@ const STAGES: Stage[] = [
     label: 'advisor tenure + experience',
     engine: 'postgres',
   },
+  /**
+   * Snapshot diffs, after the observations exist and before anything reads
+   * them. 047 stays unregistered: deriving movement from interval start dates
+   * produced falsely dated events, which is what this replaces.
+   */
   {
     key: 'movement',
-    file: '047-advisor-movement.sql',
-    label: 'advisor movement',
+    file: '048-movement.sql',
+    label: 'movement from snapshot diffs',
     engine: 'postgres',
   },
   {

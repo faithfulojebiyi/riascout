@@ -1,5 +1,11 @@
 -- Rebuilds market.firm_search, the firm-side prospecting projection.
 --
+-- Scoped to firms that have filed a Form ADV — the inner join to cur. The other
+-- 28,895 CRDs in market.firm exist only as an adviser's employer and have no
+-- filing behind them, so every column here would be NULL and they are not
+-- targetable. They keep their identity, names and movement; they are not
+-- prospects. See etl/sql/010-identity.sql.
+--
 -- Every fact table is keyed by filing, so each join goes through
 -- firm_current_filing. Joining a firm_fact_* table by firm alone would
 -- aggregate its entire filing history: firm_fact_custodian holds 3.4M rows
@@ -39,6 +45,15 @@ advisor_counts as (
     from market.advisor_registration
    where end_date is null and employer_firm_crd is not null
    group by employer_firm_crd
+),
+/**
+ * The same count plus advisers whose only current evidence is an observation.
+ * Kept separate so advisor_count cannot shift under a saved view or filter.
+ */
+observed_counts as (
+  select firm_crd, count(distinct advisor_crd)::int as observed_advisor_count
+    from market.advisor_current_affiliation
+   group by firm_crd
 ),
 custodians as (
   select c.filing_id,
@@ -177,6 +192,19 @@ flows as (
     ) d
    group by firm_crd
 ),
+/**
+ * Movement is only meaningful once two complete snapshots can be diffed. Until
+ * then every movement column is NULL rather than a confident zero.
+ */
+movement_ready as (
+  select (select count(*) from market.observation_run where is_complete) >= 2
+     and coalesce((
+       select movement_status = 'processed'
+         from market.observation_run
+        where is_complete
+        order by completed_at desc, collection_id desc
+        limit 1), false) as ready
+),
 filing_span as (
   select firm_crd,
          min(submitted_at)::date as first_filing_date,
@@ -187,7 +215,7 @@ filing_span as (
 )
 select f.firm_crd,
 
-       fi.firm_name,
+       coalesce(fcn.firm_name, fi.firm_name) as firm_name,
        fi.sec_number,
        fd.domain,
        web.linkedin_url,
@@ -206,6 +234,19 @@ select f.firm_crd,
        fm.client_count::int, fm.employee_count::int,
        fm.advisory_employee_count::int, fm.office_count::int,
        ac.advisor_count,
+       oc.observed_advisor_count,
+
+       /**
+        * A null count means no individual record links to the firm, never that
+        * nobody works there: 10,136 of them report advisory employees on the
+        * ADV. The status says which, so the grid cannot imply zero.
+        */
+       case
+         when ac.advisor_count is not null            then 'linked'
+         when oc.observed_advisor_count is not null   then 'observed_only'
+         when fm.advisory_employee_count is not null  then 'self_reported_only'
+         else 'unknown'
+       end                                                   as advisor_linkage_status,
 
        fdv.aum_per_advisor, fdv.aum_per_client, fdv.aum_per_employee,
        fdv.aum_percentile, fdv.aum_per_advisor_percentile,
@@ -229,18 +270,26 @@ select f.firm_crd,
 
        ow.owner_count, ow.owner_advisor_count, ow.ownership_concentration,
 
-       coalesce(flow.gained, 0)                              as advisors_gained_90d,
-       coalesce(flow.lost, 0)                                as advisors_lost_90d,
-       coalesce(flow.gained, 0) - coalesce(flow.lost, 0)     as net_advisor_flow_90d,
+       /**
+        * NULL until two complete snapshots exist. Zero would assert "observed,
+        * no movement", which is only true once a diff has actually run; today
+        * it would mean "we have not looked".
+        */
+       case when mr.ready then coalesce(flow.gained, 0) end  as advisors_gained_90d,
+       case when mr.ready then coalesce(flow.lost, 0) end    as advisors_lost_90d,
+       case when mr.ready
+            then coalesce(flow.gained, 0) - coalesce(flow.lost, 0)
+       end                                                   as net_advisor_flow_90d,
 
        fs.first_filing_date, fs.latest_filing_date, fs.filing_count,
 
-       setweight(to_tsvector('simple', coalesce(fi.firm_name, '')), 'A') ||
+       setweight(to_tsvector('simple', coalesce(fcn.firm_name, fi.firm_name, '')), 'A') ||
        setweight(to_tsvector('simple', coalesce(fi.city, '')), 'B')      ||
        setweight(to_tsvector('simple', coalesce(fi.region_raw, '')), 'C')     as search_tsv,
        now()                                                 as refreshed_at
   from market.firm f
-  left join cur                            on cur.firm_crd = f.firm_crd
+  join      cur                            on cur.firm_crd = f.firm_crd
+  left join market.firm_current_name      fcn on fcn.firm_crd = f.firm_crd
   left join market.firm_fact_identity     fi  on fi.filing_id  = cur.filing_id
   left join market.firm_fact_metrics      fm  on fm.filing_id  = cur.filing_id
   left join market.firm_fact_derived      fdv on fdv.filing_id = cur.filing_id
@@ -255,12 +304,14 @@ select f.firm_crd,
   left join asset_categories acat on acat.filing_id = cur.filing_id
   left join owners     ow   on ow.filing_id   = cur.filing_id
   left join advisor_counts ac on ac.firm_crd  = f.firm_crd
+  left join observed_counts oc on oc.firm_crd = f.firm_crd
   left join filing_span    fs on fs.firm_crd  = f.firm_crd
   left join growth_aum     g1 on g1.firm_crd  = f.firm_crd and g1.horizon = 1
   left join growth_aum     g3 on g3.firm_crd  = f.firm_crd and g3.horizon = 3
   left join growth_aum     g5 on g5.firm_crd  = f.firm_crd and g5.horizon = 5
   left join growth_emp     ge on ge.firm_crd  = f.firm_crd
-  left join flows          flow on flow.firm_crd = f.firm_crd;
+  left join flows          flow on flow.firm_crd = f.firm_crd
+  cross join movement_ready mr;
 truncate market.firm_search;
 
 -- named rather than `select *`: a positional insert silently shifts every
@@ -273,6 +324,7 @@ insert into market.firm_search (
   is_sec_registered, is_era, primary_registration_type, channel_code,
   regulatory_aum, discretionary_aum, non_discretionary_aum, aum_band,
   client_count, employee_count, advisory_employee_count, office_count, advisor_count,
+  observed_advisor_count, advisor_linkage_status,
   aum_per_advisor, aum_per_client, aum_per_employee,
   aum_percentile, aum_per_advisor_percentile,
   aum_cagr_1y, aum_cagr_3y, aum_cagr_5y, employee_cagr_3y,
@@ -292,6 +344,7 @@ select
   is_sec_registered, is_era, primary_registration_type, channel_code,
   regulatory_aum, discretionary_aum, non_discretionary_aum, aum_band,
   client_count, employee_count, advisory_employee_count, office_count, advisor_count,
+  observed_advisor_count, advisor_linkage_status,
   aum_per_advisor, aum_per_client, aum_per_employee,
   aum_percentile, aum_per_advisor_percentile,
   aum_cagr_1y, aum_cagr_3y, aum_cagr_5y, employee_cagr_3y,

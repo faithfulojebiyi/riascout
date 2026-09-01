@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { AttributeType } from '@orm/app';
+
 import {
   filterTreeSchema,
   sortAstSchema,
@@ -60,6 +62,8 @@ const FacetDefinitionSchema = z
     icon: z.string().nullable(),
     group: z.string(),
     kind: z.enum(['multiSelect', 'search', 'number', 'boolean', 'date']),
+    /** kind drives the filter control; type drives the cell renderer */
+    type: z.enum(AttributeType),
     operators: z.array(z.string()),
     isArray: z.boolean(),
     /** empty for search facets, which fetch options on demand */

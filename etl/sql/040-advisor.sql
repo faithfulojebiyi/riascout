@@ -4,12 +4,31 @@
 -- history carries none at all with month precision. They are separate tables
 -- and only registrations are authoritative.
 
+/**
+ * Loaded into unlogged shadow tables, then swapped in one postgres transaction.
+ * Truncating up front committed separately from the DuckDB inserts, so any
+ * later failure left every adviser table empty — which is exactly what happened.
+ * TRUNCATE is transactional in postgres, so the swap is genuinely all-or-nothing.
+ */
+call postgres_execute('pg', 'drop table if exists market.advisor_name__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_name__load (like market.advisor_name including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_exam__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_exam__load (like market.advisor_exam including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_designation__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_designation__load (like market.advisor_designation including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_disclosure_flag__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_disclosure_flag__load (like market.advisor_disclosure_flag including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_registration__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_registration__load (like market.advisor_registration including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_employment__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_employment__load (like market.advisor_employment including defaults)');
+call postgres_execute('pg', 'drop table if exists market.advisor_location__load');
+call postgres_execute('pg', 'create unlogged table market.advisor_location__load (like market.advisor_location including defaults)');
+
 begin;
 
 -- ── names: one observation, dated from the collection run ───────────────────
-delete from pg.market.advisor_name;
-
-insert into pg.market.advisor_name (
+insert into pg.market.advisor_name__load (
   advisor_crd, observed_on, first_name, middle_name, last_name, suffix_name
 )
 select n.individual_crd,
@@ -31,9 +50,7 @@ where exam_code is not null
 group by exam_code
 on conflict (code) do nothing;
 
-delete from pg.market.advisor_exam;
-
-insert into pg.market.advisor_exam (advisor_crd, exam_code, exam_date)
+insert into pg.market.advisor_exam__load (advisor_crd, exam_code, exam_date)
 select e.individual_crd, e.exam_code, min(e.exam_date)
 from individual_exams e
 where e.exam_code is not null
@@ -41,18 +58,14 @@ where e.exam_code is not null
 group by e.individual_crd, e.exam_code;
 
 -- ── designations ────────────────────────────────────────────────────────────
-delete from pg.market.advisor_designation;
-
-insert into pg.market.advisor_designation (advisor_crd, designation_name)
+insert into pg.market.advisor_designation__load (advisor_crd, designation_name)
 select distinct d.individual_crd, d.designation_name
 from individual_designations d
 where d.designation_name is not null
   and exists (select 1 from individuals i where i.individual_crd = d.individual_crd);
 
 -- ── disclosure flags: flags are all this source has ─────────────────────────
-delete from pg.market.advisor_disclosure_flag;
-
-insert into pg.market.advisor_disclosure_flag (
+insert into pg.market.advisor_disclosure_flag__load (
   advisor_crd, has_regulatory_action, has_criminal, has_bankruptcy,
   has_civil_judgment, has_bond, has_judgment, has_investigation,
   has_customer_complaint, has_termination, has_other
@@ -80,9 +93,7 @@ group by f.individual_crd;
 --
 -- Rows whose end precedes their start (135 in the seed) are rejected here and
 -- reported by 090-quality rather than dropped silently.
-delete from pg.market.advisor_registration;
-
-insert into pg.market.advisor_registration (
+insert into pg.market.advisor_registration__load (
   advisor_crd, employer_firm_crd, source_employer_name, jurisdiction,
   registration_category, status, start_date, end_date,
   start_precision, end_precision, interval_source
@@ -122,9 +133,7 @@ from islands
 group by individual_crd, employer_firm_crd, jkey, island;
 
 -- ── employment history: no firm CRD in the source, month precision ──────────
-delete from pg.market.advisor_employment;
-
-insert into pg.market.advisor_employment (
+insert into pg.market.advisor_employment__load (
   advisor_crd, source_employer_name, city, region_raw,
   start_month, end_month, is_open_ended, employment_sequence
 )
@@ -136,9 +145,7 @@ where exists (select 1 from individuals i where i.individual_crd = e.individual_
   and (e.end_month is null or e.start_month is null or e.end_month >= e.start_month);
 
 -- ── work locations, SEC-sourced ─────────────────────────────────────────────
-delete from pg.market.advisor_location;
-
-insert into pg.market.advisor_location (
+insert into pg.market.advisor_location__load (
   advisor_crd, sequence, location_source, street_1, street_2,
   city, region_raw, postal_code, country_code, is_us_workplace
 )
@@ -149,3 +156,23 @@ from individual_registration_locations l
 where exists (select 1 from individuals i where i.individual_crd = l.individual_crd);
 
 commit;
+
+call postgres_execute('pg', $swap$
+begin;
+truncate market.advisor_name, market.advisor_exam, market.advisor_designation, market.advisor_disclosure_flag, market.advisor_registration, market.advisor_employment, market.advisor_location;
+insert into market.advisor_name select * from market.advisor_name__load;
+insert into market.advisor_exam select * from market.advisor_exam__load;
+insert into market.advisor_designation select * from market.advisor_designation__load;
+insert into market.advisor_disclosure_flag select * from market.advisor_disclosure_flag__load;
+insert into market.advisor_registration select * from market.advisor_registration__load;
+insert into market.advisor_employment select * from market.advisor_employment__load;
+insert into market.advisor_location select * from market.advisor_location__load;
+drop table market.advisor_name__load;
+drop table market.advisor_exam__load;
+drop table market.advisor_designation__load;
+drop table market.advisor_disclosure_flag__load;
+drop table market.advisor_registration__load;
+drop table market.advisor_employment__load;
+drop table market.advisor_location__load;
+commit;
+$swap$);

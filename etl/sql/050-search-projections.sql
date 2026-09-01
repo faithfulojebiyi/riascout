@@ -18,13 +18,18 @@ with latest_name as (
    order by advisor_crd, observed_on desc nulls last
 ),
 primary_firm as (
-  -- an advisor may hold several open registrations; the primary is the one
-  -- they have held longest, matching how movement picks its firm
-  select distinct on (r.advisor_crd)
-         r.advisor_crd, r.employer_firm_crd as firm_crd, r.start_date
-    from market.advisor_registration r
-   where r.end_date is null
-   order by r.advisor_crd, r.start_date asc nulls last
+  /**
+   * From the canonical affiliation relation, never re-derived here. A
+   * registration outranks an observation, then longest-held wins; an
+   * observation-backed link keeps a null start because none is known.
+   */
+  select distinct on (a.advisor_crd)
+         a.advisor_crd, a.firm_crd, a.since as start_date,
+         a.source, a.observed_on
+    from market.advisor_current_affiliation a
+   order by a.advisor_crd,
+            case a.source when 'registration' then 0 else 1 end,
+            a.since asc nulls last
 ),
 firm_now as (
   select f.firm_crd, f.filing_id
@@ -60,18 +65,33 @@ previous_firms as (
     from market.advisor_registration
    where end_date is not null
    group by advisor_crd
+),
+movement_ready as (
+  select (select count(*) from market.observation_run where is_complete) >= 2
+     and coalesce((
+       select movement_status = 'processed'
+         from market.observation_run
+        where is_complete
+        order by completed_at desc, collection_id desc
+        limit 1), false) as ready
 )
 select a.advisor_crd,
        n.full_name, n.first_name, n.last_name,
        d.is_active,
 
        pf.firm_crd                                      as current_firm_crd,
-       fi.firm_name                                     as current_firm_name,
+       -- not fi.firm_name: 25,361 advisers work at a firm with no ADV filing,
+       -- and reading the name off the current filing left them blank
+       coalesce(fcn.firm_name, fi.firm_name)            as current_firm_name,
        pf.start_date                                    as current_firm_since,
+       pf.source                                        as current_firm_source,
+       pf.observed_on                                   as current_firm_observed_on,
        coalesce(d.current_firm_count, 0)                as current_firm_count,
 
-       d.tenure_months, d.experience_months,
-       (d.tenure_months / 12)                           as tenure_years,
+       -- no authentic start means no tenure; it is not zero and not guessable
+       case when pf.source = 'registration' then d.tenure_months end as tenure_months,
+       d.experience_months,
+       case when pf.source = 'registration' then d.tenure_months / 12 end as tenure_years,
        (d.experience_months / 12)                       as experience_years,
        coalesce(d.previous_firm_count, 0)               as previous_firm_count,
        d.avg_previous_tenure_months,
@@ -94,7 +114,14 @@ select a.advisor_crd,
 
        loc.city, loc.state, loc.postal_code, loc.country_code, loc.is_us_workplace,
 
-       mv.last_moved_on, mv.last_detected_on, mv.previous_firm_crd, mv.move_count_5y,
+       /**
+        * NULL until two complete snapshots can be diffed. A zero move count
+        * would claim we looked and saw nothing; we have not looked yet.
+        */
+       case when mr.ready then mv.last_moved_on end     as last_moved_on,
+       case when mr.ready then mv.last_detected_on end  as last_detected_on,
+       case when mr.ready then mv.previous_firm_crd end as previous_firm_crd,
+       case when mr.ready then mv.move_count_5y end     as move_count_5y,
 
        fm.regulatory_aum                                as firm_aum,
        fd.aum_band_code                                 as firm_aum_band,
@@ -124,12 +151,13 @@ select a.advisor_crd,
        false         as do_not_contact,
 
        setweight(to_tsvector('simple', coalesce(n.full_name, '')), 'A') ||
-       setweight(to_tsvector('simple', coalesce(fi.firm_name, '')), 'B') as search_tsv,
+       setweight(to_tsvector('simple', coalesce(fcn.firm_name, fi.firm_name, '')), 'B') as search_tsv,
        now() as refreshed_at
   from market.advisor a
   left join latest_name       n    on n.advisor_crd = a.advisor_crd
   left join market.advisor_derived d on d.advisor_crd = a.advisor_crd
   left join primary_firm      pf   on pf.advisor_crd = a.advisor_crd
+  left join market.firm_current_name fcn on fcn.firm_crd = pf.firm_crd
   left join firm_now          fn   on fn.firm_crd = pf.firm_crd
   left join market.firm_fact_identity     fi on fi.filing_id = fn.filing_id
   left join market.firm_fact_metrics      fm on fm.filing_id = fn.filing_id
@@ -187,7 +215,8 @@ select a.advisor_crd,
            )::int as move_count_5y
       from market.advisor_movement m
      where m.advisor_crd = a.advisor_crd
-  ) mv on true;
+  ) mv on true
+  cross join movement_ready mr;
 
 truncate market.advisor_search;
 
@@ -196,7 +225,8 @@ truncate market.advisor_search;
 -- the cause
 insert into market.advisor_search (
   advisor_crd, full_name, first_name, last_name, is_active,
-  current_firm_crd, current_firm_name, current_firm_since, current_firm_count,
+  current_firm_crd, current_firm_name, current_firm_since,
+  current_firm_source, current_firm_observed_on, current_firm_count,
   tenure_months, experience_months, tenure_years, experience_years,
   previous_firm_count, avg_previous_tenure_months, previous_firm_crds,
   exam_codes, designations, jurisdictions, jurisdiction_count,
@@ -214,7 +244,8 @@ insert into market.advisor_search (
 )
 select
   advisor_crd, full_name, first_name, last_name, is_active,
-  current_firm_crd, current_firm_name, current_firm_since, current_firm_count,
+  current_firm_crd, current_firm_name, current_firm_since,
+  current_firm_source, current_firm_observed_on, current_firm_count,
   tenure_months, experience_months, tenure_years, experience_years,
   previous_firm_count, avg_previous_tenure_months, previous_firm_crds,
   exam_codes, designations, jurisdictions, jurisdiction_count,

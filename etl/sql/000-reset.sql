@@ -28,6 +28,7 @@ delete from pg.market.firm_web_presence;
 delete from pg.market.firm_registration_event;
 delete from pg.market.firm_email_pattern;
 delete from pg.market.firm_domain;
+delete from pg.market.firm_name_observation;
 delete from pg.market.filing;
 
 delete from pg.market.advisor;

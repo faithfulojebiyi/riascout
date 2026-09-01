@@ -36,6 +36,27 @@ union all
 select 'source registrations rejected (inverted interval)', count(*)
 from individual_registration_intervals where end_date < start_date
 union all
+-- an unclassified status must never default into "permitted to transact"; add
+-- it to REGISTRATION_STATUSES in prisma/seed/dimensions.ts
+select 'observations with unclassified status (expect 0)', count(*)
+from pg.market.advisor_firm_observation
+where firm_crd is not null and can_conduct_business is null
+union all
+select 'source statuses missing from dim_registration_status', count(*)
+from (
+  select distinct c.status from individual_current_registrations c
+   where c.status is not null
+     and not exists (select 1 from pg.market.dim_registration_status d where d.code = c.status)
+) unknown_status
+union all
+-- every CRD is nameable from one of the three sources; a non-zero count means
+-- the canonical name layer has regressed and firms will render blank again
+select 'firms with no canonical name (expect 0)', count(*)
+from pg.market.firm f
+where not exists (
+  select 1 from pg.market.firm_name_observation n where n.firm_crd = f.firm_crd
+)
+union all
 -- DRPs: {} means ZERO disclosures, not unknown. NULL is reserved for
 -- genuinely malformed source data and should be near-zero. A large count
 -- here means the upstream normalization has regressed.

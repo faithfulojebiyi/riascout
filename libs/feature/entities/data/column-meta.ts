@@ -51,6 +51,8 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'advisor.current_firm_name': { visible: true, group: 'Current firm' },
   'advisor.current_firm_crd': { group: 'Current firm' },
   'advisor.current_firm_since': { group: 'Current firm' },
+  'advisor.current_firm_source': { group: 'Current firm' },
+  'advisor.current_firm_observed_on': { group: 'Current firm' },
   'advisor.current_firm_count': { group: 'Current firm' },
 
   'advisor.tenure_months': { group: 'Career' },
@@ -111,6 +113,8 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'firm.regulatory_aum': { visible: true, group: 'Firm metrics' },
   'firm.aum_band': { group: 'Firm metrics' },
   'firm.advisor_count': { visible: true, group: 'Firm metrics' },
+  'firm.observed_advisor_count': { group: 'Firm metrics' },
+  'firm.advisor_linkage_status': { group: 'Firm coverage' },
   'firm.client_count': { group: 'Firm metrics' },
   'firm.employee_count': { group: 'Firm metrics' },
   'firm.aum_per_advisor': { group: 'Firm metrics' },
