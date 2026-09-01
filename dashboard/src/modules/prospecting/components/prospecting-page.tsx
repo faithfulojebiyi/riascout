@@ -20,20 +20,29 @@ import { TopBar } from './results/top-bar';
 /**
  * Keyed by allowlist key, not label: a label is display text a user may rename,
  * and matching on it silently yields no columns.
+ *
+ * The label and width are carried here so the header renders at its final
+ * geometry on first paint. Deriving columns from the facets response meant the
+ * table rendered two headers, then six, and every column jumped sideways.
  */
-const TABLE_COLUMNS: Record<SourceKind, string[]> = {
+/** width omitted means the column absorbs the slack, so nothing overflows */
+type ColumnDef = { allowKey: string; label: string; width?: string };
+
+const TABLE_COLUMNS: Record<SourceKind, ColumnDef[]> = {
   advisor: [
-    'advisor.full_name',
-    'advisor.current_firm_name',
-    'advisor.state',
-    'advisor.tenure_years',
+    { allowKey: 'advisor.full_name', label: 'Name' },
+    { allowKey: 'advisor.current_firm_name', label: 'Current Firm' },
+    { allowKey: 'advisor.state', label: 'State', width: '4.5rem' },
+    { allowKey: 'advisor.tenure_years', label: 'Tenure', width: '5.5rem' },
   ],
   // the actual AUM, not the band: a band is a filter control, not a fact
   firm: [
-    'firm.firm_name',
-    'firm.state',
-    'firm.regulatory_aum',
-    'firm.advisor_count',
+    { allowKey: 'firm.firm_name', label: 'Firm Name', width: '15rem' },
+    { allowKey: 'firm.firm_crd', label: 'CRD', width: '4.5rem' },
+    { allowKey: 'firm.state', label: 'State', width: '4.5rem' },
+    { allowKey: 'firm.regulatory_aum', label: 'AUM', width: '5rem' },
+    { allowKey: 'firm.aum_per_advisor', label: 'AUM / Adviser', width: '6rem' },
+    { allowKey: 'firm.advisor_count', label: 'Advisers', width: '6rem' },
   ],
 };
 
@@ -61,12 +70,24 @@ export const ProspectingPage = ({
     [facetsQuery.data],
   );
 
+  /**
+   * Always the full set, facets or not. The facet supplies the attributeId a
+   * cell is keyed by and the workspace's own label once loaded; until then the
+   * static definition holds the column open.
+   */
   const columns = useMemo(
     () =>
-      TABLE_COLUMNS[sourceKind].flatMap((allowKey) => {
-        const match = facets.find((facet) => facet.allowKey === allowKey);
+      TABLE_COLUMNS[sourceKind].map((def) => {
+        const facet = facets.find((f) => f.allowKey === def.allowKey);
 
-        return match ? [match] : [];
+        return {
+          allowKey: def.allowKey,
+          width: def.width ?? null,
+          label: facet?.label ?? def.label,
+          attributeId: facet?.attributeId ?? null,
+          type: facet?.type ?? 'text',
+          isArray: facet?.isArray ?? false,
+        };
       }),
     [facets, sourceKind],
   );
@@ -101,6 +122,9 @@ export const ProspectingPage = ({
     });
 
   const rows = search.data?.rows ?? [];
+  /** facets gate the search, so "not started yet" is also loading */
+  const isLoading =
+    facetsQuery.isPending || search.isPending || search.isFetching;
 
   const toggle = (sourceCrd: string) =>
     setSelected((current) => {
@@ -140,11 +164,12 @@ export const ProspectingPage = ({
           title={sourceKind === 'firm' ? 'Firms' : 'Advisors'}
           total={search.data?.total ?? null}
         />
-        {rows.length === 0 && !search.isFetching ? (
+        {rows.length === 0 && !isLoading ? (
           <ProspectingEmptyState hasFilters={hasFilters} />
         ) : (
           <ProspectResults
             columns={columns}
+            isLoading={isLoading}
             onRowClick={setOpenRow}
             onToggle={toggle}
             onToggleAll={toggleAll}

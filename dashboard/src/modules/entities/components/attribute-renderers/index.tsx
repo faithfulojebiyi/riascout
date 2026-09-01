@@ -39,19 +39,29 @@ const Numeric = ({ value }: RendererProps) =>
     <span className={numeric}>{Number(value).toLocaleString()}</span>
   );
 
-const Currency = ({ value }: RendererProps) =>
-  isBlank(value) ? (
-    <Blank />
-  ) : (
+/**
+ * Locale is pinned: the runtime's own renders USD as "US$1bn". A compact figure
+ * also keeps one decimal, or $1.0B and $1.4B collapse onto the same string.
+ */
+const Currency = ({ value }: RendererProps) => {
+  if (isBlank(value)) {
+    return <Blank />;
+  }
+
+  const amount = Number(value);
+  const compact = Math.abs(amount) >= 1_000_000;
+
+  return (
     <span className={numeric}>
-      {Number(value).toLocaleString(undefined, {
+      {amount.toLocaleString('en-US', {
         style: 'currency',
         currency: 'USD',
-        maximumFractionDigits: 0,
-        notation: Number(value) >= 1_000_000 ? 'compact' : 'standard',
+        notation: compact ? 'compact' : 'standard',
+        maximumFractionDigits: compact ? 1 : 0,
       })}
     </span>
   );
+};
 
 const Percentage = ({ value }: RendererProps) =>
   isBlank(value) ? (
