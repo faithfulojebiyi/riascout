@@ -8,6 +8,8 @@ export type CellRendererParams = ICellRendererParams<GridRow> & {
   attributeType: string;
   /** the market allowlist key; a CRD renders unformatted despite its type */
   referenceColumn?: string | null;
+  /** value/label pairs for a coded column */
+  options?: { value: string; label: string }[];
   isMultiValue: boolean;
   /** projected market columns arrive on the row, not in the cell map */
   projectedKey?: string;
@@ -22,5 +24,5 @@ export const CellRendererAdapter = (params: CellRendererParams) => {
   );
   const value = params.data?.cellsByAttributeId[params.attributeId];
 
-  return <Renderer value={value} />;
+  return <Renderer options={params.options} value={value} />;
 };

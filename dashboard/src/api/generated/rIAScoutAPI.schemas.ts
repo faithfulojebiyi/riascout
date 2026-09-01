@@ -155,6 +155,11 @@ export interface EntityAttributeChoice {
   color: string | null;
 }
 
+export type EntityViewFieldOptionsItem = {
+  value: string;
+  label: string;
+};
+
 export interface EntityViewField {
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   fieldId: string;
@@ -166,6 +171,7 @@ export interface EntityViewField {
   type: string;
   /** @nullable */
   referenceColumn: string | null;
+  options: EntityViewFieldOptionsItem[];
   /** @nullable */
   group: string | null;
   position: string;

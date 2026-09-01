@@ -20,6 +20,9 @@ import type {
   GetEntityRecordsResponseDto,
 } from '../dto/entities.dto.js';
 
+/** above this a vocabulary is a lookup, not a set of labels */
+const CODE_VOCABULARY_MAX = 64;
+
 export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
   constructor(public readonly dto: GetEntityRecordsDto) {
     super();
@@ -100,7 +103,15 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       attributes.map((a) => [a.id, a satisfies AttributeMeta]),
     );
 
-    const view = await this.loadView(dto, entity.id, workspaceId, attributes);
+    const optionsByKey = await this.readCodeVocabularies(attributes);
+
+    const view = await this.loadView(
+      dto,
+      entity.id,
+      workspaceId,
+      attributes,
+      optionsByKey,
+    );
 
     /**
      * A request filter replaces the view's rather than merging: intersecting a
@@ -214,6 +225,56 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
   }
 
   /** the requested view, else the entity's default; null when it has none */
+  /**
+   * Display labels for coded columns — aum_band renders as "$1B – $5B" rather
+   * than the raw 1b_5b. Only closed vocabularies are sent: firm_name has 32,009
+   * options and full_name 455,296, which are lookups, not labels.
+   */
+  private async readCodeVocabularies(
+    attributes: { referenceColumn: string | null }[],
+  ): Promise<Map<string, { value: string; label: string }[]>> {
+    const keys = [
+      ...new Set(
+        attributes
+          .map((a) => a.referenceColumn)
+          .filter((key): key is string => key !== null),
+      ),
+    ];
+
+    if (keys.length === 0) {
+      return new Map();
+    }
+
+    const counts = await this.appPrismaService.facetOption.groupBy({
+      by: ['allowKey'],
+      where: { allowKey: { in: keys } },
+      _count: { _all: true },
+    });
+
+    const closed = counts
+      .filter((c) => c._count._all <= CODE_VOCABULARY_MAX)
+      .map((c) => c.allowKey);
+
+    if (closed.length === 0) {
+      return new Map();
+    }
+
+    const options = await this.appPrismaService.facetOption.findMany({
+      where: { allowKey: { in: closed } },
+      select: { allowKey: true, value: true, label: true },
+      // same order the facet rail uses, so a picker built from these agrees
+      orderBy: [{ allowKey: 'asc' }, { position: 'asc' }, { label: 'asc' }],
+    });
+
+    const byKey = new Map<string, { value: string; label: string }[]>();
+
+    for (const { allowKey, value, label } of options) {
+      byKey.set(allowKey, [...(byKey.get(allowKey) ?? []), { value, label }]);
+    }
+
+    return byKey;
+  }
+
   private async loadView(
     dto: GetEntityRecordsDto,
     entityId: string,
@@ -228,6 +289,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       isEditable: boolean;
       choices: { id: string; name: string; color: string | null }[];
     }[],
+    optionsByKey: Map<string, { value: string; label: string }[]>,
   ) {
     const view = await this.appPrismaService.entityView.findFirst({
       where: dto.viewId
@@ -287,6 +349,9 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
           icon: attribute.icon,
           type: attribute.type,
           referenceColumn: attribute.referenceColumn,
+          options: attribute.referenceColumn
+            ? (optionsByKey.get(attribute.referenceColumn) ?? [])
+            : [],
           group: attribute.group,
           position: field.position,
           isVisible: field.isVisible,

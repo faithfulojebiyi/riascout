@@ -24,6 +24,7 @@ export type ProspectColumn = {
   attributeId: string | null;
   type: string;
   isArray: boolean;
+  options?: { value: string; label: string }[];
 };
 
 export type ProspectResultsProps = {
@@ -157,7 +158,7 @@ export const ProspectResults = ({
 
                 return (
                   <TableCell key={column.allowKey} overflow="hidden">
-                    <Renderer value={cell?.value} />
+                    <Renderer options={column.options} value={cell?.value} />
                   </TableCell>
                 );
               })}

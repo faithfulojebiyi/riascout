@@ -45,6 +45,7 @@ export const buildColumnDefs = (
         attributeId: field.attributeId,
         attributeType: field.type,
         referenceColumn: field.referenceColumn,
+        options: field.options,
         isMultiValue: false,
       },
       cellEditor: CellEditorAdapter,

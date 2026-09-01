@@ -87,6 +87,7 @@ export const ProspectingPage = ({
           attributeId: facet?.attributeId ?? null,
           type: facet?.type ?? 'text',
           isArray: facet?.isArray ?? false,
+          options: facet?.options ?? [],
         };
       }),
     [facets, sourceKind],

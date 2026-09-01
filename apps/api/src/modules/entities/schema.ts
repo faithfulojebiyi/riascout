@@ -47,6 +47,8 @@ const ViewFieldSchema = z
     /** the market allowlist key, so the client can render a CRD as an identifier
      *  rather than a quantity; null for recruiter-authored attributes */
     referenceColumn: z.string().nullable(),
+    /** value/label pairs for a closed vocabulary; empty for open ones */
+    options: z.array(z.object({ value: z.string(), label: z.string() })),
     group: z.string().nullable(),
     position: z.string(),
     isVisible: z.boolean(),

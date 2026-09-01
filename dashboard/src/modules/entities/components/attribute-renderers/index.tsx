@@ -9,7 +9,13 @@ import { ColorBadge } from '../../../../ui/blocks/colored-elements';
  * Keyed by type rather than by column, so a new allowlisted column renders
  * correctly without a new component.
  */
-export type RendererProps = { value: unknown };
+export type CodeOption = { value: string; label: string };
+
+export type RendererProps = {
+  value: unknown;
+  /** value/label pairs for a closed vocabulary; the code is the fallback */
+  options?: CodeOption[];
+};
 
 const muted = css({ color: 'text.placeholder' });
 const numeric = css({ fontVariantNumeric: 'tabular-nums', textAlign: 'right' });
@@ -184,13 +190,23 @@ const formatCode = (value: string): string =>
  * A closed vocabulary reads as a chip, not as raw text — and the colour is
  * derived from the code, so the same channel is the same colour everywhere
  * without anyone maintaining a palette.
+ *
+ * The dimension's own label wins where one arrived. Which fallback applies when
+ * it did not depends on the column, hence `humanise`.
  */
-const CodeBadge = ({ value }: RendererProps) => {
+const Chip = ({
+  value,
+  options,
+  humanise,
+}: RendererProps & { humanise: boolean }) => {
   if (isBlank(value)) {
     return <Blank />;
   }
 
   const code = String(value);
+  const label =
+    options?.find((option) => option.value === code)?.label ??
+    (humanise ? formatCode(code) : code);
 
   return (
     // ColorBadge is a block by default, so in a cell it stretched the full width
@@ -208,12 +224,24 @@ const CodeBadge = ({ value }: RendererProps) => {
       whiteSpace="nowrap"
       w="fit-content"
     >
-      {formatCode(code)}
+      {label}
     </ColorBadge>
   );
 };
 
-/** columns whose values are enum codes rather than free text */
+/** words split cleanly: pure_ria -> Pure RIA */
+const CodeBadge = (props: RendererProps) => <Chip {...props} humanise />;
+
+/**
+ * Not words: 1b_5b humanises to "1b 5b", which is worse than the code itself.
+ * These depend on the dimension label, and show the raw code when the ETL has
+ * not populated market.facet_option yet.
+ */
+const DimBadge = (props: RendererProps) => (
+  <Chip {...props} humanise={false} />
+);
+
+/** codes that read as words once split */
 const CODE_COLUMNS = new Set([
   'advisor.disclosure_status',
   'advisor.firm_channel',
@@ -221,6 +249,9 @@ const CODE_COLUMNS = new Set([
   'firm.channel_code',
   'firm.primary_registration_type',
 ]);
+
+/** codes that only a dimension can label */
+const DIM_LABEL_COLUMNS = new Set(['advisor.firm_aum_band', 'firm.aum_band']);
 
 /**
  * CRDs are typed `number` because they sort and filter numerically, but they are
@@ -248,6 +279,10 @@ export const rendererForColumn = (
 
   if (referenceColumn && CODE_COLUMNS.has(referenceColumn)) {
     return isMultiValue ? Tags : CodeBadge;
+  }
+
+  if (referenceColumn && DIM_LABEL_COLUMNS.has(referenceColumn)) {
+    return isMultiValue ? Tags : DimBadge;
   }
 
   return rendererFor(type, isMultiValue);
