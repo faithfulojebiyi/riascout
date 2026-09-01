@@ -25,12 +25,31 @@ export type GridQueryInput = {
   sourceKind: SourceKind | null;
   attributesById: Map<string, AttributeMeta>;
   filter: FilterTree | null;
+  /** scope to one list's members; null shows every record in the entity */
+  listId?: string | null;
   sort: SortAst;
   limit: number;
   offset: number;
   /** reference attributes to project; omit for none */
   referenceAttributeIds?: string[];
 };
+
+/**
+ * List membership is a join, not a filter condition — a list holds records, and
+ * the filter AST only speaks about attribute values. EXISTS keeps it out of the
+ * row count when a record is in the list more than once.
+ */
+const listPredicate = (
+  listId: string | null | undefined,
+  workspaceParam: string,
+  addParam: (value: unknown) => string,
+): string | null =>
+  listId
+    ? `EXISTS (SELECT 1 FROM app.list_member lm
+                WHERE lm.record_id = ${RECORD_ALIAS}.id
+                  AND lm.workspace_id = ${workspaceParam}
+                  AND lm.list_id = ${addParam(listId)})`
+    : null;
 
 /** value of a projected market column, keyed by the attribute that names it */
 export const REFERENCE_PREFIX = 'ref_';
@@ -72,6 +91,12 @@ export const buildGridPageQuery = (input: GridQueryInput): BuiltQuery => {
 
   if (predicate) {
     where.push(predicate);
+  }
+
+  const membership = listPredicate(input.listId, workspaceParam, addParam);
+
+  if (membership) {
+    where.push(membership);
   }
 
   const sort = compileSort(input.sort, {
@@ -161,6 +186,12 @@ export const buildGridCountQuery = (
 
   if (predicate) {
     where.push(predicate);
+  }
+
+  const membership = listPredicate(input.listId, workspaceParam, addParam);
+
+  if (membership) {
+    where.push(membership);
   }
 
   const join = projection

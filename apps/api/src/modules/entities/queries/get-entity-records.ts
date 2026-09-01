@@ -118,6 +118,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       sourceKind: entity.sourceKind,
       attributesById,
       filter,
+      listId: dto.listId,
     };
 
     const requestedFields = new Set(dto.visibleFieldIds);

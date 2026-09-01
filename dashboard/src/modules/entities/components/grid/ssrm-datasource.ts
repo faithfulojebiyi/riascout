@@ -9,6 +9,8 @@ import { toGridRow } from '../../types/grid';
 export type SsrmArgs = {
   entityId: string;
   viewId: string | null;
+  /** scope to one list's members; null shows every record */
+  listId?: string | null;
   /** only the columns on screen, so a 63-column view does not fetch all of them */
   visibleFieldIds: () => string[];
 };
@@ -44,6 +46,7 @@ export class EntityGridDatasource implements IServerSideDatasource {
       const response = await entitiesControllerGetEntityRecords({
         entityId: this.args.entityId,
         viewId: this.args.viewId,
+        listId: this.args.listId ?? null,
         visibleFieldIds: this.args.visibleFieldIds(),
         limit: endRow - startRow,
         offset: startRow,

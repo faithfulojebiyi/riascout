@@ -15,6 +15,8 @@ export const GetEntityRecordsSchema = z
     entityId: z.uuid(),
     /** omit to use the entity's default view */
     viewId: z.uuid().nullable().default(null),
+    /** scope the page and the total to one list's members */
+    listId: z.uuid().nullable().default(null),
     /** narrow to the columns actually on screen; omit for every visible one */
     visibleFieldIds: z.array(z.uuid()).max(200).default([]),
     /** overrides the view's saved filter; omit to use the view's */

@@ -8,18 +8,23 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../../../ui/primitives/dropdown-menu';
 import { Span } from '../../../../ui/primitives/text';
 import { useUpdateViewSort } from '../../mutations/use-view-field-mutations';
 import type { EntityViewSummary } from '../../types/grid';
 import { ViewSettingsMenu } from './view-settings-menu';
+import { useFetchLists } from '../../../lists/queries/use-fetch-lists';
 
 export type GridToolbarProps = {
   entityId: string;
   entitySlug: string;
   views: { id: string; name: string; isDefault: boolean }[];
   view: EntityViewSummary;
+  /** the list currently scoping the grid, or null for every record */
+  listId: string | null;
   /** market CRDs of the ticked rows, for a bulk action */
   selectedCrds: string[];
   onSortCleared: () => void;
@@ -30,10 +35,15 @@ export const GridToolbar = ({
   entitySlug,
   views,
   view,
+  listId,
   selectedCrds,
   onSortCleared,
 }: GridToolbarProps) => {
   const updateSort = useUpdateViewSort();
+
+  const listsQuery = useFetchLists(entityId);
+  const lists = listsQuery.data?.lists ?? [];
+  const activeList = lists.find((list) => list.id === listId) ?? null;
 
   const activeSort = view.sort[0];
   const sortedField = activeSort
@@ -67,11 +77,11 @@ export const GridToolbar = ({
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
               <Icons.grid />
-              <Span>{view.name}</Span>
+              <Span>{activeList?.name ?? view.name}</Span>
               <Icons.caretDown size={12} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" css={{ minW: '12rem' }}>
+          <DropdownMenuContent align="start" css={{ minW: '14rem' }}>
             {views.map((option) => (
               <DropdownMenuItem asChild key={option.id}>
                 <Link
@@ -82,11 +92,38 @@ export const GridToolbar = ({
                   <Flex align="center" gap="2" w="full">
                     <Icons.entityList />
                     <Span flex="1">{option.name}</Span>
-                    {option.id === view.id ? <Icons.check size={14} /> : null}
+                    {option.id === view.id && !listId ? (
+                      <Icons.check size={14} />
+                    ) : null}
                   </Flex>
                 </Link>
               </DropdownMenuItem>
             ))}
+
+            {lists.length > 0 ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Lists</DropdownMenuLabel>
+                {lists.map((list) => (
+                  <DropdownMenuItem asChild key={list.id}>
+                    <Link
+                      params={{ entitySlug }}
+                      search={{ list: list.id, view: view.id }}
+                      to="/$entitySlug"
+                    >
+                      <Flex align="center" gap="2" w="full">
+                        <Icons.entityList />
+                        <Span flex="1">{list.name}</Span>
+                        <Span color="text.muted" fontSize="1">
+                          {list.memberCount.toLocaleString()}
+                        </Span>
+                        {list.id === listId ? <Icons.check size={14} /> : null}
+                      </Flex>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
 

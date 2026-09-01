@@ -11,14 +11,15 @@ import { GridToolbar } from '../../modules/entities/components/grid/grid-toolbar
 import { GRID_DEFAULT_COL_WIDTH } from '../../ui/primitives/data-grid';
 import { TableSkeleton } from '../../ui/primitives/skeleton/table-skeleton';
 
-type Search = { view?: string };
+type Search = { view?: string; list?: string };
 
 export const Route = createFileRoute('/_authed/$entitySlug')({
   validateSearch: (search: Record<string, unknown>): Search => ({
     view: typeof search.view === 'string' ? search.view : undefined,
+    list: typeof search.list === 'string' ? search.list : undefined,
   }),
   // without this the loader would not re-run when only the view changes
-  loaderDeps: ({ search }) => ({ view: search.view }),
+  loaderDeps: ({ search }) => ({ view: search.view, list: search.list }),
   pendingComponent: EntityPageSkeleton,
   loader: async ({ params, deps }) => {
     const { entities } = await entitiesControllerGetEntities();
@@ -32,10 +33,16 @@ export const Route = createFileRoute('/_authed/$entitySlug')({
     const seed = await entitiesControllerGetEntityRecords({
       entityId: entity.id,
       viewId: deps.view ?? null,
+      listId: deps.list ?? null,
       limit: 1,
     });
 
-    return { entity, view: seed.view, total: seed.total };
+    return {
+      entity,
+      view: seed.view,
+      total: seed.total,
+      listId: deps.list ?? null,
+    };
   },
   component: EntityPage,
 });
@@ -71,7 +78,7 @@ function EntityPageSkeleton() {
 }
 
 function EntityPage() {
-  const { entity, view, total } = Route.useLoaderData();
+  const { entity, view, total, listId } = Route.useLoaderData();
   const [selectedCrds, setSelectedCrds] = useState<string[]>([]);
 
   return (
@@ -103,6 +110,7 @@ function EntityPage() {
         <GridToolbar
           entityId={entity.id}
           entitySlug={entity.slug}
+          listId={listId}
           onSortCleared={() => setSelectedCrds([])}
           selectedCrds={selectedCrds}
           view={view}
@@ -115,7 +123,8 @@ function EntityPage() {
           // keyed so switching views rebuilds the grid rather than reusing its columns
           <EntityGrid
             entityId={entity.id}
-            key={view.id}
+            key={`${view.id}:${listId ?? 'all'}`}
+            listId={listId}
             onSelectionChange={setSelectedCrds}
             view={view}
           />

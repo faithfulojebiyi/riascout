@@ -19,6 +19,8 @@ import { EntityGridDatasource } from './ssrm-datasource';
 
 export type EntityGridProps = {
   entityId: string;
+  /** scope to one list's members; null shows every record */
+  listId?: string | null;
   view: EntityViewSummary;
   /** ticked rows, lifted so the toolbar can act on them */
   onSelectionChange?: (sourceCrds: string[]) => void;
@@ -34,6 +36,7 @@ export type EntityGridProps = {
  */
 export const EntityGrid = ({
   entityId,
+  listId,
   view,
   onSelectionChange,
 }: EntityGridProps) => {
@@ -81,9 +84,10 @@ export const EntityGrid = ({
       new EntityGridDatasource({
         entityId,
         viewId: view.id,
+        listId: listId ?? null,
         visibleFieldIds: () => visibleFieldIdsRef.current,
       }),
-    [entityId, view.id],
+    [entityId, view.id, listId],
   );
 
   /**
