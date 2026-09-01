@@ -24,11 +24,7 @@ export const CurrentUser = createParamDecorator(
   },
 );
 
-/**
- * The active workspace, from the session — never from a request header. A
- * client-supplied workspace makes tenant isolation an assertion the client
- * controls, which is how the legacy app leaked across tenants.
- */
+// session-derived workspace IDs prevent cross-tenant access
 export const Workspace = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest<SessionRequest>();

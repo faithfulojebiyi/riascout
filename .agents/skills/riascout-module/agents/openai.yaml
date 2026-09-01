@@ -1,0 +1,4 @@
+interface:
+  display_name: "RIAScout Module"
+  short_description: "Work safely across RIAScout application and market data"
+  default_prompt: "Use $riascout-module to make this RIAScout change with the correct data, migration, test, and commit rules."

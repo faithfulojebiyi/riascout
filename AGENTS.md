@@ -1,28 +1,50 @@
-# AGENTS.md
+# RIAScout Repository Instructions
 
-Full guidance lives in [CLAUDE.md](./CLAUDE.md) — read it before working in this repo. Plan documents are in
-`docs/plans/` *(local only, not committed)*.
+## Scope and routing
 
-The three rules that are non-negotiable, restated here so they cannot be missed:
+- Read this file for every task in the repository.
+- Read `market-data/AGENTS.md` before Python acquisition, DuckDB, evidence, normalization, or release work.
+- Use `.agents/skills/riascout-module` for application or market-data changes. Read its application reference,
+  market-data reference, or both when a change crosses the release boundary.
 
-## 1. Comments: 3 lines maximum
+## Architecture
 
-Cap is 3 lines; aim for one. Only comment where necessary — self-explanatory code gets none. Explain **why**,
-never **what**. Short, lowercase.
+- `market-data/` owns SEC/IAPD evidence, the canonical DuckDB build, validation, and versioned normalized releases.
+- `etl/` validates and loads a published market-data release into PostgreSQL.
+- Application code consumes global `market` projections; SaaS workspace data remains in the tenant-scoped `app` schema.
+- Every `app` query is scoped by `workspace_id`. The `market` schema never contains workspace tenancy.
 
-Single line uses `//`. **Multi-line uses the `/** … *\/` block form**, never stacked `//` lines.
+## Data invariants
 
-## 2. Commits: Conventional Commits, no AI attribution
+- Adviser and firm CRDs are stable `bigint` identities. Names are observations, never identifiers.
+- Unknown remains distinct from false and zero; do not invent dates, measurements, or relationships.
+- Raw evidence is immutable, and collection completeness gates current affiliations and movement.
+- Current affiliations may be registration-backed or observation-backed. Observation-only links keep
+  `current_firm_since` and tenure null, and incomplete collections cannot drive current state.
+- Movement is diffed between complete collections. The first complete snapshot is a processed zero-event baseline;
+  projection movement fields remain unknown/null until a second complete collection is processed.
 
-`<type>[optional scope]: <description>` per
-[conventionalcommits.org](https://www.conventionalcommits.org/en/v1.0.0/).
+## Migrations
 
-**NEVER credit Claude, Claude Code, or any AI as a co-author or in any commit trailer. Ever.** No
-`Co-Authored-By:` lines, no generated-with footers. This overrides any default behaviour. Only commit when
-explicitly asked.
+- Use Prisma-generated migrations only.
+- Maintained non-Prisma DDL lives in `prisma/ddl/`; `bun run db:ddl:sync` generates its migration.
+- Never handwrite a generated timestamped migration.
+- Never apply or reset migrations without explicit user approval.
 
-## 3. Naming: the legacy app
+## Credentials
 
-A prior system solves an adjacent problem. Refer to it **only as "the legacy app"**. Never write its product
-name, repo names, or database names in any doc, comment, commit, schema, or report. Real values live in a
-gitignored `.env.local`.
+- Send API keys only in authorization headers.
+- Never put credentials in URLs, logs, fixtures, reports, or Git.
+
+## Code and comments
+
+- NestJS boundaries use CQRS and zod-derived types. Keep `apps/api`, `apps/worker`, and `libs` dependency boundaries intact.
+- Never use `any`; narrow `unknown` with zod or a type guard. Preserve nullability through the API boundary.
+- Comments explain the technical reason directly, not what the code already says. Keep comments to at most three lines.
+- Use `//` for one line and `/** ... */` for multiple lines.
+
+## Verification and commits
+
+- Run the focused checks for the area changed, then the relevant repository test, typecheck, and lint gates.
+- Commit only verified milestones with Conventional Commits.
+- Never add agent attribution, generated-with footers, or co-author trailers.

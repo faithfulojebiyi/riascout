@@ -30,11 +30,7 @@ export type FacetAttribute = {
   referenceColumn: string | null;
 };
 
-/**
- * Facets are derived from the allowlist, never hand-written. 102 columns cannot
- * have 102 components, and hand-maintained field lists are exactly how the
- * legacy app ended up with two 8,000-line grid configs.
- */
+// one facet definition keeps backend predicates and visible configuration aligned
 export const buildFacetDefinitions = (
   attributes: readonly FacetAttribute[],
 ): FacetDefinition[] =>

@@ -274,7 +274,7 @@ describe('default entities', () => {
       expect(iconFor('advisor.state', 'text')).toBe('location');
     });
 
-    it('never returns an empty icon, unlike the reference implementation', () => {
+    it('returns a fallback icon for unknown fields', () => {
       expect(iconFor('nothing.at.all', 'unknown-type')).toBe('text');
     });
   });

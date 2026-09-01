@@ -12,14 +12,7 @@ export type BulkAddInput = {
 
 export type BuiltStatement = { sql: string; params: unknown[] };
 
-/**
- * The whole add is two statements regardless of size. The legacy app issued one
- * HTTP request and one ownership SELECT per advisor, so adding 5,000 search
- * results was 10,000 round trips.
- *
- * Records first, because list_member points at an entity_record rather than a
- * CRD — saving to a list is also what brings the advisor into the CRM.
- */
+// two statements keep database round trips constant as the batch grows
 export const buildUpsertRecords = (input: BulkAddInput): BuiltStatement => {
   const params: unknown[] = [
     input.entityId,

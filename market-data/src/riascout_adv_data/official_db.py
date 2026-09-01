@@ -36,7 +36,7 @@ class OfficialDatabase:
         path.parent.mkdir(parents=True, exist_ok=True)
 
     def install_schema(self) -> None:
-        """Install the idempotent official-data schema alongside existing feasibility tables."""
+        """Install the idempotent official-data schema in the project DuckDB file."""
         schema = resources.files("riascout_adv_data.sql").joinpath("official_schema.sql").read_text()
         with self.connection() as connection:
             connection.execute(schema)

@@ -7,12 +7,7 @@ import type { EntityViewField, GridRow } from '../../types/grid';
 import { CellEditorAdapter } from './cell-editor-adapter';
 import { CellRendererAdapter } from './cell-renderer-adapter';
 import { GridColumnHeader } from './grid-column-header';
-
-
-/**
- * Columns come from the view, never from a hand-written config. The legacy app
- * had two ~8,000-line grid-config files with 140 duplicated fields between them.
- */
+// view metadata keeps rendering and query behavior aligned
 export const buildColumnDefs = (
   fields: EntityViewField[],
   header: {

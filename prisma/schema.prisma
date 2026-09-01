@@ -483,8 +483,7 @@ model FirmFactPrivateFund {
   @@map("firm_fact_private_fund")
 }
 
-/// One affiliation table. The legacy app had two overlapping ones plus two
-/// columns on the firm row, with no reconciliation.
+/// One affiliation model preserves source and provenance without overlapping current-state tables.
 model FirmFactAffiliation {
   filingId          String  @map("filing_id")
   affiliationRef    String  @map("affiliation_reference")
@@ -1746,9 +1745,7 @@ enum ListKind {
   @@map("list_kind")
 }
 
-/// Entity owns the schema; List owns membership. A record in two lists has ONE
-/// set of cells — the legacy model gave each list private columns, so setting
-/// a value in one left the other empty.
+/// One shared cell set keeps values consistent when a record belongs to multiple lists.
 model List {
   id            String   @id @default(uuid(7))
   workspaceId   String   @map("workspace_id")
