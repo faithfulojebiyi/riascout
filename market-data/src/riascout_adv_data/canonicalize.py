@@ -68,6 +68,16 @@ SERVICES = {
     "5G12": "Other",
 }
 
+FEE_METHODS = {
+    "5E1": "Percentage of Assets Under Management",
+    "5E2": "Hourly Charges",
+    "5E3": "Subscription Fees",
+    "5E4": "Fixed Fees",
+    "5E5": "Commissions",
+    "5E6": "Performance-Based Fees",
+    "5E7": "Other",
+}
+
 ASSET_ALLOCATIONS = {
     "5K(1)(a)(i)EOY": "Exchange-Traded Equity",
     "5K(1)(a)(ii)EOY": "Non-Exchange-Traded Equity",
@@ -464,6 +474,15 @@ class HistoricalCanonicalizer:
                 connection.execute(
                     "INSERT INTO filing_services VALUES (?, ?, ?, ?, ?)",
                     [filing_id, service_type, table.artifact_id, table.member_name, source_row],
+                )
+        # only an affirmative flag is recorded; an absent 5E column is unknown,
+        # not a statement that the firm charges nothing
+        for source_field, fee_method in FEE_METHODS.items():
+            column = resolver.optional(f"fee_{source_field}", (source_field,))
+            if _is_yes(_field(row, column)):
+                connection.execute(
+                    "INSERT INTO filing_fee_methods VALUES (?, ?, ?, ?, ?)",
+                    [filing_id, fee_method, table.artifact_id, table.member_name, source_row],
                 )
 
     @staticmethod

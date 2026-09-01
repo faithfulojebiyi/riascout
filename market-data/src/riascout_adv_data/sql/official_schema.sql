@@ -128,6 +128,15 @@ CREATE TABLE IF NOT EXISTS filing_services (
     PRIMARY KEY (filing_id, service_type)
 );
 
+CREATE TABLE IF NOT EXISTS filing_fee_methods (
+    filing_id VARCHAR NOT NULL,
+    fee_method VARCHAR NOT NULL,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, fee_method)
+);
+
 CREATE TABLE IF NOT EXISTS filing_offices (
     filing_id VARCHAR NOT NULL,
     office_reference VARCHAR NOT NULL,
@@ -315,6 +324,12 @@ SELECT s.snapshot_year, s.snapshot_date, s.snapshot_status, s.firm_crd,
        c.filing_id, c.service_type, c.artifact_id, c.source_member, c.source_row_number
 FROM firm_snapshots s
 JOIN filing_services c ON c.filing_id = s.selected_filing_id;
+
+CREATE OR REPLACE VIEW firm_snapshot_fee_methods AS
+SELECT s.snapshot_year, s.snapshot_date, s.snapshot_status, s.firm_crd,
+       c.filing_id, c.fee_method, c.artifact_id, c.source_member, c.source_row_number
+FROM firm_snapshots s
+JOIN filing_fee_methods c ON c.filing_id = s.selected_filing_id;
 
 CREATE OR REPLACE VIEW firm_snapshot_offices AS
 SELECT s.snapshot_year, s.snapshot_date, s.snapshot_status, s.firm_crd,
