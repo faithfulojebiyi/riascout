@@ -29,8 +29,15 @@ const skeletonStyles = cva({
     '&[data-inline-skeleton]': {
       lineHeight: '0',
     },
-    animation: 'skeletonPulse 1000ms infinite alternate-reverse',
+    /**
+     * A solid background pulsed on opacity, not a colour keyframe. The old
+     * skeletonPulse hardcoded var(--colors-brand-panel-2), but panda emits every
+     * token under the `riascout` prefix, so both ends resolved to nothing.
+     */
+    animation: 'pulsate',
     backgroundClip: 'border-box',
+    // panel.10 is ~10% alpha; background.muted at 3% is invisible on white
+    backgroundColor: 'brand.panel.10',
     backgroundImage: 'none',
     border: 'none',
     borderRadius: 'sm',

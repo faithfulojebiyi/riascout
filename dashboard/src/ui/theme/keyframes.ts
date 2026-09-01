@@ -90,10 +90,6 @@ export const keyframes = defineKeyframes({
     '50%': { opacity: 0.5 },
   },
 
-  skeletonPulse: {
-    from: { backgroundColor: 'var(--colors-brand-panel-2)' },
-    to: { backgroundColor: 'var(--colors-brand-panel-4)' },
-  },
   slideDownAndFade: {
     from: { opacity: 0, transform: 'translateY(-2px)' },
     to: { opacity: 1, transform: 'translateY(0)' },
