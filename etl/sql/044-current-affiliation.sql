@@ -46,15 +46,12 @@ select r.collection_id,
        r.collection_completed_at,
        r.expected_individual_count,
        r.retrieved_individual_count,
-       /**
-        * Measured, not taken on the source's word: a status string is its
-        * opinion and its vocabulary can change, but retrieving every expected
-        * adviser and every expected page is evidence we can check.
-        */
-       r.collection_completed_at is not null
+       /** Measured: publication is the atomic gate; exact counts prove reconciliation. */
+       r.status = 'published'
+         and r.collection_completed_at is not null
          and r.expected_individual_count > 0
-         and r.retrieved_individual_count >= r.expected_individual_count
-         and r.completed_page_requests >= r.expected_page_requests
+         and r.retrieved_individual_count = r.expected_individual_count
+         and r.completed_page_requests = r.expected_page_requests
 from individual_collection_runs r
 where r.collection_completed_at is not null;
 
