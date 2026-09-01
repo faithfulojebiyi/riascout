@@ -8,11 +8,11 @@ export const workerEnvSchema = Joi.object({
   APP_DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgres', 'postgresql'] })
     .optional(),
-  ASSET_DATA_DIR: Joi.string().allow('').optional(),
+  MARKET_DATA_DIR: Joi.string().allow('').optional(),
 });
 
 export type WorkerEnv = BaseEnv & {
   PORT: number;
   APP_DATABASE_URL?: string;
-  ASSET_DATA_DIR?: string;
+  MARKET_DATA_DIR?: string;
 };

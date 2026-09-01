@@ -20,11 +20,11 @@ export type Preflight = {
  * concurrent ingestion holding its write lock must not block them.
  */
 export async function preflight(needsSeed = true): Promise<Preflight> {
-  const dataDir = process.env.ASSET_DATA_DIR;
+  const dataDir = process.env.MARKET_DATA_DIR;
 
   if (!dataDir) {
     throw new Error(
-      'ASSET_DATA_DIR is not set. Copy .env.local.example to .env.local and point it at the seed data directory.',
+      'MARKET_DATA_DIR is not set. Copy .env.local.example to .env.local and point it at market-data/data.',
     );
   }
 

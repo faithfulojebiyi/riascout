@@ -51,7 +51,7 @@ lerna-debug.log*
 # migrations are not committed yet
 /prisma/migrations
 
-# ETL working files (large; sourced from ASSET_DATA_DIR)
+# ETL working files sourced from MARKET_DATA_DIR
 /etl/.staging
 
 # uploaded user assets — STORAGE_LOCAL_DIR's default target, never committed
