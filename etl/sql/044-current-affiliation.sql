@@ -35,6 +35,20 @@ call postgres_execute('pg', 'create unlogged table market.advisor_firm_observati
 
 begin;
 
+create or replace temp table eligible_individual_collection_runs as
+select *
+from (
+  select r.*,
+         /** Measured: publication is the atomic gate; exact counts prove reconciliation. */
+         r.status = 'published'
+           and r.collection_completed_at is not null
+           and r.expected_individual_count > 0
+           and r.retrieved_individual_count = r.expected_individual_count
+           and r.completed_page_requests = r.expected_page_requests as is_complete
+  from individual_collection_runs r
+) measured_runs
+where is_complete;
+
 insert into pg.market.observation_run__load (
   collection_id, source_code, observed_on, started_at, completed_at,
   expected_advisor_count, observed_advisor_count, is_complete
@@ -46,13 +60,10 @@ select r.collection_id,
        r.collection_completed_at,
        r.expected_individual_count,
        r.retrieved_individual_count,
-       /** Measured: publication is the atomic gate; exact counts prove reconciliation. */
-       r.status = 'published'
-         and r.collection_completed_at is not null
-         and r.expected_individual_count > 0
-         and r.retrieved_individual_count = r.expected_individual_count
-         and r.completed_page_requests = r.expected_page_requests
+       e.collection_id is not null
 from individual_collection_runs r
+left join eligible_individual_collection_runs e
+  on e.collection_id = r.collection_id
 where r.collection_completed_at is not null;
 
 -- one row per adviser-firm-jurisdiction the collection saw
@@ -77,7 +88,8 @@ select c.individual_crd,
        case when count(*) filter (where d.code is null) > 0 then null
             else max(case when d.can_conduct_business then 1 else 0 end) = 1 end
 from individual_current_registrations c
-join individual_collection_runs cr on cr.collection_id = c.collection_id
+join eligible_individual_collection_runs cr
+  on cr.collection_id = c.collection_id
 left join pg.market.dim_registration_status d on d.code = c.status
 where c.employer_firm_crd is not null
   and exists (select 1 from individuals i where i.individual_crd = c.individual_crd)
@@ -100,8 +112,8 @@ select i.individual_crd,
        'sec_iapd_current', false, false
 from individuals i
 cross join (
-  select collection_id, collection_completed_at from individual_collection_runs
-   where collection_completed_at is not null
+  select collection_id, collection_completed_at
+  from eligible_individual_collection_runs
    order by collection_completed_at desc limit 1
 ) cr
 where not exists (
