@@ -1,0 +1,119 @@
+{
+  "total": {"value": 2, "relation": "eq"},
+  "filings": [
+    {
+      "id": 7000001,
+      "Info": {
+        "indvlPK": 7000001,
+        "firstNm": "TEST",
+        "midNm": "ADVISER",
+        "lastNm": "ONE",
+        "actvAGReg": "Y"
+      },
+      "OthrNms": {"OthrNm": [{"firstNm": "IGNORED", "lastNm": "ALIAS"}]},
+      "CrntEmps": {
+        "CrntEmp": [
+          {
+            "orgPK": 800001,
+            "orgNm": "TEST FIRM ALPHA",
+            "str1": "1 TEST STREET",
+            "city": "NEW YORK",
+            "state": "NY",
+            "cntry": "United States",
+            "postlCd": "10001",
+            "CrntRgstns": {
+              "CrntRgstn": [
+                {"regAuth": "NY", "regCat": "RA", "st": "APPROVED", "stDt": "2022-10-20"},
+                {"regAuth": "NJ", "regCat": "RA", "st": "PENDING", "stDt": "2024-01-15"}
+              ]
+            },
+            "BrnchOfLocs": {
+              "BrnchOfLoc": [
+                {"str1": "2 BRANCH STREET", "city": "NEW YORK", "state": "NY", "cntry": "USA", "postlCd": "10002"}
+              ]
+            }
+          },
+          {
+            "orgPK": 800002,
+            "orgNm": "TEST FIRM BETA",
+            "city": "TORONTO",
+            "state": "ON",
+            "cntry": "Canada",
+            "CrntRgstns": {
+              "CrntRgstn": [
+                {"regAuth": "ON", "regCat": "RA", "st": "TEMPREG", "stDt": "2025-03-01"}
+              ]
+            },
+            "BrnchOfLocs": {
+              "BrnchOfLoc": [
+                {"city": "TORONTO", "state": "ON", "cntry": "Canada"}
+              ]
+            }
+          }
+        ]
+      },
+      "PrevRgstns": {
+        "PrevRgstn": [
+          {
+            "orgPK": 700010,
+            "orgNm": "TEST PRIOR FIRM",
+            "regBeginDt": "2020-01-10",
+            "regEndDt": "2022-10-20",
+            "BrnchOfLocs": [
+              {"BrnchOfLoc": [{"city": "BOSTON", "state": "MA", "cntry": "United States"}]}
+            ]
+          }
+        ]
+      },
+      "EmpHss": {
+        "EmpHs": [
+          {"orgNm": "TEST FIRM ALPHA", "fromDt": "10/2022", "toDt": "Present", "city": "NEW YORK", "state": "NY"},
+          {"orgNm": "TEST UNIVERSITY", "fromDt": "09/2018", "toDt": "06/2020", "city": "BOSTON", "state": "MA"}
+        ]
+      },
+      "Exms": {
+        "Exm": [
+          {"exmCd": "S65", "exmNm": "Uniform Investment Adviser Law Examination", "exmDt": "2020-01-05"}
+        ]
+      },
+      "Dsgntns": {"Dsgntn": [{"dsgntnNm": "CERTIFIED TEST PROFESSIONAL"}]},
+      "DRPs": {
+        "DRP": [
+          {
+            "hasRegAction": "N",
+            "hasCriminal": "N",
+            "hasBankrupt": "N",
+            "hasCivilJudc": "N",
+            "hasBond": "N",
+            "hasJudgment": "N",
+            "hasInvstgn": "N",
+            "hasCustComp": "Y",
+            "hasTermination": "N"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7000002,
+      "Info": {"indvlPK": 7000002, "firstNm": "TEST", "lastNm": "TWO", "actvAGReg": "Y"},
+      "OthrNms": {},
+      "CrntEmps": {
+        "CrntEmp": [
+          {
+            "orgPK": 899999,
+            "orgNm": "TEST STATE FIRM",
+            "city": "UNKNOWN CITY",
+            "state": "ZZ",
+            "CrntRgstns": {"CrntRgstn": [{"regAuth": "TX", "regCat": "RA", "st": "APPROVED"}]},
+            "BrnchOfLocs": {}
+          }
+        ]
+      },
+      "PrevRgstns": {},
+      "EmpHss": {"EmpHs": [{"orgNm": "TEST BROKEN EMPLOYER", "fromDt": "13/2024", "city": "AUSTIN", "state": "TX"}]},
+      "Exms": {},
+      "Dsgntns": {},
+      "DRPs": {}
+    }
+  ]
+}
