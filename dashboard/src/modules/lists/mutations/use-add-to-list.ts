@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 
 import { listsControllerAddToList } from '../../../api/generated/lists/lists';
 import type {
@@ -31,6 +32,7 @@ const message = (result: AddToListResponse): string => {
 
 export const useAddToList = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (body: AddToList) => listsControllerAddToList(body),
@@ -46,6 +48,13 @@ export const useAddToList = () => {
         void queryClient.invalidateQueries({
           queryKey: [QUERY_KEYS.prospectSearch],
         });
+        /**
+         * An add creates records, so the sidebar's per-entity count and the
+         * entity page total both move. The total comes from the route loader
+         * rather than a query, hence the router invalidate.
+         */
+        void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.entities] });
+        void router.invalidate();
       };
 
       invalidate();
