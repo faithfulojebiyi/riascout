@@ -12,6 +12,7 @@ export const DIM_SOURCE: Readonly<Record<string, string>> = {
   'firm.channel_code': 'dim_firm_channel',
   'firm.client_type_codes': 'dim_client_type',
   'firm.service_codes': 'dim_service_type',
+  'firm.fee_method_codes': 'dim_fee_method',
   'firm.fund_type_codes': 'dim_fund_type',
   'firm.asset_category_codes': 'dim_asset_category',
 };

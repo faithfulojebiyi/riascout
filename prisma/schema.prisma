@@ -64,6 +64,18 @@ model DimServiceType {
   @@map("dim_service_type")
 }
 
+/// Form ADV Item 5.E. A firm with no rows has not reported a method, which is
+/// not the same as reporting that it charges none.
+model DimFeeMethod {
+  code String @id
+  name String
+
+  facts FirmFactFeeMethod[]
+
+  @@schema("market")
+  @@map("dim_fee_method")
+}
+
 model DimAssetCategory {
   code String @id
   name String
@@ -264,6 +276,7 @@ model Filing {
   derived      FirmFactDerived?
   clientTypes  FirmFactClientType[]
   services     FirmFactService[]
+  feeMethods   FirmFactFeeMethod[]
   allocations  FirmFactAssetAllocation[]
   offices      FirmFactOffice[]
   custodians   FirmFactCustodian[]
@@ -403,6 +416,19 @@ model FirmFactService {
   @@index([serviceTypeCode])
   @@schema("market")
   @@map("firm_fact_service")
+}
+
+model FirmFactFeeMethod {
+  filingId      String @map("filing_id")
+  feeMethodCode String @map("fee_method_code")
+
+  filing    Filing       @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  feeMethod DimFeeMethod @relation(fields: [feeMethodCode], references: [code])
+
+  @@id([filingId, feeMethodCode])
+  @@index([feeMethodCode])
+  @@schema("market")
+  @@map("firm_fact_fee_method")
 }
 
 model FirmFactAssetAllocation {
@@ -1147,6 +1173,9 @@ model FirmSearch {
 
   clientTypeCodes    String[] @map("client_type_codes")
   serviceCodes       String[] @map("service_codes")
+  /// empty means the filing reported no method, which is unknown rather than
+  /// a statement that the firm charges nothing
+  feeMethodCodes     String[] @map("fee_method_codes")
   assetCategoryCodes String[] @map("asset_category_codes")
 
   custodianIds    Int[]    @map("custodian_ids")
@@ -1182,6 +1211,7 @@ model FirmSearch {
   @@index([searchTsv], type: Gin, map: "firm_search_tsv_gin")
   @@index([clientTypeCodes], type: Gin, map: "firm_search_client_type_codes_gin")
   @@index([serviceCodes], type: Gin, map: "firm_search_service_codes_gin")
+  @@index([feeMethodCodes], type: Gin, map: "firm_search_fee_method_codes_gin")
   @@index([assetCategoryCodes], type: Gin, map: "firm_search_asset_category_codes_gin")
   @@index([custodianIds], type: Gin, map: "firm_search_custodian_ids_gin")
   @@index([fundTypeCodes], type: Gin, map: "firm_search_fund_type_codes_gin")

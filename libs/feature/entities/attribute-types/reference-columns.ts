@@ -151,6 +151,7 @@ export const REFERENCE_COLUMNS: ReadonlyMap<string, ReferenceColumn> = new Map([
   firm('filing_count', 'number'),
   firm('client_type_codes', 'text', true),
   firm('service_codes', 'text', true),
+  firm('fee_method_codes', 'text', true),
   firm('custodian_ids', 'number', true),
   firm('fund_type_codes', 'text', true),
   firm('advisors_gained_90d', 'number'),

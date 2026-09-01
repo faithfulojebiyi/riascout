@@ -89,6 +89,7 @@ export const FIRM_REFERENCE_ATTRIBUTES = {
   advisorCount: '01a04af1-e887-703a-897b-2574528425ec', // firm.advisor_count
   advisorLinkageStatus: '01a04b0c-4d21-7a6e-9c3f-5b81e7402db4', // firm.advisor_linkage_status
   observedAdvisorCount: '01a04b0c-4d22-7b13-8e57-2c9d6a4413f8', // firm.observed_advisor_count
+  feeMethodCodes: '01a04b0c-4d25-7e91-8a73-3f60d2c85b47', // firm.fee_method_codes
   aumPerAdvisor: '01a04af1-e888-7097-856c-c8799b7ef4df', // firm.aum_per_advisor
   aumPerClient: '01a04af1-e889-7f5f-8bb8-ab8bad855866', // firm.aum_per_client
   aumCagr_3y: '01a04af1-e88a-7260-b668-928b4a2042c0', // firm.aum_cagr_3y

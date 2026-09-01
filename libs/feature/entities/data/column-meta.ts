@@ -114,6 +114,7 @@ export const COLUMN_META: Readonly<Record<string, ColumnMeta>> = {
   'firm.aum_band': { group: 'Firm metrics' },
   'firm.advisor_count': { visible: true, group: 'Firm metrics' },
   'firm.observed_advisor_count': { group: 'Firm metrics' },
+  'firm.fee_method_codes': { group: 'Firm metrics' },
   'firm.advisor_linkage_status': { group: 'Firm coverage' },
   'firm.client_count': { group: 'Firm metrics' },
   'firm.employee_count': { group: 'Firm metrics' },

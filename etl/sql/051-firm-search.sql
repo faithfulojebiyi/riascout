@@ -94,6 +94,13 @@ services as (
     join cur on cur.filing_id = s.filing_id
    group by s.filing_id
 ),
+fee_methods as (
+  select f.filing_id,
+         array_agg(distinct f.fee_method_code) filter (where f.fee_method_code is not null) as fee_method_codes
+    from market.firm_fact_fee_method f
+    join cur on cur.filing_id = f.filing_id
+   group by f.filing_id
+),
 asset_categories as (
   select aa.filing_id,
          array_agg(distinct aa.asset_category_code) filter (where aa.asset_category_code is not null) as asset_category_codes
@@ -258,6 +265,8 @@ select f.firm_crd,
 
        coalesce(ct.client_type_codes,    '{}'::text[])       as client_type_codes,
        coalesce(sv.service_codes,        '{}'::text[])       as service_codes,
+       -- empty means the filing named no method; the ADV does not require one
+       coalesce(fee.fee_method_codes,    '{}'::text[])       as fee_method_codes,
        coalesce(acat.asset_category_codes, '{}'::text[])     as asset_category_codes,
 
        coalesce(cu.custodian_ids, '{}'::int[])               as custodian_ids,
@@ -301,6 +310,7 @@ select f.firm_crd,
   left join affiliations af on af.filing_id   = cur.filing_id
   left join client_types ct on ct.filing_id   = cur.filing_id
   left join services   sv   on sv.filing_id   = cur.filing_id
+  left join fee_methods fee on fee.filing_id  = cur.filing_id
   left join asset_categories acat on acat.filing_id = cur.filing_id
   left join owners     ow   on ow.filing_id   = cur.filing_id
   left join advisor_counts ac on ac.firm_crd  = f.firm_crd
@@ -328,7 +338,7 @@ insert into market.firm_search (
   aum_per_advisor, aum_per_client, aum_per_employee,
   aum_percentile, aum_per_advisor_percentile,
   aum_cagr_1y, aum_cagr_3y, aum_cagr_5y, employee_cagr_3y,
-  client_type_codes, service_codes, asset_category_codes,
+  client_type_codes, service_codes, fee_method_codes, asset_category_codes,
   custodian_ids, top_custodian_id, top_custodian_aum,
   fund_type_codes, fund_count, total_fund_gav,
   affiliated_crds,
@@ -348,7 +358,7 @@ select
   aum_per_advisor, aum_per_client, aum_per_employee,
   aum_percentile, aum_per_advisor_percentile,
   aum_cagr_1y, aum_cagr_3y, aum_cagr_5y, employee_cagr_3y,
-  client_type_codes, service_codes, asset_category_codes,
+  client_type_codes, service_codes, fee_method_codes, asset_category_codes,
   custodian_ids, top_custodian_id, top_custodian_aum,
   fund_type_codes, fund_count, total_fund_gav,
   affiliated_crds,

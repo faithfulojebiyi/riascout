@@ -53,6 +53,17 @@ const ASSET_CATEGORIES = [
   ['other', 'Other'],
 ] as const;
 
+/** Form ADV Item 5.E, in the order the form lists them */
+const FEE_METHODS = [
+  ['percentage_of_aum', 'Percentage of assets under management'],
+  ['hourly', 'Hourly charges'],
+  ['subscription', 'Subscription fees'],
+  ['fixed', 'Fixed fees'],
+  ['commissions', 'Commissions'],
+  ['performance_based', 'Performance-based fees'],
+  ['other', 'Other'],
+] as const;
+
 const FUND_TYPES = [
   ['private_equity', 'Private Equity Fund'],
   ['hedge', 'Hedge Fund'],
@@ -160,6 +171,16 @@ async function main(): Promise<void> {
   }
 
   report('dim_asset_category', ASSET_CATEGORIES.length);
+
+  for (const [code, name] of FEE_METHODS) {
+    await prisma.dimFeeMethod.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+  }
+
+  report('dim_fee_method', FEE_METHODS.length);
 
   for (const [code, name] of FUND_TYPES) {
     await prisma.dimFundType.upsert({ where: { code }, create: { code, name }, update: { name } });

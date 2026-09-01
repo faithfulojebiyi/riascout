@@ -18,6 +18,7 @@ delete from pg.market.firm_fact_registration;
 delete from pg.market.firm_fact_derived;
 delete from pg.market.firm_fact_client_type;
 delete from pg.market.firm_fact_service;
+delete from pg.market.firm_fact_fee_method;
 delete from pg.market.firm_fact_asset_allocation;
 delete from pg.market.firm_fact_office;
 delete from pg.market.firm_fact_custodian;
