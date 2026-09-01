@@ -160,6 +160,8 @@ export interface EntityViewField {
   icon: string | null;
   type: string;
   /** @nullable */
+  referenceColumn: string | null;
+  /** @nullable */
   group: string | null;
   position: string;
   isVisible: boolean;

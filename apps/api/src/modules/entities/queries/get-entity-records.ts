@@ -222,6 +222,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       label: string;
       icon: string | null;
       type: string;
+      referenceColumn: string | null;
       group: string | null;
       isEditable: boolean;
       choices: { id: string; name: string; color: string | null }[];
@@ -284,6 +285,7 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
           label: attribute.label,
           icon: attribute.icon,
           type: attribute.type,
+          referenceColumn: attribute.referenceColumn,
           group: attribute.group,
           position: field.position,
           isVisible: field.isVisible,

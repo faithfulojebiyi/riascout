@@ -1,6 +1,9 @@
 import { css } from '@riascout-ui/styled-system/css';
 import type { ReactNode } from 'react';
 
+import { stringToDesignSystemColor } from '../../../../lib/color';
+import { ColorBadge } from '../../../../ui/blocks/colored-elements';
+
 /**
  * One renderer per AttributeType, mirroring the backend's operator registry.
  * Keyed by type rather than by column, so a new allowlisted column renders
@@ -160,5 +163,94 @@ export const ATTRIBUTE_RENDERERS: Record<
 
 export const rendererFor = (type: string, isMultiValue = false) =>
   isMultiValue ? Tags : (ATTRIBUTE_RENDERERS[type] ?? Text);
+
+/** the codes are lowercase slugs; these read wrong title-cased */
+const ACRONYMS = new Set(['RIA', 'BD', 'ERA', 'SEC', 'AUM', 'CRD', 'US', 'IAR']);
+
+/** `pure_ria` -> `Pure RIA`; the raw slug is not a label */
+const formatCode = (value: string): string =>
+  value
+    .split('_')
+    .map((word) => {
+      const upper = word.toUpperCase();
+
+      return ACRONYMS.has(upper)
+        ? upper
+        : word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+
+/**
+ * A closed vocabulary reads as a chip, not as raw text — and the colour is
+ * derived from the code, so the same channel is the same colour everywhere
+ * without anyone maintaining a palette.
+ */
+const CodeBadge = ({ value }: RendererProps) => {
+  if (isBlank(value)) {
+    return <Blank />;
+  }
+
+  const code = String(value);
+
+  return (
+    // ColorBadge is a block by default, so in a cell it stretched the full width
+    <ColorBadge
+      alignItems="center"
+      color={stringToDesignSystemColor(code)}
+      display="inline-flex"
+      h="1.125rem"
+      lineHeight="1"
+      maxW="full"
+      overflow="hidden"
+      px="1.5"
+      rounded="md"
+      textOverflow="ellipsis"
+      whiteSpace="nowrap"
+      w="fit-content"
+    >
+      {formatCode(code)}
+    </ColorBadge>
+  );
+};
+
+/** columns whose values are enum codes rather than free text */
+const CODE_COLUMNS = new Set([
+  'advisor.disclosure_status',
+  'advisor.firm_channel',
+  'advisor.ownership_band',
+  'firm.channel_code',
+  'firm.primary_registration_type',
+]);
+
+/**
+ * CRDs are typed `number` because they sort and filter numerically, but they are
+ * identifiers — 104,559 is a firm you cannot look up, and the separators get
+ * copied into a search box. Keyed by allowlist key, since the type cannot say it.
+ */
+const IDENTIFIER_COLUMNS = new Set([
+  'advisor.advisor_crd',
+  'advisor.current_firm_crd',
+  'advisor.previous_firm_crd',
+  'advisor.previous_firm_crds',
+  'firm.firm_crd',
+  'firm.affiliated_crds',
+]);
+
+/** as rendererFor, but an identifier column wins over its numeric type */
+export const rendererForColumn = (
+  referenceColumn: string | null | undefined,
+  type: string,
+  isMultiValue = false,
+) => {
+  if (referenceColumn && IDENTIFIER_COLUMNS.has(referenceColumn)) {
+    return isMultiValue ? Tags : Identifier;
+  }
+
+  if (referenceColumn && CODE_COLUMNS.has(referenceColumn)) {
+    return isMultiValue ? Tags : CodeBadge;
+  }
+
+  return rendererFor(type, isMultiValue);
+};
 
 export { Identifier, Blank };
