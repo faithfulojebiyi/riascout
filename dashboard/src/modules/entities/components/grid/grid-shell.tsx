@@ -1,10 +1,12 @@
 import {
   type CellValueChangedEvent,
+  type GridApi,
+  type GridReadyEvent,
   type SelectionChangedEvent,
   themeAlpine,
 } from 'ag-grid-enterprise';
 import { AgGridReact } from 'ag-grid-react';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import {
   GRID_ROW_HEIGHT,
@@ -50,11 +52,29 @@ export const EntityGrid = ({
     [view.fields, view.id, activeSort],
   );
 
+  const visibleFieldIds = useMemo(
+    () => view.fields.filter((f) => f.isVisible).map((f) => f.fieldId),
+    [view.fields],
+  );
+
   // read at call time rather than captured, so scrolling to a new column
   // widens the fetch without rebuilding the datasource
-  const visibleFieldIdsRef = useRef<string[]>(
-    view.fields.filter((f) => f.isVisible).map((f) => f.fieldId),
-  );
+  const visibleFieldIdsRef = useRef<string[]>(visibleFieldIds);
+  const gridApiRef = useRef<GridApi<GridRow> | null>(null);
+
+  /**
+   * The server drops any attribute not named in visibleFieldIds, so this ref has
+   * to track the view. A useRef initialiser runs once, and the columnVisible
+   * event that used to update it never fires — buildColumnDefs omits hidden
+   * fields rather than marking them hidden — so a newly added column fetched
+   * nothing and rendered blank until a full page load.
+   *
+   * Cached blocks were fetched without it too, hence the purge.
+   */
+  useEffect(() => {
+    visibleFieldIdsRef.current = visibleFieldIds;
+    gridApiRef.current?.refreshServerSide({ purge: true });
+  }, [visibleFieldIds]);
 
   const datasource = useMemo(
     () =>
@@ -82,12 +102,6 @@ export const EntityGrid = ({
     [onSelectionChange],
   );
 
-  const onColumnVisible = useCallback(() => {
-    visibleFieldIdsRef.current = view.fields
-      .filter((f) => f.isVisible)
-      .map((f) => f.fieldId);
-  }, [view.fields]);
-
   /**
    * ag-grid has already applied the new value to the row node by the time this
    * fires, so a failed write must put the old one back — otherwise the grid
@@ -113,6 +127,10 @@ export const EntityGrid = ({
     [updateRecordValues],
   );
 
+  const onGridReady = useCallback((event: GridReadyEvent<GridRow>) => {
+    gridApiRef.current = event.api;
+  }, []);
+
   return (
     <GridWrapper borderless>
       <AgGridReact<GridRow>
@@ -137,7 +155,7 @@ export const EntityGrid = ({
         rowHeight={GRID_ROW_HEIGHT}
         maxBlocksInCache={10}
         onCellValueChanged={onCellValueChanged}
-        onColumnVisible={onColumnVisible}
+        onGridReady={onGridReady}
         onSelectionChanged={onSelectionChanged}
         rowModelType="serverSide"
         /**
