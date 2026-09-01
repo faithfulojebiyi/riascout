@@ -126,3 +126,11 @@ uv run riascout-adv-data --help
 ```
 
 The test suite uses synthetic local data and mocked HTTP; it performs no live download.
+
+## Verification
+
+Run the complete local Python gate with:
+
+```bash
+./scripts/verify.sh
+```
