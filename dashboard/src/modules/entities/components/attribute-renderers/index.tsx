@@ -171,7 +171,16 @@ export const rendererFor = (type: string, isMultiValue = false) =>
   isMultiValue ? Tags : (ATTRIBUTE_RENDERERS[type] ?? Text);
 
 /** the codes are lowercase slugs; these read wrong title-cased */
-const ACRONYMS = new Set(['RIA', 'BD', 'ERA', 'SEC', 'AUM', 'CRD', 'US', 'IAR']);
+const ACRONYMS = new Set([
+  'RIA',
+  'BD',
+  'ERA',
+  'SEC',
+  'AUM',
+  'CRD',
+  'US',
+  'IAR',
+]);
 
 /** `pure_ria` -> `Pure RIA`; the raw slug is not a label */
 const formatCode = (value: string): string =>
@@ -237,9 +246,7 @@ const CodeBadge = (props: RendererProps) => <Chip {...props} humanise />;
  * These depend on the dimension label, and show the raw code when the ETL has
  * not populated market.facet_option yet.
  */
-const DimBadge = (props: RendererProps) => (
-  <Chip {...props} humanise={false} />
-);
+const DimBadge = (props: RendererProps) => <Chip {...props} humanise={false} />;
 
 /** codes that read as words once split */
 const CODE_COLUMNS = new Set([

@@ -18,7 +18,8 @@ describe('market data preflight', () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      APP_DATABASE_URL: 'postgresql://user:pass@localhost:5432/riascout?schema=app',
+      APP_DATABASE_URL:
+        'postgresql://user:pass@localhost:5432/riascout?schema=app',
     };
     delete process.env[retiredDataDirKey];
     delete process.env.MARKET_DATA_DIR;
@@ -41,6 +42,8 @@ describe('market data preflight', () => {
   it('does not accept the retired environment variable', async () => {
     process.env[retiredDataDirKey] = '/tmp/retired-data';
 
-    await expect(preflight(false)).rejects.toThrow('MARKET_DATA_DIR is not set');
+    await expect(preflight(false)).rejects.toThrow(
+      'MARKET_DATA_DIR is not set',
+    );
   });
 });

@@ -100,7 +100,12 @@ export const ProspectResults = ({
       overflow="auto"
     >
       {/* Table here is the unstyled primitive, so the size has to be set on it */}
-      <Table fontSize="1" minW={MIN_W} style={{ tableLayout: 'fixed' }} w="full">
+      <Table
+        fontSize="1"
+        minW={MIN_W}
+        style={{ tableLayout: 'fixed' }}
+        w="full"
+      >
         <colgroup>
           <col style={{ width: CHECKBOX_W }} />
           <col style={{ width: IN_CRM_W }} />

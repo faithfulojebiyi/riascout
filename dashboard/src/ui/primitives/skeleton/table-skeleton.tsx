@@ -51,12 +51,7 @@ export const TableSkeleton = ({
   minW,
 }: TableSkeletonProps) => (
   <Box flex="1" h="full" minH="0" overflow="hidden">
-    <Table
-      fontSize="1"
-      minW={minW}
-      style={{ tableLayout: 'fixed' }}
-      w="full"
-    >
+    <Table fontSize="1" minW={minW} style={{ tableLayout: 'fixed' }} w="full">
       <colgroup>
         {columns.map((column) => (
           <col
