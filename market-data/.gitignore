@@ -1,0 +1,18 @@
+.env.local
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# local evidence, methodology, and generated outputs never enter Git
+data/
+docs/
+reports/generated/
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.part
+*.wal
+*.log
