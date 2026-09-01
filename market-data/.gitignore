@@ -9,7 +9,7 @@ __pycache__/
 # local evidence, methodology, and generated outputs never enter Git
 data/
 docs/
-reports/generated/
+reports/
 *.duckdb
 *.duckdb.wal
 *.parquet
