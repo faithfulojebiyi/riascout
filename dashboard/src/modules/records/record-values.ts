@@ -85,10 +85,18 @@ export const recordSubtitle = (
   record: GetEntityRecordResponse,
 ): string | null => {
   const parts: string[] = [];
-  const registration = valueOf(record, 'firm.primary_registration_type');
+  /**
+   * A firm's registration type; an adviser's current firm. Both answer "what am
+   * I looking at", but reading the firm key on an adviser would print nothing
+   * and leave a bare CRD.
+   */
+  const lead =
+    record.market.sourceKind === 'advisor'
+      ? valueOf(record, 'advisor.current_firm_name')
+      : valueOf(record, 'firm.primary_registration_type');
 
-  if (typeof registration === 'string' && registration.trim() !== '') {
-    parts.push(registration);
+  if (typeof lead === 'string' && lead.trim() !== '') {
+    parts.push(lead);
   }
 
   if (record.market.sourceCrd) {

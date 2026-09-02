@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
+import { advisorsControllerGetAdvisorProfile } from '../../api/generated/advisors/advisors';
 import {
   firmsControllerGetFirmContacts,
   firmsControllerGetFirmCustodians,
@@ -63,4 +64,15 @@ export const firmFilingsQuery = (firmCrd: string) =>
   queryOptions({
     queryKey: ['firm', firmCrd, 'filings'],
     queryFn: () => firmsControllerGetFirmFilings({ firmCrd }),
+  });
+
+/**
+ * One query for the whole adviser, not one per tab. The median adviser has 2
+ * registrations and 4 employment rows and the worst in the table has 100 and 92,
+ * so splitting it would cost round trips to save nothing.
+ */
+export const advisorProfileQuery = (advisorCrd: string) =>
+  queryOptions({
+    queryKey: ['advisor', advisorCrd, 'profile'],
+    queryFn: () => advisorsControllerGetAdvisorProfile({ advisorCrd }),
   });

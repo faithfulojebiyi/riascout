@@ -4,6 +4,86 @@
  * RIAScout API
  * OpenAPI spec version: 0.0.1
  */
+export interface GetAdvisorProfile {
+  /** @pattern ^[1-9]\d*$ */
+  advisorCrd: string;
+}
+
+export interface AdvisorStint {
+  firmCrd: string;
+  /** @nullable */
+  firmName: string | null;
+  /** @nullable */
+  startedOn: string | null;
+  /** @nullable */
+  endedOn: string | null;
+  isCurrent: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  jurisdictionCount: number;
+  jurisdictions: string[];
+  /**
+     * @nullable
+     * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+     */
+  recordId: string | null;
+}
+
+export interface AdvisorEmployment {
+  /** @nullable */
+  employerName: string | null;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  region: string | null;
+  /** @nullable */
+  startMonth: string | null;
+  /** @nullable */
+  endMonth: string | null;
+  isOpenEnded: boolean;
+}
+
+export interface AdvisorExam {
+  code: string;
+  /** @nullable */
+  takenOn: string | null;
+}
+
+export interface AdvisorDisclosures {
+  /** @nullable */
+  anyReported: boolean | null;
+  reported: string[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  count: number | null;
+}
+
+export interface GetAdvisorProfileResponse {
+  stints: AdvisorStint[];
+  employment: AdvisorEmployment[];
+  exams: AdvisorExam[];
+  designations: string[];
+  jurisdictions: string[];
+  disclosures: AdvisorDisclosures;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  experienceMonths: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  tenureMonths: number | null;
+}
+
 /**
  * @nullable
  */

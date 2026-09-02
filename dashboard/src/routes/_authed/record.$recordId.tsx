@@ -42,6 +42,8 @@ function RecordPage() {
    */
   const firmCrd =
     record.market.sourceKind === 'firm' ? record.market.sourceCrd : null;
+  const advisorCrd =
+    record.market.sourceKind === 'advisor' ? record.market.sourceCrd : null;
 
   return (
     <div className={page}>
@@ -56,7 +58,11 @@ function RecordPage() {
             minW: '0',
           })}
         >
-          <RecordTabs firmCrd={firmCrd} record={record} />
+          <RecordTabs
+            advisorCrd={advisorCrd}
+            firmCrd={firmCrd}
+            record={record}
+          />
         </div>
         <aside className={panel}>
           <RecordAttributesPanel record={record} />
