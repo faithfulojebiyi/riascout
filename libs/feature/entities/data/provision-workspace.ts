@@ -47,6 +47,10 @@ export type ProvisionClient = {
     }>;
   };
   entityViewField: {
+    findMany: (args: {
+      where: { viewId: string };
+      select: { id: true; position: true };
+    }) => Promise<{ id: string; position: string }[]>;
     create: (args: {
       data: Record<string, unknown>;
       select: { id: true };
@@ -55,6 +59,10 @@ export type ProvisionClient = {
     }>;
   };
   entityViewFieldPath: {
+    findMany: (args: {
+      where: { fieldId: { in: string[] } };
+      select: { attributeId: true };
+    }) => Promise<{ attributeId: string }[]>;
     create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
   };
 };
@@ -63,6 +71,7 @@ export type ProvisionResult = {
   entitiesCreated: number;
   attributesCreated: number;
   viewsCreated: number;
+  fieldsCreated: number;
 };
 
 /**
@@ -78,6 +87,7 @@ export const provisionWorkspace = async (
   let entitiesCreated = 0;
   let attributesCreated = 0;
   let viewsCreated = 0;
+  let fieldsCreated = 0;
 
   for (const definition of entities) {
     const existing = await client.entity.findFirst({
@@ -161,8 +171,9 @@ export const provisionWorkspace = async (
       select: { id: true },
     });
 
-    if (!existingView) {
-      const view = await client.entityView.create({
+    const view =
+      existingView ??
+      (await client.entityView.create({
         data: {
           entityId: entity.id,
           workspaceId,
@@ -171,38 +182,69 @@ export const provisionWorkspace = async (
           isDefault: true,
         },
         select: { id: true },
+      }));
+
+    if (!existingView) {
+      viewsCreated += 1;
+    }
+
+    /**
+     * Fields are backfilled, not only created with the view. A column added to
+     * the allowlist after a workspace exists otherwise has no field, so it never
+     * appears in grid settings and cannot be switched on.
+     */
+    const fields = await client.entityViewField.findMany({
+      where: { viewId: view.id },
+      select: { id: true, position: true },
+    });
+
+    const paths =
+      fields.length > 0
+        ? await client.entityViewFieldPath.findMany({
+            where: { fieldId: { in: fields.map((f) => f.id) } },
+            select: { attributeId: true },
+          })
+        : [];
+
+    const fielded = new Set(paths.map((p) => p.attributeId));
+
+    let fieldRank = fields.reduce(
+      (highest, field) =>
+        field.position > highest.toString()
+          ? LexoRank.parse(field.position)
+          : highest,
+      LexoRank.middle(),
+    );
+
+    for (const attribute of definition.attributes) {
+      const attributeId = idByKey.get(attribute.key);
+
+      if (!attributeId || fielded.has(attributeId)) {
+        continue;
+      }
+
+      fieldRank = fieldRank.genNext();
+
+      const field = await client.entityViewField.create({
+        data: {
+          viewId: view.id,
+          workspaceId,
+          position: fieldRank.toString(),
+          // a backfilled column stays off: turning it on would rearrange a grid
+          // the user has already arranged
+          isVisible: existingView ? false : attribute.visible,
+          isPinned: existingView ? false : attribute.pinned,
+        },
+        select: { id: true },
       });
 
-      viewsCreated += 1;
+      await client.entityViewFieldPath.create({
+        data: { fieldId: field.id, position: 0, attributeId, workspaceId },
+      });
 
-      let fieldRank = LexoRank.middle();
-
-      for (const attribute of definition.attributes) {
-        const attributeId = idByKey.get(attribute.key);
-
-        if (!attributeId) {
-          continue;
-        }
-
-        fieldRank = fieldRank.genNext();
-
-        const field = await client.entityViewField.create({
-          data: {
-            viewId: view.id,
-            workspaceId,
-            position: fieldRank.toString(),
-            isVisible: attribute.visible,
-            isPinned: attribute.pinned,
-          },
-          select: { id: true },
-        });
-
-        await client.entityViewFieldPath.create({
-          data: { fieldId: field.id, position: 0, attributeId, workspaceId },
-        });
-      }
+      fieldsCreated += 1;
     }
   }
 
-  return { entitiesCreated, attributesCreated, viewsCreated };
+  return { entitiesCreated, attributesCreated, viewsCreated, fieldsCreated };
 };
