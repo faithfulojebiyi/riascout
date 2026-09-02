@@ -150,3 +150,49 @@ def test_validation_requires_historical_era_coverage(tmp_path: Path) -> None:
     result = validate_official_pipeline(database, years=[2020])
 
     assert "missing_historical_era_coverage" in {failure.code for failure in result.failures}
+
+
+def test_validation_separates_client_transform_failures_from_source_warnings(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    with database.transaction() as connection:
+        connection.execute("INSERT INTO firms VALUES (149777, DATE '2025-03-31', DATE '2025-03-31')")
+        connection.execute(
+            """
+            INSERT INTO filings VALUES (
+                'F-QUALITY', 149777, TIMESTAMP '2025-03-31', NULL,
+                'Annual Updating Amendment', '801-1', 'SEC', 'history', 'base.csv', 2
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO firm_metrics (
+                filing_id, regulatory_aum, discretionary_aum, non_discretionary_aum,
+                employee_count, advisory_employee_count,
+                discretionary_account_count, non_discretionary_account_count,
+                account_count, office_count, artifact_id, source_member,
+                source_row_number
+            ) VALUES (
+                'F-QUALITY', 100, 60, 40, 5, 3, 1, 2, 4, 1,
+                'history', 'base.csv', 2
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO filing_client_types VALUES
+                ('F-QUALITY', 'Individuals', -1, FALSE, 40, 'history', 'base.csv', 2),
+                ('F-QUALITY', 'High_Net_Worth_Individuals', 6, TRUE, 50,
+                 'history', 'base.csv', 2)
+            """
+        )
+
+    result = validate_official_pipeline(database, years=[2026])
+    failures = {issue.code for issue in result.failures}
+    warnings = {issue.code for issue in result.warnings}
+
+    assert "negative_client_count" in failures
+    assert "invalid_fewer_than_five_count" in failures
+    assert "account_component_reconciliation" in warnings
+    assert "client_aum_reconciliation" in warnings
+    assert "client_count_missing_for_positive_aum" in warnings

@@ -55,6 +55,65 @@ def test_schema_installation_is_idempotent(tmp_path: Path) -> None:
     assert "source_artifacts" in database.table_names()
 
 
+def test_schema_installation_upgrades_legacy_account_and_client_columns(tmp_path: Path) -> None:
+    path = tmp_path / "analysis.duckdb"
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            """
+            CREATE TABLE firm_metrics (
+                filing_id VARCHAR PRIMARY KEY,
+                regulatory_aum DECIMAL(38, 2),
+                discretionary_aum DECIMAL(38, 2),
+                non_discretionary_aum DECIMAL(38, 2),
+                employee_count BIGINT,
+                advisory_employee_count BIGINT,
+                client_count BIGINT,
+                office_count BIGINT,
+                artifact_id VARCHAR NOT NULL,
+                source_member VARCHAR NOT NULL,
+                source_row_number UBIGINT NOT NULL
+            );
+            INSERT INTO firm_metrics VALUES (
+                'F-LEGACY', 100, 60, 40, 5, 3, 7, 1, 'artifact', 'base.csv', 2
+            );
+            CREATE TABLE filing_client_types (
+                filing_id VARCHAR NOT NULL,
+                client_type VARCHAR NOT NULL,
+                client_count BIGINT,
+                regulatory_aum DECIMAL(38, 2),
+                artifact_id VARCHAR NOT NULL,
+                source_member VARCHAR NOT NULL,
+                source_row_number UBIGINT NOT NULL,
+                PRIMARY KEY (filing_id, client_type)
+            );
+            INSERT INTO filing_client_types VALUES (
+                'F-LEGACY', 'Individuals', 2, 100, 'artifact', 'base.csv', 2
+            );
+            """
+        )
+
+    database = OfficialDatabase(path)
+    database.install_schema()
+
+    with database.connection() as connection:
+        metrics = connection.execute(
+            """
+            SELECT account_count, discretionary_account_count,
+                   non_discretionary_account_count
+            FROM firm_metrics WHERE filing_id = 'F-LEGACY'
+            """
+        ).fetchone()
+        client = connection.execute(
+            """
+            SELECT client_count, fewer_than_five
+            FROM filing_client_types WHERE filing_id = 'F-LEGACY'
+            """
+        ).fetchone()
+
+    assert metrics == (7, None, None)
+    assert client == (2, None)
+
+
 def test_schema_installs_individual_pipeline_tables(tmp_path: Path) -> None:
     database = OfficialDatabase(tmp_path / "analysis.duckdb")
 

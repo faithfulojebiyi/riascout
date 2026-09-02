@@ -14,9 +14,9 @@ from riascout_adv_data.field_mapping import ColumnMappingError, ColumnResolver
 from riascout_adv_data.official_db import OfficialDatabase
 from riascout_adv_data.raw_ingest import quote_ident
 
-# v4 adds Item 5.E fee methods; artifacts published under v3 are
-# re-canonicalized because the mapping, not the evidence, changed
-TRANSFORMATION_VERSION = "official-v4"
+# v5 separates Item 5.F accounts from Item 5.D clients and preserves
+# range evidence; the immutable artifacts are re-canonicalized.
+TRANSFORMATION_VERSION = "official-v5"
 
 BASE_FIELDS = {
     "filing_id": ("FilingID", "Filing ID"),
@@ -35,24 +35,27 @@ BASE_FIELDS = {
     "non_discretionary_aum": ("5F2b",),
     "employee_count": ("5A",),
     "advisory_employee_count": ("5B1",),
-    "client_count": ("5F2f",),
+    "discretionary_account_count": ("5F2d",),
+    "non_discretionary_account_count": ("5F2e",),
+    "account_count": ("5F2f",),
     "other_office_count": ("1F5",),
 }
 
 CLIENT_TYPES = {
-    "Individuals": ("5D1a", "5D3a"),
-    "High_Net_Worth_Individuals": ("5D1b", "5D3b"),
-    "Banking_or_Thrift": ("5D1c", "5D3c"),
-    "Investment_Companies": ("5D1d", "5D3d"),
-    "Business_Development_Companies": ("5D1e", "5D3e"),
-    "Pooled_Investment_Vehicles": ("5D1f", "5D3f"),
-    "Pension_and_Profit_Sharing": ("5D1g", "5D3g"),
-    "Charitable_Organizations": ("5D1h", "5D3h"),
-    "Corporations_or_Other_Businesses": ("5D1i", "5D3i"),
-    "State_or_Municipal_Governments": ("5D1j", "5D3j"),
-    "Other_Investment_Advisers": ("5D1k", "5D3k"),
-    "Insurance_Companies": ("5D1l", "5D3l"),
-    "Sovereign_Wealth_Funds": ("5D1m", "5D3m"),
+    "Individuals": ("5D1a", "5D2a", "5D3a"),
+    "High_Net_Worth_Individuals": ("5D1b", "5D2b", "5D3b"),
+    "Banking_or_Thrift": ("5D1c", "5D2c", "5D3c"),
+    "Investment_Companies": ("5D1d", "5D2d", "5D3d"),
+    "Business_Development_Companies": ("5D1e", "5D2e", "5D3e"),
+    "Pooled_Investment_Vehicles": ("5D1f", "5D2f", "5D3f"),
+    "Pension_and_Profit_Sharing": ("5D1g", "5D2g", "5D3g"),
+    "Charitable_Organizations": ("5D1h", "5D2h", "5D3h"),
+    "State_or_Municipal_Governments": ("5D1i", "5D2i", "5D3i"),
+    "Other_Investment_Advisers": ("5D1j", "5D2j", "5D3j"),
+    "Insurance_Companies": ("5D1k", "5D2k", "5D3k"),
+    "Sovereign_Wealth_Funds": ("5D1l", "5D2l", "5D3l"),
+    "Corporations_or_Other_Businesses": ("5D1m", "5D2m", "5D3m"),
+    "Other": ("5D1n", "5D2n", "5D3n"),
 }
 
 SERVICES = {
@@ -230,6 +233,7 @@ class HistoricalCanonicalizer:
         for table in (
             "filing_client_types",
             "filing_services",
+            "filing_fee_methods",
             "filing_offices",
             "filing_asset_allocations",
             "filing_custodians",
@@ -418,7 +422,12 @@ class HistoricalCanonicalizer:
             other_offices = _integer(_field(row, columns["other_office_count"]))
             connection.execute(
                 """
-                INSERT INTO firm_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO firm_metrics (
+                    filing_id, regulatory_aum, discretionary_aum, non_discretionary_aum,
+                    employee_count, advisory_employee_count,
+                    discretionary_account_count, non_discretionary_account_count, account_count,
+                    office_count, artifact_id, source_member, source_row_number
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     filing_id,
@@ -427,7 +436,9 @@ class HistoricalCanonicalizer:
                     _decimal(_field(row, columns["non_discretionary_aum"])),
                     _integer(_field(row, columns["employee_count"])),
                     _integer(_field(row, columns["advisory_employee_count"])),
-                    _integer(_field(row, columns["client_count"])),
+                    _integer(_field(row, columns["discretionary_account_count"])),
+                    _integer(_field(row, columns["non_discretionary_account_count"])),
+                    _integer(_field(row, columns["account_count"])),
                     other_offices + 1 if other_offices is not None else None,
                     table.artifact_id,
                     table.member_name,
@@ -459,16 +470,32 @@ class HistoricalCanonicalizer:
         source_row: int,
     ) -> None:
         resolver = ColumnResolver(table.columns)
-        for client_type, (count_alias, aum_alias) in CLIENT_TYPES.items():
+        for client_type, (count_alias, fewer_alias, aum_alias) in CLIENT_TYPES.items():
             count_column = resolver.optional(f"{client_type}_count", (count_alias,))
+            fewer_column = resolver.optional(f"{client_type}_fewer_than_five", (fewer_alias,))
             aum_column = resolver.optional(f"{client_type}_aum", (aum_alias,))
-            count = _integer(_field(row, count_column))
-            aum = _decimal(_field(row, aum_column))
-            if count is None and aum is None:
+            if count_column is None and fewer_column is None and aum_column is None:
                 continue
+            count = _integer(_field(row, count_column))
+            fewer_than_five = _yes_no(_field(row, fewer_column))
+            aum = _decimal(_field(row, aum_column))
             connection.execute(
-                "INSERT INTO filing_client_types VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [filing_id, client_type, count, aum, table.artifact_id, table.member_name, source_row],
+                """
+                INSERT INTO filing_client_types (
+                    filing_id, client_type, client_count, fewer_than_five, regulatory_aum,
+                    artifact_id, source_member, source_row_number
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    filing_id,
+                    client_type,
+                    count,
+                    fewer_than_five,
+                    aum,
+                    table.artifact_id,
+                    table.member_name,
+                    source_row,
+                ],
             )
         for source_field, service_type in SERVICES.items():
             column = resolver.optional(f"service_{source_field}", (source_field,))
@@ -956,6 +983,15 @@ def _registration_category(sec_number: str | None) -> str:
 
 def _is_yes(value: str | None) -> bool:
     return (value or "").strip().upper() in {"Y", "YES", "TRUE", "1"}
+
+
+def _yes_no(value: str | None) -> bool | None:
+    normalized = (value or "").strip().upper()
+    if normalized in {"Y", "YES", "TRUE", "1"}:
+        return True
+    if normalized in {"N", "NO", "FALSE", "0"}:
+        return False
+    return None
 
 
 def _insert_event(

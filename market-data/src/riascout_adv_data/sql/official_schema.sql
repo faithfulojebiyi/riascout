@@ -101,7 +101,9 @@ CREATE TABLE IF NOT EXISTS firm_metrics (
     non_discretionary_aum DECIMAL(38, 2),
     employee_count BIGINT,
     advisory_employee_count BIGINT,
-    client_count BIGINT,
+    discretionary_account_count BIGINT,
+    non_discretionary_account_count BIGINT,
+    account_count BIGINT,
     office_count BIGINT,
     artifact_id VARCHAR NOT NULL,
     source_member VARCHAR NOT NULL,
@@ -112,12 +114,65 @@ CREATE TABLE IF NOT EXISTS filing_client_types (
     filing_id VARCHAR NOT NULL,
     client_type VARCHAR NOT NULL,
     client_count BIGINT,
+    fewer_than_five BOOLEAN,
     regulatory_aum DECIMAL(38, 2),
     artifact_id VARCHAR NOT NULL,
     source_member VARCHAR NOT NULL,
     source_row_number UBIGINT NOT NULL,
     PRIMARY KEY (filing_id, client_type)
 );
+
+CREATE OR REPLACE VIEW filing_reported_client_totals AS
+WITH per_filing AS (
+    SELECT filing_id,
+           coalesce(bool_or(client_count < 0), FALSE) AS has_negative_count,
+           coalesce(
+               bool_or(fewer_than_five IS TRUE AND client_count > 4),
+               FALSE
+           ) AS has_invalid_fewer_count,
+           coalesce(
+               bool_or(
+                   regulatory_aum > 0
+                   AND coalesce(client_count, 0) <= 0
+                   AND fewer_than_five IS NOT TRUE
+               ),
+               FALSE
+           ) AS has_unresolved_positive_aum,
+           sum(
+               CASE
+                   WHEN client_count > 0 THEN client_count
+                   WHEN fewer_than_five IS TRUE THEN 1
+                   ELSE 0
+               END
+           )::BIGINT AS count_min,
+           sum(
+               CASE
+                   WHEN client_count > 0 THEN client_count
+                   WHEN fewer_than_five IS TRUE THEN 4
+                   ELSE 0
+               END
+           )::BIGINT AS count_max
+    FROM filing_client_types
+    GROUP BY filing_id
+)
+SELECT filing_id,
+       CASE
+           WHEN has_negative_count OR has_invalid_fewer_count OR has_unresolved_positive_aum
+               THEN NULL
+           ELSE count_min
+       END AS reported_client_count_min,
+       CASE
+           WHEN has_negative_count OR has_invalid_fewer_count OR has_unresolved_positive_aum
+               THEN NULL
+           ELSE count_max
+       END AS reported_client_count_max,
+       CASE
+           WHEN has_negative_count OR has_invalid_fewer_count OR has_unresolved_positive_aum
+               THEN 'unavailable'
+           WHEN count_min = count_max THEN 'reported_number'
+           ELSE 'bounded_range'
+       END AS reported_client_count_quality
+FROM per_filing;
 
 CREATE TABLE IF NOT EXISTS filing_services (
     filing_id VARCHAR NOT NULL,
@@ -314,7 +369,7 @@ CREATE TABLE IF NOT EXISTS snapshot_coverage (
 
 CREATE OR REPLACE VIEW firm_snapshot_client_types AS
 SELECT s.snapshot_year, s.snapshot_date, s.snapshot_status, s.firm_crd,
-       c.filing_id, c.client_type, c.client_count, c.regulatory_aum,
+       c.filing_id, c.client_type, c.client_count, c.fewer_than_five, c.regulatory_aum,
        c.artifact_id, c.source_member, c.source_row_number
 FROM firm_snapshots s
 JOIN filing_client_types c ON c.filing_id = s.selected_filing_id;

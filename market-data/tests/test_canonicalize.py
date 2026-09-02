@@ -43,10 +43,10 @@ def _record_and_ingest(
 def _history_members() -> dict[str, str]:
     return {
         "IA_ADV_Base_A_sample.csv": (
-            "FilingID,DateSubmitted,1E1,1D,1A,1F1-City,1F1-State,1F1-Country,5F2c,5A,5B1,5D1a,5D3a,5G1\n"
-            "F-2020-OLD,03/31/2020 10:00:00 AM,361,801-1,Old Name,New York,NY,UNITED STATES,1000,10,8,10,500,Y\n"
-            "F-2020-LATEST,12/15/2020 11:00:00 AM,361,801-1,Latest Name,New York,NY,UNITED STATES,1200,12,9,12,700,Y\n"
-            "F-2020-WITHDRAW,01/10/2020,9001,801-9001,Leaving Adviser,Boston,MA,UNITED STATES,500,4,3,3,200,N\n"
+            "FilingID,DateSubmitted,1E1,1D,1A,1F1-City,1F1-State,1F1-Country,5F2c,5A,5B1,5D1a,5D3a,5G1,5E1\n"
+            "F-2020-OLD,03/31/2020 10:00:00 AM,361,801-1,Old Name,New York,NY,UNITED STATES,1000,10,8,10,500,Y,Y\n"
+            "F-2020-LATEST,12/15/2020 11:00:00 AM,361,801-1,Latest Name,New York,NY,UNITED STATES,1200,12,9,12,700,Y,Y\n"
+            "F-2020-WITHDRAW,01/10/2020,9001,801-9001,Leaving Adviser,Boston,MA,UNITED STATES,500,4,3,3,200,N,Y\n"
         ),
         "ERA_ADV_Base_sample.csv": (
             "FilingID,DateSubmitted,1E1,1D,1A,1F1-City,1F1-State,1F1-Country\n"
@@ -156,6 +156,97 @@ def test_canonicalizer_expands_scientific_notation_before_duckdb_binding(tmp_pat
         Decimal("134710000000.00"),
     )
     assert client_aum == (Decimal("10246600000000.00"),)
+
+
+def test_canonicalizer_separates_accounts_and_preserves_client_evidence(tmp_path: Path) -> None:
+    database = OfficialDatabase(tmp_path / "analysis.duckdb")
+    database.install_schema()
+    source = tmp_path / "accounts-clients.zip"
+    _write_zip(
+        source,
+        {
+            "IA_ADV_Base_A_accounts_clients.csv": (
+                "FilingID,DateSubmitted,1E1,1D,1A,5F2d,5F2e,5F2f,"
+                "5D1i,5D2i,5D3i,5D1j,5D2j,5D3j,5D1k,5D2k,5D3k,"
+                "5D1l,5D2l,5D3l,5D1m,5D2m,5D3m,5D1n,5D2n,5D3n\n"
+                "F-CLIENTS,03/31/2025,149777,801-1,Mapping Adviser,10,20,30,"
+                "2,N,200,3,N,300,4,Y,400,,Y,500,6,N,600,7,N,700\n"
+            ),
+            "ADV_Filing_Types_accounts_clients.csv": ("FilingID,FilingType\nF-CLIENTS,Annual Updating Amendment\n"),
+        },
+    )
+    _record_and_ingest(database, source, artifact_id="accounts-clients:abc", dataset_kind="adv_part1")
+
+    HistoricalCanonicalizer(database).publish(["accounts-clients:abc"])
+
+    with database.connection() as connection:
+        accounts = connection.execute(
+            """
+            SELECT discretionary_account_count, non_discretionary_account_count, account_count
+            FROM firm_metrics WHERE filing_id = 'F-CLIENTS'
+            """
+        ).fetchone()
+        clients = connection.execute(
+            """
+            SELECT client_type, client_count, fewer_than_five, regulatory_aum
+            FROM filing_client_types WHERE filing_id = 'F-CLIENTS'
+            ORDER BY client_type
+            """
+        ).fetchall()
+
+    assert accounts == (10, 20, 30)
+    assert clients == [
+        ("Corporations_or_Other_Businesses", 6, False, Decimal("600.00")),
+        ("Insurance_Companies", 4, True, Decimal("400.00")),
+        ("Other", 7, False, Decimal("700.00")),
+        ("Other_Investment_Advisers", 3, False, Decimal("300.00")),
+        ("Sovereign_Wealth_Funds", None, True, Decimal("500.00")),
+        ("State_or_Municipal_Governments", 2, False, Decimal("200.00")),
+    ]
+
+
+def test_reported_client_totals_are_range_native(tmp_path: Path) -> None:
+    database = OfficialDatabase(tmp_path / "analysis.duckdb")
+    database.install_schema()
+    source = tmp_path / "client-totals.zip"
+    _write_zip(
+        source,
+        {
+            "IA_ADV_Base_A_client_totals.csv": (
+                "FilingID,DateSubmitted,1E1,1D,1A,5D1a,5D2a,5D3a,5D1b,5D2b,5D3b\n"
+                "F-EXACT,03/31/2025,1001,801-1001,Exact,12,N,1200,0,N,0\n"
+                "F-RANGE,03/31/2025,1002,801-1002,Range,12,N,1200,,Y,0\n"
+                "F-ZERO,03/31/2025,1003,801-1003,Zero,0,N,0,0,N,0\n"
+                "F-UNAVAILABLE,03/31/2025,1004,801-1004,Unavailable,,,100,,,0\n"
+            ),
+            "ADV_Filing_Types_client_totals.csv": (
+                "FilingID,FilingType\n"
+                "F-EXACT,Annual Updating Amendment\n"
+                "F-RANGE,Annual Updating Amendment\n"
+                "F-ZERO,Annual Updating Amendment\n"
+                "F-UNAVAILABLE,Annual Updating Amendment\n"
+            ),
+        },
+    )
+    _record_and_ingest(database, source, artifact_id="client-totals:abc", dataset_kind="adv_part1")
+    HistoricalCanonicalizer(database).publish(["client-totals:abc"])
+
+    with database.connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT filing_id, reported_client_count_min,
+                   reported_client_count_max, reported_client_count_quality
+            FROM filing_reported_client_totals
+            ORDER BY filing_id
+            """
+        ).fetchall()
+
+    assert rows == [
+        ("F-EXACT", 12, 12, "reported_number"),
+        ("F-RANGE", 13, 16, "bounded_range"),
+        ("F-UNAVAILABLE", None, None, "unavailable"),
+        ("F-ZERO", 0, 0, "reported_number"),
+    ]
 
 
 def test_canonical_children_remain_keyed_to_their_own_filing(tmp_path: Path) -> None:
@@ -286,6 +377,8 @@ def test_new_transformation_version_replaces_prior_artifact_publication(tmp_path
     database = _database_with_history(tmp_path)
     canonicalizer = HistoricalCanonicalizer(database)
     canonicalizer.publish(["history:abc", "advw:def"])
+    with database.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM filing_fee_methods").fetchone()[0] == 3
     with database.transaction() as connection:
         connection.execute("UPDATE canonicalization_runs SET transformation_version = 'official-v1'")
 
@@ -294,6 +387,7 @@ def test_new_transformation_version_replaces_prior_artifact_publication(tmp_path
     assert result.published_filings == 5
     with database.connection() as connection:
         assert connection.execute("SELECT count(*) FROM filings").fetchone()[0] == 5
+        assert connection.execute("SELECT count(*) FROM filing_fee_methods").fetchone()[0] == 3
 
 
 def test_missing_required_base_column_rolls_back_without_replacing_valid_data(tmp_path: Path) -> None:

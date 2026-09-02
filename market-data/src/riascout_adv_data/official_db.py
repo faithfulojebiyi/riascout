@@ -39,6 +39,7 @@ class OfficialDatabase:
         """Install the idempotent official-data schema in the project DuckDB file."""
         schema = resources.files("riascout_adv_data.sql").joinpath("official_schema.sql").read_text()
         with self.connection() as connection:
+            _upgrade_account_client_schema(connection)
             connection.execute(schema)
 
     @contextmanager
@@ -123,6 +124,31 @@ class OfficialDatabase:
             """,
             values,
         )
+
+
+def _upgrade_account_client_schema(connection: DuckDBPyConnection) -> None:
+    """Upgrade pre-v5 canonical tables before views bind to the new columns."""
+    metrics_columns = _column_names(connection, "firm_metrics")
+    if metrics_columns:
+        if "client_count" in metrics_columns and "account_count" not in metrics_columns:
+            connection.execute("ALTER TABLE firm_metrics RENAME COLUMN client_count TO account_count")
+        connection.execute("ALTER TABLE firm_metrics ADD COLUMN IF NOT EXISTS discretionary_account_count BIGINT")
+        connection.execute("ALTER TABLE firm_metrics ADD COLUMN IF NOT EXISTS non_discretionary_account_count BIGINT")
+
+    if _column_names(connection, "filing_client_types"):
+        connection.execute("ALTER TABLE filing_client_types ADD COLUMN IF NOT EXISTS fewer_than_five BOOLEAN")
+
+
+def _column_names(connection: DuckDBPyConnection, table_name: str) -> set[str]:
+    rows = connection.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'main' AND table_name = ?
+        """,
+        [table_name],
+    ).fetchall()
+    return {str(row[0]) for row in rows}
 
 
 __all__ = ["OfficialArtifactRecord", "OfficialDatabase"]

@@ -179,6 +179,21 @@ def _base_exports(collection_id: str) -> list[tuple[Path, str, list[object]]]:
     exports: list[tuple[Path, str, list[object]]] = [
         (Path("firms.parquet"), "SELECT * FROM firms ORDER BY firm_crd", []),
         (
+            Path("firm_metrics.parquet"),
+            "SELECT * FROM firm_metrics ORDER BY filing_id",
+            [],
+        ),
+        (
+            Path("filing_client_types.parquet"),
+            "SELECT * FROM filing_client_types ORDER BY filing_id, client_type",
+            [],
+        ),
+        (
+            Path("filing_reported_client_totals.parquet"),
+            "SELECT * FROM filing_reported_client_totals ORDER BY filing_id",
+            [],
+        ),
+        (
             Path("individuals.parquet"),
             """
             SELECT identities.individual_crd, identities.first_seen_at, identities.last_seen_at,

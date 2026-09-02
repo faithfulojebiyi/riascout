@@ -28,6 +28,12 @@ def test_export_writes_queryable_partitioned_parquet_and_manifest(tmp_path: Path
     assert manifest["collection_id"] == COLLECTION_ID
     assert manifest["population_coverage"]["2026"] == "available_current_observation"
     assert any("may lag official IAPD" in limitation for limitation in manifest["known_limitations"])
+    paths = {item["path"] for item in manifest["files"]}
+    assert {
+        "firm_metrics.parquet",
+        "filing_client_types.parquet",
+        "filing_reported_client_totals.parquet",
+    } <= paths
     with duckdb.connect() as connection:
         assert connection.execute(
             "SELECT count(*) FROM read_parquet(?)",
@@ -37,6 +43,14 @@ def test_export_writes_queryable_partitioned_parquet_and_manifest(tmp_path: Path
             "SELECT count(*) FROM read_parquet(?)",
             [str(release.path / "individual_year_snapshots" / "snapshot_year=2026" / "part-00000.parquet")],
         ).fetchone() == (1,)
+        client_columns = {
+            str(row[0])
+            for row in connection.execute(
+                "DESCRIBE SELECT * FROM read_parquet(?)",
+                [str(release.path / "filing_client_types.parquet")],
+            ).fetchall()
+        }
+        assert "fewer_than_five" in client_columns
 
 
 def test_failed_export_leaves_previous_release_untouched(tmp_path: Path) -> None:

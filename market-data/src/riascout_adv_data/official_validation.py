@@ -125,6 +125,76 @@ def validate_official_pipeline(
                 WHERE snapshot_year = 2026 AND snapshot_status <> 'provisional'
             """,
         )
+        _append_count_issue(
+            connection,
+            failures,
+            code="negative_client_count",
+            message="An Item 5.D client count is negative.",
+            query="SELECT count(*) FROM filing_client_types WHERE client_count < 0",
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="invalid_fewer_than_five_count",
+            message="An Item 5.D fewer-than-five response carries a count greater than four.",
+            query="""
+                SELECT count(*) FROM filing_client_types
+                WHERE fewer_than_five IS TRUE AND client_count > 4
+            """,
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="inverted_reported_client_bound",
+            message="A derived reported-client minimum exceeds its maximum.",
+            query="""
+                SELECT count(*) FROM filing_reported_client_totals
+                WHERE reported_client_count_min > reported_client_count_max
+            """,
+        )
+        _append_count_issue(
+            connection,
+            warnings,
+            code="account_component_reconciliation",
+            message="Source-reported discretionary and non-discretionary accounts do not sum to total accounts.",
+            query="""
+                SELECT count(*) FROM firm_metrics
+                WHERE discretionary_account_count IS NOT NULL
+                  AND non_discretionary_account_count IS NOT NULL
+                  AND account_count IS NOT NULL
+                  AND discretionary_account_count + non_discretionary_account_count <> account_count
+            """,
+        )
+        _append_count_issue(
+            connection,
+            warnings,
+            code="client_aum_reconciliation",
+            message="Source-reported client-type AUM does not sum to total regulatory AUM.",
+            query="""
+                SELECT count(*)
+                FROM firm_metrics m
+                JOIN (
+                    SELECT filing_id, sum(regulatory_aum) AS client_type_aum
+                    FROM filing_client_types
+                    GROUP BY filing_id
+                ) c USING (filing_id)
+                WHERE m.regulatory_aum IS NOT NULL
+                  AND c.client_type_aum IS NOT NULL
+                  AND c.client_type_aum <> m.regulatory_aum
+            """,
+        )
+        _append_count_issue(
+            connection,
+            warnings,
+            code="client_count_missing_for_positive_aum",
+            message="Positive client-type AUM has no numeric or fewer-than-five client evidence.",
+            query="""
+                SELECT count(*) FROM filing_client_types
+                WHERE regulatory_aum > 0
+                  AND coalesce(client_count, 0) <= 0
+                  AND fewer_than_five IS NOT TRUE
+            """,
+        )
         for year in requested:
             snapshot_count = _scalar_count(
                 connection,
