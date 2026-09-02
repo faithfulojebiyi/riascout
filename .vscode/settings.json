@@ -1,5 +1,12 @@
 {
 	"editor.fontFamily": "Geist Mono, monospace",
 	"typescript.tsdk": "node_modules/typescript/lib",
-	"typescript.enablePromptUseWorkspaceTsdk": true
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"workbench.editorAssociations": {
+		"*.copilotmd": "vscode.markdown.preview.editor",
+		"*.parquet": "duckdb.dataFileViewer",
+		"*.csv": "duckdb.dataFileViewer",
+		"*.tsv": "duckdb.dataFileViewer",
+		"*.xlsx": "duckdb.dataFileViewer"
+	}
 }
