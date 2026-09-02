@@ -17,9 +17,7 @@ export class GetFirmMetricsSeriesQuery extends Query<GetFirmMetricsSeriesRespons
 }
 
 @QueryHandler(GetFirmMetricsSeriesQuery)
-export class GetFirmMetricsSeriesQueryHandler
-  implements IQueryHandler<GetFirmMetricsSeriesQuery>
-{
+export class GetFirmMetricsSeriesQueryHandler implements IQueryHandler<GetFirmMetricsSeriesQuery> {
   constructor(private readonly appPrismaService: AppPrismaService) {}
 
   async execute({
@@ -40,7 +38,11 @@ export class GetFirmMetricsSeriesQueryHandler
         nonDiscretionaryAum: toMoney(p.non_discretionary_aum),
         employeeCount: toCount(p.employee_count),
         advisoryEmployeeCount: toCount(p.advisory_employee_count),
-        clientCount: toCount(p.client_count),
+        discretionaryAccountCount: toCount(p.discretionary_account_count),
+        nonDiscretionaryAccountCount: toCount(
+          p.non_discretionary_account_count,
+        ),
+        accountCount: toCount(p.account_count),
         officeCount: toCount(p.office_count),
       })),
       filingCount,

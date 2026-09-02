@@ -491,13 +491,41 @@ export interface FirmFacet {
      */
   clientCount: number | null;
   /** @nullable */
+  fewerThanFive: boolean | null;
+  /** @nullable */
   regulatoryAum: string | null;
 }
+
+export type GetFirmProfileResponseReportedClientsQuality = typeof GetFirmProfileResponseReportedClientsQuality[keyof typeof GetFirmProfileResponseReportedClientsQuality];
+
+
+export const GetFirmProfileResponseReportedClientsQuality = {
+  reported_number: 'reported_number',
+  bounded_range: 'bounded_range',
+  unavailable: 'unavailable',
+} as const;
+
+export type GetFirmProfileResponseReportedClients = {
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  min: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  max: number | null;
+  quality: GetFirmProfileResponseReportedClientsQuality;
+};
 
 export interface GetFirmProfileResponse {
   clientTypes: FirmFacet[];
   services: FirmFacet[];
   feeMethods: FirmFacet[];
+  reportedClients: GetFirmProfileResponseReportedClients;
   /** @nullable */
   filingId: string | null;
 }
@@ -536,7 +564,19 @@ export interface FirmMetricsPoint {
      * @maximum 9007199254740991
      * @nullable
      */
-  clientCount: number | null;
+  discretionaryAccountCount: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  nonDiscretionaryAccountCount: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  accountCount: number | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991

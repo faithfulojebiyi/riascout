@@ -18,7 +18,12 @@ import { AumChart } from '../components/aum-chart';
 import { TrendChart } from '../components/trend-chart';
 
 const caption = css({ color: 'text.muted', fontSize: '0', pb: '3' });
-const heading = css({ fontSize: '2', fontWeight: 'semibold', pb: '2', pt: '5' });
+const heading = css({
+  fontSize: '2',
+  fontWeight: 'semibold',
+  pb: '2',
+  pt: '5',
+});
 
 const toggle = css({
   _hover: { color: 'text.app' },
@@ -33,7 +38,10 @@ const count = (value: number | null) =>
 
 export const MetricsTab = ({ firmCrd }: { firmCrd: string | null }) => {
   const [showTable, setShowTable] = useState(false);
-  const query = useQuery({ ...firmMetricsQuery(firmCrd ?? ''), enabled: !!firmCrd });
+  const query = useQuery({
+    ...firmMetricsQuery(firmCrd ?? ''),
+    enabled: !!firmCrd,
+  });
 
   if (!firmCrd) {
     return <NoMarketLink />;
@@ -66,11 +74,11 @@ export const MetricsTab = ({ firmCrd }: { firmCrd: string | null }) => {
       <h2 className={heading}>Assets under management</h2>
       <AumChart points={data.points} />
 
-      <h2 className={heading}>Clients</h2>
+      <h2 className={heading}>Accounts</h2>
       <TrendChart
         color={token('colors.brand.info.9')}
-        dataKey="clientCount"
-        label="Clients"
+        dataKey="accountCount"
+        label="Accounts"
         points={data.points}
       />
 
@@ -106,7 +114,9 @@ export const MetricsTab = ({ firmCrd }: { firmCrd: string | null }) => {
               <TableHead>Regulatory AUM</TableHead>
               <TableHead>Discretionary</TableHead>
               <TableHead>Non-discretionary</TableHead>
-              <TableHead>Clients</TableHead>
+              <TableHead>Discretionary accounts</TableHead>
+              <TableHead>Non-discretionary accounts</TableHead>
+              <TableHead>Total accounts</TableHead>
               <TableHead>Employees</TableHead>
               <TableHead>Offices</TableHead>
             </TableRow>
@@ -128,7 +138,11 @@ export const MetricsTab = ({ firmCrd }: { firmCrd: string | null }) => {
                 <TableCell>
                   <Money value={point.nonDiscretionaryAum} />
                 </TableCell>
-                <TableCell>{count(point.clientCount)}</TableCell>
+                <TableCell>{count(point.discretionaryAccountCount)}</TableCell>
+                <TableCell>
+                  {count(point.nonDiscretionaryAccountCount)}
+                </TableCell>
+                <TableCell>{count(point.accountCount)}</TableCell>
                 <TableCell>{count(point.employeeCount)}</TableCell>
                 <TableCell>{count(point.officeCount)}</TableCell>
               </TableRow>

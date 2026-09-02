@@ -6,8 +6,17 @@ import { firmProfileQuery } from '../record-queries';
 import { valueOf } from '../record-values';
 import { TabLoading } from './tab-state';
 import { RankedBars, type RankedRow } from '../components/ranked-bars';
+import {
+  formatClientTypeCount,
+  formatReportedClients,
+} from '../client-metrics';
 
-const heading = css({ fontSize: '2', fontWeight: 'semibold', pb: '2', pt: '5' });
+const heading = css({
+  fontSize: '2',
+  fontWeight: 'semibold',
+  pb: '2',
+  pt: '5',
+});
 const prose = css({ fontSize: '2', lineHeight: 'relaxed', maxW: '46rem' });
 const chip = css({
   bg: 'background.muted',
@@ -43,7 +52,6 @@ const narrative = (record: GetEntityRecordResponse): string[] => {
   const employees = asNumber(valueOf(record, 'firm.employee_count'));
   const advisory = asNumber(valueOf(record, 'firm.advisory_employee_count'));
   const offices = asNumber(valueOf(record, 'firm.office_count'));
-  const clients = asNumber(valueOf(record, 'firm.client_count'));
 
   const place = [city, state].filter(Boolean).join(', ');
 
@@ -65,10 +73,6 @@ const narrative = (record: GetEntityRecordResponse): string[] => {
     );
   }
 
-  if (clients !== null) {
-    sentences.push(`Serves ${clients.toLocaleString()} clients.`);
-  }
-
   return sentences;
 };
 
@@ -85,19 +89,22 @@ const compactMoney = (value: string | null): string =>
 
 /** ranked by assets, which is the figure a recruiter is actually comparing */
 const clientRows = (
-  types: { code: string; label: string | null; clientCount: number | null; regulatoryAum: string | null }[],
+  types: {
+    code: string;
+    label: string | null;
+    clientCount: number | null;
+    fewerThanFive: boolean | null;
+    regulatoryAum: string | null;
+  }[],
 ): RankedRow[] =>
   types
-    .filter((type) => (type.clientCount ?? 0) > 0)
+    .filter((type) => type.fewerThanFive || (type.clientCount ?? 0) > 0)
     .map((type) => ({
       key: type.code,
       label: type.label ?? type.code,
       value: type.regulatoryAum === null ? null : Number(type.regulatoryAum),
       display: compactMoney(type.regulatoryAum),
-      meta:
-        type.clientCount === null
-          ? undefined
-          : `${type.clientCount.toLocaleString()} client${type.clientCount === 1 ? '' : 's'}`,
+      meta: formatClientTypeCount(type),
     }))
     .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
 
@@ -108,8 +115,12 @@ export const OverviewTab = ({
   record: GetEntityRecordResponse;
   firmCrd: string | null;
 }) => {
-  const query = useQuery({ ...firmProfileQuery(firmCrd ?? ''), enabled: !!firmCrd });
+  const query = useQuery({
+    ...firmProfileQuery(firmCrd ?? ''),
+    enabled: !!firmCrd,
+  });
   const sentences = narrative(record);
+  const profile = query.data;
 
   return (
     <>
@@ -119,19 +130,27 @@ export const OverviewTab = ({
 
       {firmCrd && query.isPending ? <TabLoading rows={3} /> : null}
 
-      {query.data ? (
+      {profile ? (
         <>
+          <h2 className={heading}>Reported clients</h2>
+          <p className={prose}>
+            {formatReportedClients(profile.reportedClients)}
+            {profile.reportedClients.quality === 'bounded_range'
+              ? ' (reported as fewer than five)'
+              : ''}
+          </p>
+
           <h2 className={heading}>Client types</h2>
           {/*
             Zero here is a reported zero: the ADV asks about all 13 categories,
             so an entry with no clients was answered, not skipped. Only the
             answered-positive ones are shown, ranked by the assets behind them.
           */}
-          <RankedBars rows={clientRows(query.data.clientTypes)} />
+          <RankedBars rows={clientRows(profile.clientTypes)} />
 
           <h2 className={heading}>Services</h2>
           <div>
-            {query.data.services.map((s) => (
+            {profile.services.map((s) => (
               <span className={chip} key={s.code}>
                 {s.label ?? s.code}
               </span>
@@ -139,14 +158,14 @@ export const OverviewTab = ({
           </div>
 
           <h2 className={heading}>Fee structure</h2>
-          {query.data.feeMethods.length === 0 ? (
+          {profile.feeMethods.length === 0 ? (
             // absent from the ERA form entirely, so silence is not "no fees"
             <p className={css({ color: 'text.muted', fontSize: '1' })}>
               This filing does not report fee methods.
             </p>
           ) : (
             <div>
-              {query.data.feeMethods.map((f) => (
+              {profile.feeMethods.map((f) => (
                 <span className={chip} key={f.code}>
                   {f.label ?? f.code}
                 </span>

@@ -1,10 +1,4 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import { token } from '@riascout-ui/styled-system/tokens';
 
@@ -67,66 +61,69 @@ export const AumChart = ({ points }: { points: FirmMetricsPoint[] }) => {
     <>
       <ChartLegend config={config} />
       <ChartContainer config={config} h="18rem" w="full">
-      <AreaChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
-        <CartesianGrid stroke={token('colors.brand.panel.4')} vertical={false} />
-        {/*
+        <AreaChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
+          <CartesianGrid
+            stroke={token('colors.brand.panel.4')}
+            vertical={false}
+          />
+          {/*
           A real time axis, not a categorical one: filings are irregular, and
           evenly spacing them would make a six-year gap look like a six-month
           one.
         */}
-        <XAxis
-          axisLine={false}
-          dataKey="submittedAt"
-          domain={['dataMin', 'dataMax']}
-          scale="time"
-          tickFormatter={day}
-          tickLine={false}
-          tickMargin={8}
-          type="number"
-        />
-        <YAxis
-          axisLine={false}
-          tickFormatter={compact}
-          tickLine={false}
-          tickMargin={8}
-          width={56}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              labelFormatter={day}
-              valueFormatter={(value) => compact(Number(value))}
-            />
-          }
-        />
-        {/*
+          <XAxis
+            axisLine={false}
+            dataKey="submittedAt"
+            domain={['dataMin', 'dataMax']}
+            scale="time"
+            tickFormatter={day}
+            tickLine={false}
+            tickMargin={8}
+            type="number"
+          />
+          <YAxis
+            axisLine={false}
+            tickFormatter={compact}
+            tickLine={false}
+            tickMargin={8}
+            width={56}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                labelFormatter={day}
+                valueFormatter={(value) => compact(Number(value))}
+              />
+            }
+          />
+          {/*
           Stacked, because the two sum to regulatory AUM — showing them as
           separate lines invites reading the total off the wrong one.
 
           connectNulls stays false: an unreported measure leaves a gap, and
           bridging it would draw a trend the filings never reported.
         */}
-        <Area
-          connectNulls={false}
-          dataKey="discretionaryAum"
-          fill="var(--color-discretionaryAum)"
-          fillOpacity={0.2}
-          stackId="aum"
-          stroke="var(--color-discretionaryAum)"
-          strokeWidth={2}
-          type="monotone"
-        />
-        <Area
-          connectNulls={false}
-          dataKey="nonDiscretionaryAum"
-          fill="var(--color-nonDiscretionaryAum)"
-          fillOpacity={0.2}
-          stackId="aum"
-          stroke="var(--color-nonDiscretionaryAum)"
-          strokeWidth={2}
-          type="monotone"
-        />
-      </AreaChart>
+          <Area
+            connectNulls={false}
+            dataKey="discretionaryAum"
+            fill="var(--color-discretionaryAum)"
+            fillOpacity={0.2}
+            stackId="aum"
+            stroke="var(--color-discretionaryAum)"
+            strokeWidth={2}
+            type="monotone"
+          />
+          <Area
+            connectNulls={false}
+            dataKey="nonDiscretionaryAum"
+            fill="var(--color-nonDiscretionaryAum)"
+            fillOpacity={0.2}
+            stackId="aum"
+            stroke="var(--color-nonDiscretionaryAum)"
+            strokeWidth={2}
+            type="monotone"
+          />
+        </AreaChart>
       </ChartContainer>
     </>
   );

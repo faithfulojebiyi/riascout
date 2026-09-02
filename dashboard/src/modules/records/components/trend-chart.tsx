@@ -10,12 +10,11 @@ import {
 import type { FirmMetricsPoint } from '../../../api/generated/rIAScoutAPI.schemas';
 
 /**
- * One measure per chart, on its own axis. Clients and employees shared one and
- * the employee line sat flat on zero — a firm with 2.7M clients and 29k staff
- * differs by two orders of magnitude, so a shared axis hides the smaller series
- * entirely rather than inviting a comparison.
+ * One measure per chart, on its own axis. Accounts and employees can differ by
+ * orders of magnitude, so a shared axis can hide the smaller series entirely
+ * rather than inviting a comparison.
  */
-export type TrendKey = 'clientCount' | 'employeeCount' | 'officeCount';
+export type TrendKey = 'accountCount' | 'employeeCount' | 'officeCount';
 
 const compact = (value: number) =>
   new Intl.NumberFormat('en-US', {
@@ -51,7 +50,10 @@ export const TrendChart = ({
   return (
     <ChartContainer config={config} h="13rem" w="full">
       <LineChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
-        <CartesianGrid stroke={token('colors.brand.panel.4')} vertical={false} />
+        <CartesianGrid
+          stroke={token('colors.brand.panel.4')}
+          vertical={false}
+        />
         <XAxis
           axisLine={false}
           dataKey="submittedAt"

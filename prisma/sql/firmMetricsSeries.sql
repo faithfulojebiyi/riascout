@@ -16,7 +16,9 @@ with per_filing as (
          m.non_discretionary_aum,
          m.employee_count,
          m.advisory_employee_count,
-         m.client_count,
+         m.discretionary_account_count,
+         m.non_discretionary_account_count,
+         m.account_count,
          m.office_count
     from market.filing f
     left join market.firm_fact_metrics m on m.filing_id = f.filing_id
@@ -29,7 +31,9 @@ ordered as (
   select p.*,
          lag(p.regulatory_aum) over w as prev_aum,
          lag(p.employee_count) over w as prev_employees,
-         lag(p.client_count)   over w as prev_clients,
+         lag(p.discretionary_account_count) over w as prev_discretionary_accounts,
+         lag(p.non_discretionary_account_count) over w as prev_non_discretionary_accounts,
+         lag(p.account_count) over w as prev_accounts,
          row_number()          over w as seq
     from per_filing p
   window w as (order by p.submitted_at, p.filing_id)
@@ -42,7 +46,9 @@ select filing_id,
        non_discretionary_aum,
        employee_count,
        advisory_employee_count,
-       client_count,
+       discretionary_account_count,
+       non_discretionary_account_count,
+       account_count,
        office_count
   from ordered
  -- `is distinct from`, not `<>`: a measure going null -> value or value -> null
@@ -50,5 +56,7 @@ select filing_id,
  where seq = 1
     or regulatory_aum is distinct from prev_aum
     or employee_count is distinct from prev_employees
-    or client_count   is distinct from prev_clients
+    or discretionary_account_count is distinct from prev_discretionary_accounts
+    or non_discretionary_account_count is distinct from prev_non_discretionary_accounts
+    or account_count is distinct from prev_accounts
  order by submitted_at, filing_id;

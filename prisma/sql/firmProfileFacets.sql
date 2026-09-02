@@ -12,6 +12,7 @@ select 'client_type' as facet,
        t.client_type_code as code,
        d.name             as label,
        t.client_count     as client_count,
+       t.fewer_than_five  as fewer_than_five,
        t.regulatory_aum   as regulatory_aum
   from market.firm_current_filing cf
   join market.firm_fact_client_type t on t.filing_id = cf.filing_id
@@ -20,7 +21,7 @@ select 'client_type' as facet,
 
 union all
 
-select 'service', s.service_type_code, d.name, null::bigint, null::numeric
+select 'service', s.service_type_code, d.name, null::bigint, null::boolean, null::numeric
   from market.firm_current_filing cf
   join market.firm_fact_service s on s.filing_id = cf.filing_id
   left join market.dim_service_type d on d.code = s.service_type_code
@@ -28,7 +29,7 @@ select 'service', s.service_type_code, d.name, null::bigint, null::numeric
 
 union all
 
-select 'fee_method', f.fee_method_code, d.name, null::bigint, null::numeric
+select 'fee_method', f.fee_method_code, d.name, null::bigint, null::boolean, null::numeric
   from market.firm_current_filing cf
   join market.firm_fact_fee_method f on f.filing_id = cf.filing_id
   left join market.dim_fee_method d on d.code = f.fee_method_code

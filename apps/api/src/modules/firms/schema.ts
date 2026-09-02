@@ -31,7 +31,9 @@ const FirmMetricsPointSchema = z
     nonDiscretionaryAum: money,
     employeeCount: count,
     advisoryEmployeeCount: count,
-    clientCount: count,
+    discretionaryAccountCount: count,
+    nonDiscretionaryAccountCount: count,
+    accountCount: count,
     officeCount: count,
   })
   .meta({ id: 'FirmMetricsPoint' });
@@ -90,6 +92,8 @@ const FirmFacetSchema = z
     label: z.string().nullable(),
     /** client types only; the ADV asks all 13, so 0 here is a reported zero */
     clientCount: count,
+    /** true means the filing selected "fewer than five" instead of a number */
+    fewerThanFive: z.boolean().nullable(),
     regulatoryAum: money,
   })
   .meta({ id: 'FirmFacet' });
@@ -103,6 +107,11 @@ export const GetFirmProfileResponseSchema = z
      * the ERA form entirely — not that the firm charges nothing.
      */
     feeMethods: z.array(FirmFacetSchema),
+    reportedClients: z.object({
+      min: count,
+      max: count,
+      quality: z.enum(['reported_number', 'bounded_range', 'unavailable']),
+    }),
     filingId: z.string().nullable(),
   })
   .meta({ id: 'GetFirmProfileResponse' });
@@ -136,7 +145,9 @@ const PageSchema = z.object({
   offset: z.number().int().min(0).max(10_000).default(0),
 });
 
-export const GetFirmFundsSchema = FirmRequestSchema.extend(PageSchema.shape).meta({
+export const GetFirmFundsSchema = FirmRequestSchema.extend(
+  PageSchema.shape,
+).meta({
   id: 'GetFirmFunds',
 });
 
