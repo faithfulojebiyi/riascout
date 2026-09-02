@@ -177,7 +177,11 @@ select a.advisor_crd,
       from market.firm_fact_service where filing_id = fn.filing_id
   ) fsv on true
   left join lateral (
-    select array_agg(distinct custodian_id) as ids
+    -- custodian_id is null on 316,540 of 3,365,278 rows (the unresolved
+    -- custodians), and an unfiltered array_agg turns those into {NULL} rather
+    -- than {} — an int[] holding a null, which the prisma client refuses to
+    -- deserialize. 051-firm-search.sql already filters for the same reason.
+    select array_agg(distinct custodian_id) filter (where custodian_id is not null) as ids
       from market.firm_fact_custodian where filing_id = fn.filing_id
   ) fcu on true
   left join lateral (
