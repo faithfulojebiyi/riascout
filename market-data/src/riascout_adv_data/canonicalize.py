@@ -14,7 +14,9 @@ from riascout_adv_data.field_mapping import ColumnMappingError, ColumnResolver
 from riascout_adv_data.official_db import OfficialDatabase
 from riascout_adv_data.raw_ingest import quote_ident
 
-TRANSFORMATION_VERSION = "official-v3"
+# v4 adds Item 5.E fee methods; artifacts published under v3 are
+# re-canonicalized because the mapping, not the evidence, changed
+TRANSFORMATION_VERSION = "official-v4"
 
 BASE_FIELDS = {
     "filing_id": ("FilingID", "Filing ID"),
@@ -475,8 +477,9 @@ class HistoricalCanonicalizer:
                     "INSERT INTO filing_services VALUES (?, ?, ?, ?, ?)",
                     [filing_id, service_type, table.artifact_id, table.member_name, source_row],
                 )
-        # only an affirmative flag is recorded; an absent 5E column is unknown,
-        # not a statement that the firm charges nothing
+        # Only an affirmative flag is recorded. Item 5.E is absent from the ERA
+        # form, so every filing without rows is an ERA one — the method is
+        # unavailable, not a filer reporting that it charges nothing.
         for source_field, fee_method in FEE_METHODS.items():
             column = resolver.optional(f"fee_{source_field}", (source_field,))
             if _is_yes(_field(row, column)):
