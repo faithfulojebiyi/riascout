@@ -11,6 +11,7 @@ import { AllExceptionsFilter } from '@system/interceptors/error.interceptor.js';
 
 import { apiEnvSchema } from './api.env.schema.js';
 import { EntitiesModule } from './modules/entities/entities.module.js';
+import { FirmsModule } from './modules/firms/firms.module.js';
 import { ListsModule } from './modules/lists/lists.module.js';
 import { MovementModule } from './modules/movement/movement.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
@@ -28,6 +29,7 @@ import { EventPublisherModule } from './modules/event-publisher/event-publisher.
     DatabaseModule,
     HealthModule,
     EntitiesModule,
+    FirmsModule,
     ListsModule,
     MovementModule,
     OnboardingModule,
