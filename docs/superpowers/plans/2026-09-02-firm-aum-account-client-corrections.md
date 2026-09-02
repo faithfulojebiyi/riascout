@@ -20,9 +20,9 @@
 - `aum_per_advisor` continues to use distinct advisers with an open IAPD registration. Label it `AUM per Linked Active Adviser` and disclose the mixed time basis.
 - Percentiles are integer values from 0 through 100 and rank only rows with the metric being ranked.
 - Preserve the existing UUIDs for renamed account attributes; use the exact new UUIDs assigned in Task 6 for range attributes.
-- Use Prisma-generated timestamped migrations only. Maintain non-Prisma checks in `prisma/ddl/010-constraints.sql`; never hand-edit a generated migration.
+- The user owns Prisma migration generation and application. Codex may edit and validate `prisma/schema.prisma` and maintained DDL, but must not run `prisma:draft`, `prisma:migrate`, `prisma:deploy`, `prisma:reset`, `db:ddl:sync`, or create/edit a timestamped migration.
 - Do not rebuild canonical data, export a production normalized release, apply migrations, reset a database, seed, provision workspaces, or run ETL without explicit user authorization.
-- After authorization, the local reset/rebuild order is exactly: `bun run prisma:reset`, `bun run db:ddl:sync`, `bun run prisma:migrate`, `bun run prisma:seed`, then `bun etl/load-market.ts` without `--only`.
+- At the rebuild checkpoint, the user runs `bun run prisma:reset`, `bun run db:ddl:sync`, and `bun run prisma:migrate` in that order. Codex resumes only after the user confirms completion, then may run `bun run prisma:seed` and `bun etl/load-market.ts` without `--only` if those operations were explicitly authorized.
 - Do not touch the unrelated `.vscode/settings.json` worktree change.
 
 ---
@@ -426,7 +426,6 @@ git commit -m "feat(market): export account and client facts"
 - Modify: `prisma/schema.prisma:319-405,1050-1120,1130-1225`
 - Modify: `prisma/ddl/010-constraints.sql:47-61`
 - Modify: `prisma/seed/dimensions.ts:9-25`
-- Generate: one timestamped `prisma/migrations/*_firm_account_client_metrics/migration.sql` using Prisma only
 
 **Interfaces:**
 
@@ -499,32 +498,26 @@ ALTER TABLE "market"."firm_fact_metrics"
   );
 ```
 
-- [ ] **Step 4: Stop for explicit authorization before migration generation**
+- [ ] **Step 4: Validate the edited Prisma schema without generating a migration**
 
-Ask for permission to run the Prisma migration generator. This step does not authorize applying the migration, resetting a database, seeding, or loading ETL.
+Run: `bunx prisma validate`
 
-- [ ] **Step 5: Generate and review the Prisma migration after authorization**
+Expected: `The schema at prisma/schema.prisma is valid` and exit 0. Do not run a command under `prisma:migrations/` and do not invoke Prisma Migrate.
 
-Run: `bun run prisma:draft -- --name firm_account_client_metrics`
-
-Expected: one new generated timestamped migration containing the schema renames/additions. Inspect it with `git diff -- prisma/migrations prisma/schema.prisma`; do not edit its SQL by hand.
-
-- [ ] **Step 6: Generate Prisma and TypedSQL clients**
+- [ ] **Step 5: Generate Prisma and TypedSQL clients without generating a migration**
 
 Run: `bun run prisma:generate`
 
 Expected: exit 0 and regenerated ORM/TypedSQL artifacts compile against the renamed schema.
 
-- [ ] **Step 7: Validate the generated Prisma surface**
+- [ ] **Step 6: Hand the migration boundary to the user**
 
-Run: `bunx prisma validate`
+Report that `prisma/schema.prisma` and `prisma/ddl/010-constraints.sql` are ready. Do not generate or apply a timestamped migration. After the user runs Prisma Migrate and confirms completion, a read-only review may verify the generated SQL, but it must never be hand-edited. Task 6 updates the reference allowlist before the repository TypeScript gates run.
 
-Expected: `The schema at prisma/schema.prisma is valid` and exit 0. Task 6 updates the reference allowlist before the repository TypeScript gates run.
-
-- [ ] **Step 8: Commit the generated schema milestone**
+- [ ] **Step 7: Commit the schema contract without migrations**
 
 ```bash
-git add prisma/schema.prisma prisma/ddl/010-constraints.sql prisma/seed/dimensions.ts prisma/migrations
+git add prisma/schema.prisma prisma/ddl/010-constraints.sql prisma/seed/dimensions.ts
 git commit -m "feat(db): model account and reported client facts"
 ```
 
@@ -1143,9 +1136,9 @@ Skip this commit if the gates required no corrections.
 - Consumes: verified code from Tasks 1-9 and explicit user authorization.
 - Produces: rebuilt local canonical/PostgreSQL data and a before/after report covering all current firms, source warnings, ratio equality, percentile eligibility, and Morgan Stanley CRD 149777.
 
-- [ ] **Step 1: Stop and request explicit authorization for every data operation**
+- [ ] **Step 1: Stop and request explicit authorization for Codex-owned data operations**
 
-Request one clear approval covering canonical rebuild, normalized release export if requested, migration application/reset, seeding, workspace provisioning, and full ETL. If authorization excludes any item, omit it and state which acceptance checks cannot be completed.
+Request one clear approval covering canonical rebuild, normalized release export if requested, seeding, workspace provisioning, and full ETL. Migration generation, application, and database reset remain user-owned regardless of this authorization. If authorization excludes any Codex-owned item, omit it and state which acceptance checks cannot be completed.
 
 - [ ] **Step 2: Rebuild and validate canonical DuckDB only after authorization**
 
@@ -1172,19 +1165,24 @@ uv run riascout-adv-data export-normalized \
 
 Expected: an atomic release directory with a verified manifest containing `firm_metrics.parquet`, `filing_client_types.parquet`, and `filing_reported_client_totals.parquet`.
 
-- [ ] **Step 3: Follow the mandated local database sequence exactly**
+- [ ] **Step 3: Wait for the user-owned migration checkpoint**
 
-Run one command at a time:
+Ask the user to run these commands in order:
 
 ```bash
 bun run prisma:reset
 bun run db:ddl:sync
 bun run prisma:migrate
+```
+
+Codex must not run those commands or edit the generated migration. Wait until the user confirms all three commands completed successfully, then—only if seed and ETL were explicitly authorized—run:
+
+```bash
 bun run prisma:seed
 bun etl/load-market.ts
 ```
 
-Expected: each exits 0; the ETL is full and has no `--only` argument. Then run `bun run prisma:provision` so existing workspace system attributes receive corrected labels/references and new hidden fields.
+Expected: the user-owned commands completed successfully before seeding starts; the ETL is full and has no `--only` argument. Then, only if workspace provisioning was explicitly authorized, run `bun run prisma:provision` so existing workspace system attributes receive corrected labels/references and new hidden fields.
 
 - [ ] **Step 4: Query all-firm acceptance metrics**
 
