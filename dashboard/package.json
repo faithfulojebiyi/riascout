@@ -34,6 +34,7 @@
     "react-number-format": "^5.4.5",
     "react-resizable-panels": "^4.12.3",
     "react-tag-input": "^6.10.6",
+    "recharts": "^3.10.1",
     "sonner": "^2.0.8",
     "usehooks-ts": "^3.1.1",
     "vaul": "^1.1.2"

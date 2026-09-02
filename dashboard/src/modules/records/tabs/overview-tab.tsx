@@ -5,7 +5,7 @@ import type { GetEntityRecordResponse } from '../../../api/generated/rIAScoutAPI
 import { firmProfileQuery } from '../record-queries';
 import { valueOf } from '../record-values';
 import { TabLoading } from './tab-state';
-import { Money } from '../components/money';
+import { RankedBars, type RankedRow } from '../components/ranked-bars';
 
 const heading = css({ fontSize: '2', fontWeight: 'semibold', pb: '2', pt: '5' });
 const prose = css({ fontSize: '2', lineHeight: 'relaxed', maxW: '46rem' });
@@ -72,6 +72,35 @@ const narrative = (record: GetEntityRecordResponse): string[] => {
   return sentences;
 };
 
+const compactMoney = (value: string | null): string =>
+  value === null
+    ? '—'
+    : new Intl.NumberFormat('en-US', {
+        compactDisplay: 'short',
+        currency: 'USD',
+        maximumFractionDigits: 1,
+        notation: 'compact',
+        style: 'currency',
+      }).format(Number(value));
+
+/** ranked by assets, which is the figure a recruiter is actually comparing */
+const clientRows = (
+  types: { code: string; label: string | null; clientCount: number | null; regulatoryAum: string | null }[],
+): RankedRow[] =>
+  types
+    .filter((type) => (type.clientCount ?? 0) > 0)
+    .map((type) => ({
+      key: type.code,
+      label: type.label ?? type.code,
+      value: type.regulatoryAum === null ? null : Number(type.regulatoryAum),
+      display: compactMoney(type.regulatoryAum),
+      meta:
+        type.clientCount === null
+          ? undefined
+          : `${type.clientCount.toLocaleString()} client${type.clientCount === 1 ? '' : 's'}`,
+    }))
+    .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
+
 export const OverviewTab = ({
   record,
   firmCrd,
@@ -96,21 +125,9 @@ export const OverviewTab = ({
           {/*
             Zero here is a reported zero: the ADV asks about all 13 categories,
             so an entry with no clients was answered, not skipped. Only the
-            answered-positive ones are shown.
+            answered-positive ones are shown, ranked by the assets behind them.
           */}
-          <div>
-            {query.data.clientTypes
-              .filter((c) => (c.clientCount ?? 0) > 0)
-              .map((c) => (
-                <span className={chip} key={c.code}>
-                  {c.label ?? c.code}
-                  {c.clientCount === null
-                    ? ''
-                    : ` · ${c.clientCount.toLocaleString()}`}{' '}
-                  <Money value={c.regulatoryAum} />
-                </span>
-              ))}
-          </div>
+          <RankedBars rows={clientRows(query.data.clientTypes)} />
 
           <h2 className={heading}>Services</h2>
           <div>

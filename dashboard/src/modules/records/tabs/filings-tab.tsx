@@ -45,7 +45,7 @@ export const FilingsTab = ({ firmCrd }: { firmCrd: string | null }) => {
   return (
     <>
       <h2 className={heading}>Filings</h2>
-      <Table fontSize="1">
+      <Table fontSize="1" w="full">
         <TableHeader>
           <TableRow>
             <TableHead>Submitted</TableHead>
@@ -72,7 +72,7 @@ export const FilingsTab = ({ firmCrd }: { firmCrd: string | null }) => {
       {data.events.length > 0 ? (
         <>
           <h2 className={heading}>Registration history</h2>
-          <Table fontSize="1">
+          <Table fontSize="1" w="full">
             <TableHeader>
               <TableRow>
                 <TableHead>Effective</TableHead>

@@ -65,7 +65,7 @@ export const ContactsTab = ({ firmCrd }: { firmCrd: string | null }) => {
           : ''}
         .
       </p>
-      <Table fontSize="1">
+      <Table fontSize="1" w="full">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>

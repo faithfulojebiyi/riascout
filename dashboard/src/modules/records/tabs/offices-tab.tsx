@@ -32,7 +32,7 @@ export const OfficesTab = ({ firmCrd }: { firmCrd: string | null }) => {
   }
 
   return (
-    <Table fontSize="1">
+    <Table fontSize="1" w="full">
       <TableHeader>
         <TableRow>
           <TableHead>City</TableHead>

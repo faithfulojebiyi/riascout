@@ -13,8 +13,42 @@ import {
 import { firmCustodiansQuery, firmFundsQuery } from '../record-queries';
 import { NeverFiled, NoMarketLink, NothingReported, TabLoading } from './tab-state';
 import { Money } from '../components/money';
+import { RankedBars, type RankedRow } from '../components/ranked-bars';
 
 const FUND_PAGE = 50;
+
+const compactMoney = (value: string | null): string =>
+  value === null
+    ? '—'
+    : new Intl.NumberFormat('en-US', {
+        compactDisplay: 'short',
+        currency: 'USD',
+        maximumFractionDigits: 1,
+        notation: 'compact',
+        style: 'currency',
+      }).format(Number(value));
+
+/**
+ * Ranked by assets held. "as filed" marks a custodian that did not match the
+ * dimension, so its name is only as good as the filer typed it and may not be
+ * comparable with the same custodian under another firm.
+ */
+const custodianRows = (
+  custodians: {
+    custodianName: string | null;
+    isResolved: boolean;
+    fundCount: number;
+    aumAtCustodian: string | null;
+  }[],
+): RankedRow[] =>
+  custodians.map((custodian, index) => ({
+    key: custodian.custodianName ?? `custodian-${index}`,
+    label: `${custodian.custodianName ?? '—'}${custodian.isResolved ? '' : '  (as filed)'}`,
+    value:
+      custodian.aumAtCustodian === null ? null : Number(custodian.aumAtCustodian),
+    display: compactMoney(custodian.aumAtCustodian),
+    meta: `${custodian.fundCount.toLocaleString()} fund${custodian.fundCount === 1 ? '' : 's'}`,
+  }));
 
 const caption = css({ color: 'text.muted', fontSize: '0', pb: '2' });
 const heading = css({ fontSize: '2', fontWeight: 'semibold', pb: '2', pt: '5' });
@@ -58,33 +92,7 @@ export const CustodiansTab = ({ firmCrd }: { firmCrd: string | null }) => {
           <p className={caption}>
             Rolled up by custodian; a filing names one once per fund.
           </p>
-          <Table fontSize="1">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Custodian</TableHead>
-                <TableHead>Funds</TableHead>
-                <TableHead>Assets held</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {custodians.data.custodians.map((c, index) => (
-                <TableRow key={c.custodianName ?? `custodian-${index}`}>
-                  <TableCell>
-                    {c.custodianName ?? '—'}
-                    {c.isResolved ? null : (
-                      <span className={css({ color: 'text.placeholder', pl: '2' })}>
-                        as filed
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>{c.fundCount}</TableCell>
-                  <TableCell>
-                    <Money value={c.aumAtCustodian} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <RankedBars rows={custodianRows(custodians.data.custodians)} />
         </>
       )}
 
@@ -95,7 +103,7 @@ export const CustodiansTab = ({ firmCrd }: { firmCrd: string | null }) => {
         <NothingReported what="private funds" />
       ) : (
         <>
-          <Table fontSize="1">
+          <Table fontSize="1" w="full">
             <TableHeader>
               <TableRow>
                 <TableHead>Fund</TableHead>
