@@ -246,6 +246,83 @@ export interface GetEntityRecordsResponse {
   offset: number;
 }
 
+export interface GetEntityRecord {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  recordId: string;
+}
+
+/**
+ * @nullable
+ */
+export type RecordMarketRefSourceKind = typeof RecordMarketRefSourceKind[keyof typeof RecordMarketRefSourceKind] | null;
+
+
+export const RecordMarketRefSourceKind = {
+  advisor: 'advisor',
+  firm: 'firm',
+} as const;
+
+export interface RecordMarketRef {
+  /** @nullable */
+  sourceKind: RecordMarketRefSourceKind;
+  /** @nullable */
+  sourceCrd: string | null;
+  hasProjection: boolean;
+}
+
+export type RecordAttributeOptionsItem = {
+  value: string;
+  label: string;
+};
+
+export interface RecordAttribute {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  attributeId: string;
+  key: string;
+  label: string;
+  /** @nullable */
+  icon: string | null;
+  type: string;
+  /** @nullable */
+  group: string | null;
+  position: string;
+  /** @nullable */
+  referenceColumn: string | null;
+  isPrimary: boolean;
+  isEditable: boolean;
+  isMultiValue: boolean;
+  options: RecordAttributeOptionsItem[];
+  choices: EntityAttributeChoice[];
+}
+
+export interface RecordListMembership {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  listId: string;
+  name: string;
+  kind: string;
+  visibility: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$ */
+  addedAt: string;
+}
+
+export interface GetEntityRecordResponse {
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  recordId: string;
+  /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
+  entityId: string;
+  entitySlug: string;
+  entityName: string;
+  market: RecordMarketRef;
+  attributes: RecordAttribute[];
+  cells: EntityRecordCell[];
+  edges: EntityRecordEdge[];
+  lists: RecordListMembership[];
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$ */
+  createdAt: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$ */
+  updatedAt: string;
+}
+
 /**
  * @nullable
  */
@@ -396,6 +473,342 @@ export interface UpdateViewSort {
   attributeId: string;
   /** @nullable */
   direction: UpdateViewSortDirection;
+}
+
+export interface GetFirmProfile {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+}
+
+export interface FirmFacet {
+  code: string;
+  /** @nullable */
+  label: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  clientCount: number | null;
+  /** @nullable */
+  regulatoryAum: string | null;
+}
+
+export interface GetFirmProfileResponse {
+  clientTypes: FirmFacet[];
+  services: FirmFacet[];
+  feeMethods: FirmFacet[];
+  /** @nullable */
+  filingId: string | null;
+}
+
+export interface GetFirmMetricsSeries {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+}
+
+export interface FirmMetricsPoint {
+  filingId: string;
+  /** @nullable */
+  submittedAt: string | null;
+  /** @nullable */
+  filingType: string | null;
+  /** @nullable */
+  regulatoryAum: string | null;
+  /** @nullable */
+  discretionaryAum: string | null;
+  /** @nullable */
+  nonDiscretionaryAum: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  employeeCount: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  advisoryEmployeeCount: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  clientCount: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  officeCount: number | null;
+}
+
+export type GetFirmMetricsSeriesResponseBasis = typeof GetFirmMetricsSeriesResponseBasis[keyof typeof GetFirmMetricsSeriesResponseBasis];
+
+
+export const GetFirmMetricsSeriesResponseBasis = {
+  submitted_at: 'submitted_at',
+} as const;
+
+export interface GetFirmMetricsSeriesResponse {
+  points: FirmMetricsPoint[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  filingCount: number;
+  basis: GetFirmMetricsSeriesResponseBasis;
+}
+
+export type GetFirmContactsSortBy = typeof GetFirmContactsSortBy[keyof typeof GetFirmContactsSortBy];
+
+
+export const GetFirmContactsSortBy = {
+  name: 'name',
+  tenure: 'tenure',
+  experience: 'experience',
+  state: 'state',
+  disclosure: 'disclosure',
+} as const;
+
+export type GetFirmContactsDirection = typeof GetFirmContactsDirection[keyof typeof GetFirmContactsDirection];
+
+
+export const GetFirmContactsDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface GetFirmContacts {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  limit?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  offset?: number;
+  sortBy?: GetFirmContactsSortBy;
+  direction?: GetFirmContactsDirection;
+}
+
+export interface FirmContact {
+  advisorCrd: string;
+  /** @nullable */
+  fullName: string | null;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  state: string | null;
+  /** @nullable */
+  currentFirmSince: string | null;
+  /** @nullable */
+  currentFirmSource: string | null;
+  /** @nullable */
+  currentFirmObservedOn: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  tenureYears: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  experienceYears: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  currentFirmCount: number | null;
+  designations: string[];
+  /** @nullable */
+  disclosureStatus: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  disclosureCount: number | null;
+  /** @nullable */
+  ownsCurrentFirm: boolean | null;
+  /** @nullable */
+  ownerTitle: string | null;
+  /**
+     * @nullable
+     * @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+     */
+  recordId: string | null;
+}
+
+export interface GetFirmContactsResponse {
+  contacts: FirmContact[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  total: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  affiliationTotal: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  limit: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  offset: number;
+}
+
+export interface GetFirmOffices {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+}
+
+export interface FirmOffice {
+  /** @nullable */
+  officeReference: string | null;
+  /** @nullable */
+  city: string | null;
+  /** @nullable */
+  region: string | null;
+  /** @nullable */
+  country: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  employeeCount: number | null;
+}
+
+export interface GetFirmOfficesResponse {
+  offices: FirmOffice[];
+  /** @nullable */
+  filingId: string | null;
+}
+
+export interface GetFirmCustodians {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+}
+
+export interface FirmCustodian {
+  /** @nullable */
+  custodianName: string | null;
+  isResolved: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  fundCount: number;
+  /** @nullable */
+  aumAtCustodian: string | null;
+}
+
+export interface GetFirmCustodiansResponse {
+  custodians: FirmCustodian[];
+  /** @nullable */
+  filingId: string | null;
+}
+
+export interface GetFirmFunds {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  limit?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  offset?: number;
+}
+
+export interface FirmFund {
+  /** @nullable */
+  privateFundId: string | null;
+  /** @nullable */
+  fundName: string | null;
+  /** @nullable */
+  fundTypeCode: string | null;
+  /** @nullable */
+  grossAssetValue: string | null;
+}
+
+export interface GetFirmFundsResponse {
+  funds: FirmFund[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  total: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  limit: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  offset: number;
+  /** @nullable */
+  filingId: string | null;
+}
+
+export interface GetFirmFilings {
+  /** @pattern ^[1-9]\d*$ */
+  firmCrd: string;
+}
+
+export interface FirmFiling {
+  filingId: string;
+  /** @nullable */
+  submittedAt: string | null;
+  /** @nullable */
+  filingType: string | null;
+  /** @nullable */
+  registrationCategory: string | null;
+  /** @nullable */
+  secNumber: string | null;
+  isCurrent: boolean;
+}
+
+export interface FirmRegistrationEvent {
+  eventId: string;
+  /** @nullable */
+  authority: string | null;
+  /** @nullable */
+  category: string | null;
+  /** @nullable */
+  status: string | null;
+  /** @nullable */
+  jurisdiction: string | null;
+  /** @nullable */
+  effectiveDate: string | null;
+}
+
+export interface GetFirmFilingsResponse {
+  filings: FirmFiling[];
+  events: FirmRegistrationEvent[];
 }
 
 export interface GetLists {

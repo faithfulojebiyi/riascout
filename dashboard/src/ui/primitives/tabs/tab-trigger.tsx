@@ -39,12 +39,40 @@ const tabTriggerStyles = cva({
     w: '100%',
     whiteSpace: 'nowrap',
   },
+  variants: {
+    variant: {
+      pill: {},
+      /**
+       * The record page's tab strip. Overrides the pill's active treatment
+       * rather than extending it: a filled chip and an underline read as two
+       * different selections when both are showing.
+       */
+      underline: {
+        '&[data-state=active]': {
+          bg: 'transparent',
+          borderColor: 'brand.solid',
+          color: 'text.app',
+          shadow: 'none',
+        },
+        borderBottomWidth: '2px',
+        // transparent rather than absent, so selecting a tab shifts nothing
+        borderColor: 'transparent',
+        color: 'text.muted',
+        px: '0',
+        py: '2',
+        rounded: 'none',
+        w: 'auto',
+      },
+    },
+  },
+  defaultVariants: { variant: 'pill' },
 });
 
 const StyledTabTrigger = styled(TabsPrimitive.Trigger, tabTriggerStyles);
 
 export const TabTrigger = (
-  props: React.ComponentProps<typeof TabsPrimitive.Trigger> & JsxStyleProps,
+  props: React.ComponentProps<typeof TabsPrimitive.Trigger> &
+    JsxStyleProps & { variant?: 'pill' | 'underline' },
 ) => {
   return <StyledTabTrigger {...props} />;
 };

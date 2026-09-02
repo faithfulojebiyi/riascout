@@ -35,9 +35,12 @@ export const buildColumnDefs = (
       // one flat starting width; a user-resized column persists field.width
       width: field.width ?? GRID_DEFAULT_COL_WIDTH,
       pinned: field.isPinned ? ('left' as const) : undefined,
-      // projected market columns have no cell to write, and a type with no
-      // registered input cannot be edited safely
-      editable: field.isEditable && isTypeEditable(field.type),
+      /**
+       * Off for now. Inline editing competes with the name cell's link for the
+       * same click, and opening a record is the interaction this grid is for.
+       * The type check is kept so re-enabling is a one-word change.
+       */
+      editable: false && field.isEditable && isTypeEditable(field.type),
       // the header menu sorts, and persists it to the view
       resizable: true,
       cellRenderer: CellRendererAdapter,

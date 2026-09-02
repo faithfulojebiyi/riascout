@@ -8,6 +8,8 @@ import type {
   CreateEntityRecord,
   CreateEntityRecordResponse,
   GetEntitiesResponse,
+  GetEntityRecord,
+  GetEntityRecordResponse,
   GetEntityRecords,
   GetEntityRecordsResponse,
   MoveViewField,
@@ -37,6 +39,16 @@ import { apiClient } from '../../client';
       {url: `/entities/get-entity-records`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: getEntityRecords
+    },
+      );
+    }
+  export const entitiesControllerGetEntityRecord = (
+    getEntityRecord: GetEntityRecord,
+ ) => {
+      return apiClient<GetEntityRecordResponse>(
+      {url: `/entities/get-entity-record`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: getEntityRecord
     },
       );
     }
@@ -92,6 +104,7 @@ import { apiClient } from '../../client';
     }
   export type EntitiesControllerGetEntitiesResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerGetEntities>>>
 export type EntitiesControllerGetEntityRecordsResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerGetEntityRecords>>>
+export type EntitiesControllerGetEntityRecordResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerGetEntityRecord>>>
 export type EntitiesControllerCreateEntityRecordResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerCreateEntityRecord>>>
 export type EntitiesControllerUpdateRecordValuesResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerUpdateRecordValues>>>
 export type EntitiesControllerUpdateViewFieldResult = NonNullable<Awaited<ReturnType<typeof entitiesControllerUpdateViewField>>>

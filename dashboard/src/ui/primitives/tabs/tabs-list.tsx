@@ -19,12 +19,32 @@ const tabListStyles = cva({
     p: '1',
     rounded: 'md',
   },
+  variants: {
+    variant: {
+      pill: {},
+      /** a full-width rule the active tab's underline sits on */
+      underline: {
+        bg: 'transparent',
+        borderBottomWidth: '1px',
+        borderColor: 'brand.panel.4',
+        display: 'flex',
+        gap: '5',
+        h: 'auto',
+        justifyContent: 'flex-start',
+        p: '0',
+        rounded: 'none',
+        w: 'full',
+      },
+    },
+  },
+  defaultVariants: { variant: 'pill' },
 });
 
 const StyledTabList = styled(TabsPrimitive.List, tabListStyles);
 
 export const TabsList = (
-  props: React.ComponentProps<typeof TabsPrimitive.List> & JsxStyleProps,
+  props: React.ComponentProps<typeof TabsPrimitive.List> &
+    JsxStyleProps & { variant?: 'pill' | 'underline' },
 ) => {
   return <StyledTabList {...props} />;
 };
