@@ -13,6 +13,8 @@ import {
   CreateEntityRecordResponseDto,
   GetEntitiesDto,
   GetEntitiesResponseDto,
+  GetEntityRecordDto,
+  GetEntityRecordResponseDto,
   GetEntityRecordsDto,
   GetEntityRecordsResponseDto,
   MoveViewFieldDto,
@@ -23,6 +25,7 @@ import {
   UpdateViewSortDto,
 } from './dto/entities.dto.js';
 import { GetEntitiesQuery } from './queries/get-entities.js';
+import { GetEntityRecordQuery } from './queries/get-entity-record.js';
 import { GetEntityRecordsQuery } from './queries/get-entity-records.js';
 
 @ApiTags('Entities')
@@ -43,6 +46,12 @@ export class EntitiesController {
   @Post('get-entity-records')
   async getEntityRecords(@Body() dto: GetEntityRecordsDto) {
     return this.queryBus.execute(new GetEntityRecordsQuery(dto));
+  }
+
+  @ZodResponse({ type: GetEntityRecordResponseDto })
+  @Post('get-entity-record')
+  async getEntityRecord(@Body() dto: GetEntityRecordDto) {
+    return this.queryBus.execute(new GetEntityRecordQuery(dto));
   }
 
   @ZodResponse({ type: CreateEntityRecordResponseDto })

@@ -5,6 +5,8 @@ import {
   GetEntitiesResponseSchema,
   GetEntitiesSchema,
   CreateEntityRecordSchema,
+  GetEntityRecordResponseSchema,
+  GetEntityRecordSchema,
   GetEntityRecordsResponseSchema,
   GetEntityRecordsSchema,
   MoveViewFieldResponseSchema,
@@ -20,6 +22,12 @@ export class GetEntityRecordsDto extends createZodDto(GetEntityRecordsSchema) {}
 // codec: true so dates serialize correctly
 export class GetEntityRecordsResponseDto extends createZodDto(
   GetEntityRecordsResponseSchema,
+  { codec: true },
+) {}
+
+export class GetEntityRecordDto extends createZodDto(GetEntityRecordSchema) {}
+export class GetEntityRecordResponseDto extends createZodDto(
+  GetEntityRecordResponseSchema,
   { codec: true },
 ) {}
 

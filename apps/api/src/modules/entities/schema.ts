@@ -5,6 +5,7 @@ import {
   sortAstSchema,
   sortDirectionSchema,
 } from '@feature/entities/filter-sort/ast.js';
+import { dateToString } from '@system/schema/utils.js';
 
 /**
  * The filter tree is parsed here, at the boundary, so the compiler only ever
@@ -112,6 +113,79 @@ export const GetEntityRecordsResponseSchema = z
     offset: z.number().int(),
   })
   .meta({ id: 'GetEntityRecordsResponse' });
+
+export const GetEntityRecordSchema = z
+  .object({ recordId: z.uuid() })
+  .meta({ id: 'GetEntityRecord' });
+
+/**
+ * The record panel shows every attribute, so this deliberately carries no view
+ * field: entity_view_field decides what the grid paints, and a column hidden
+ * there is still a fact about the record.
+ */
+const RecordAttributeSchema = z
+  .object({
+    attributeId: z.uuid(),
+    key: z.string(),
+    label: z.string(),
+    icon: z.string().nullable(),
+    type: z.string(),
+    /** panel grouping, e.g. "Pipeline"; null attributes fall into a default group */
+    group: z.string().nullable(),
+    /** lexorank, so the panel orders the way the attribute list does */
+    position: z.string(),
+    referenceColumn: z.string().nullable(),
+    isPrimary: z.boolean(),
+    isEditable: z.boolean(),
+    isMultiValue: z.boolean(),
+    options: z.array(z.object({ value: z.string(), label: z.string() })),
+    choices: z.array(ChoiceSchema),
+  })
+  .meta({ id: 'RecordAttribute' });
+
+const RecordListMembershipSchema = z
+  .object({
+    listId: z.uuid(),
+    name: z.string(),
+    kind: z.string(),
+    visibility: z.string(),
+    addedAt: dateToString,
+  })
+  .meta({ id: 'RecordListMembership' });
+
+/**
+ * hasProjection is false for a firm known only as an adviser's employer — it
+ * has never filed an ADV. That is distinct from a firm that filed and reported
+ * nothing, so the tabs can say which rather than rendering zeroes for both.
+ */
+const RecordMarketRefSchema = z
+  .object({
+    sourceKind: z.enum(['advisor', 'firm']).nullable(),
+    sourceCrd: z.string().nullable(),
+    hasProjection: z.boolean(),
+  })
+  .meta({ id: 'RecordMarketRef' });
+
+export const GetEntityRecordResponseSchema = z
+  .object({
+    recordId: z.uuid(),
+    entityId: z.uuid(),
+    entitySlug: z.string(),
+    entityName: z.string(),
+    market: RecordMarketRefSchema,
+    attributes: z.array(RecordAttributeSchema),
+    /**
+     * Parallel to attributes rather than merged into them: an absent cell means
+     * unknown, a present cell with a null value means explicitly cleared, and
+     * merging the two would collapse that distinction.
+     */
+    cells: z.array(CellSchema),
+    edges: z.array(EdgeSchema),
+    lists: z.array(RecordListMembershipSchema),
+    createdAt: dateToString,
+    updatedAt: dateToString,
+  })
+  .meta({ id: 'GetEntityRecordResponse' });
 
 /**
  * A cell write carries expectedVersion so a stale edit is a 409 rather than a

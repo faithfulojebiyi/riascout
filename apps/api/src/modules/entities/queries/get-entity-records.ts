@@ -13,15 +13,15 @@ import {
 import type { AttributeMeta } from '@feature/entities/relationship-edges.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
+import { readCodeVocabularies } from '@feature/entities/code-vocabularies.js';
+
+import { toJsonValue } from '../json-value.js';
 
 import type { FilterTree, SortAst } from '@feature/entities/filter-sort/ast.js';
 import type {
   GetEntityRecordsDto,
   GetEntityRecordsResponseDto,
 } from '../dto/entities.dto.js';
-
-/** above this a vocabulary is a lookup, not a set of labels */
-const CODE_VOCABULARY_MAX = 64;
 
 export class GetEntityRecordsQuery extends Query<GetEntityRecordsResponseDto> {
   constructor(public readonly dto: GetEntityRecordsDto) {
@@ -33,23 +33,6 @@ type PageRow = { id: string; source_crd: string | null } & Record<
   string,
   unknown
 >;
-
-/**
- * CRDs are bigint in postgres and JSON has no bigint. They are identifiers
- * rather than quantities, so they cross the boundary as strings — a number
- * would silently lose precision above 2^53 and invite arithmetic besides.
- */
-const toJsonValue = (value: unknown): unknown => {
-  if (typeof value === 'bigint') {
-    return String(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(toJsonValue);
-  }
-
-  return value;
-};
 
 @QueryHandler(GetEntityRecordsQuery)
 export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityRecordsQuery> {
@@ -103,7 +86,10 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
       attributes.map((a) => [a.id, a satisfies AttributeMeta]),
     );
 
-    const optionsByKey = await this.readCodeVocabularies(attributes);
+    const optionsByKey = await readCodeVocabularies(
+      this.appPrismaService,
+      attributes,
+    );
 
     const view = await this.loadView(
       dto,
@@ -225,56 +211,6 @@ export class GetEntityRecordsQueryHandler implements IQueryHandler<GetEntityReco
   }
 
   /** the requested view, else the entity's default; null when it has none */
-  /**
-   * Display labels for coded columns — aum_band renders as "$1B – $5B" rather
-   * than the raw 1b_5b. Only closed vocabularies are sent: firm_name has 32,009
-   * options and full_name 455,296, which are lookups, not labels.
-   */
-  private async readCodeVocabularies(
-    attributes: { referenceColumn: string | null }[],
-  ): Promise<Map<string, { value: string; label: string }[]>> {
-    const keys = [
-      ...new Set(
-        attributes
-          .map((a) => a.referenceColumn)
-          .filter((key): key is string => key !== null),
-      ),
-    ];
-
-    if (keys.length === 0) {
-      return new Map();
-    }
-
-    const counts = await this.appPrismaService.facetOption.groupBy({
-      by: ['allowKey'],
-      where: { allowKey: { in: keys } },
-      _count: { _all: true },
-    });
-
-    const closed = counts
-      .filter((c) => c._count._all <= CODE_VOCABULARY_MAX)
-      .map((c) => c.allowKey);
-
-    if (closed.length === 0) {
-      return new Map();
-    }
-
-    const options = await this.appPrismaService.facetOption.findMany({
-      where: { allowKey: { in: closed } },
-      select: { allowKey: true, value: true, label: true },
-      // same order the facet rail uses, so a picker built from these agrees
-      orderBy: [{ allowKey: 'asc' }, { position: 'asc' }, { label: 'asc' }],
-    });
-
-    const byKey = new Map<string, { value: string; label: string }[]>();
-
-    for (const { allowKey, value, label } of options) {
-      byKey.set(allowKey, [...(byKey.get(allowKey) ?? []), { value, label }]);
-    }
-
-    return byKey;
-  }
-
   private async loadView(
     dto: GetEntityRecordsDto,
     entityId: string,
