@@ -58,8 +58,9 @@ const tabTriggerStyles = cva({
         // transparent rather than absent, so selecting a tab shifts nothing
         borderColor: 'transparent',
         color: 'text.muted',
+        // fills the strip so the active underline sits on the rule, not above it
+        h: 'full',
         px: '0',
-        py: '2',
         rounded: 'none',
         w: 'auto',
       },

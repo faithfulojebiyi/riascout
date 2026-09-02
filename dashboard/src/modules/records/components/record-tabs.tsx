@@ -7,7 +7,6 @@ import { ContactsTab } from '../tabs/contacts-tab';
 import { MetricsTab } from '../tabs/metrics-tab';
 import { OfficesTab } from '../tabs/offices-tab';
 import { CustodiansTab } from '../tabs/custodians-tab';
-import { FilingsTab } from '../tabs/filings-tab';
 
 /**
  * 13-F holdings, SMAs, transactions and news have no ingestion pipeline, so they
@@ -27,8 +26,9 @@ export const RecordTabs = ({
     className={css({ display: 'flex', flexDirection: 'column', minH: '0' })}
     defaultValue="overview"
   >
-    <div className={css({ px: '5' })}>
-      <TabsList variant="underline">
+    {/* the rule runs the full width; only the labels are inset */}
+    <div>
+      <TabsList px="5" variant="underline">
         <TabTrigger value="overview" variant="underline">
           Overview
         </TabTrigger>
@@ -43,9 +43,6 @@ export const RecordTabs = ({
         </TabTrigger>
         <TabTrigger value="custodians" variant="underline">
           Custodians &amp; Funds
-        </TabTrigger>
-        <TabTrigger value="filings" variant="underline">
-          Links &amp; Filings
         </TabTrigger>
         {COMING_SOON.map((name) => (
           <TabTrigger disabled key={name} value={name} variant="underline">
@@ -70,9 +67,6 @@ export const RecordTabs = ({
       </TabContent>
       <TabContent value="custodians">
         <CustodiansTab firmCrd={firmCrd} />
-      </TabContent>
-      <TabContent value="filings">
-        <FilingsTab firmCrd={firmCrd} />
       </TabContent>
     </div>
   </Tabs>

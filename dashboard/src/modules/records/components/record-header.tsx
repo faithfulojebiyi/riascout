@@ -11,10 +11,19 @@ const crumb = css({
   fontSize: '1',
 });
 
+const rule = css({
+  borderBottomWidth: '1px',
+  borderColor: 'brand.panel.4',
+});
+
+/** every header row is one 44px band, so the rules land on a regular rhythm */
+const ROW_HEIGHT = '2.75rem';
+
 /**
- * Three stacked rows: breadcrumb, then the identity line with its actions, then
- * the subtitle beneath the name rather than beside it. The header spans the full
- * width so the tab strip and the attributes panel start at the same y.
+ * Breadcrumb, a rule, the identity line, another rule, then the tab strip. The
+ * subtitle sits beside the name rather than under it: SEC and the CRD identify
+ * the same thing the name does, so a third stacked row spent vertical space to
+ * say nothing extra.
  */
 export const RecordHeader = ({
   record,
@@ -27,17 +36,13 @@ export const RecordHeader = ({
   const subtitle = recordSubtitle(record);
 
   return (
-    <div
-      className={css({
-        borderBottomWidth: '1px',
-        borderColor: 'brand.panel.4',
-        flexShrink: '0',
-        px: '5',
-        pt: '3',
-      })}
-    >
-      <Flex align="center" gap="2" h="6">
-        <Link className={crumb} params={{ entitySlug: record.entitySlug }} to="/$entitySlug">
+    <div className={css({ flexShrink: '0' })}>
+      <Flex align="center" className={rule} gap="2" h={ROW_HEIGHT} px="5">
+        <Link
+          className={crumb}
+          params={{ entitySlug: record.entitySlug }}
+          to="/$entitySlug"
+        >
           {record.entityName}
         </Link>
         <span className={css({ color: 'text.placeholder', fontSize: '1' })}>
@@ -46,24 +51,40 @@ export const RecordHeader = ({
         <span className={css({ fontSize: '1' })}>{title}</span>
       </Flex>
 
-      <Flex align="flex-start" gap="3" justify="space-between" pb="3" pt="1">
-        <div>
+      <Flex
+        align="center"
+        className={rule}
+        gap="3"
+        h={ROW_HEIGHT}
+        justify="space-between"
+        px="5"
+      >
+        <Flex align="baseline" gap="3" minW="0">
           <h1
             className={css({
               fontSize: '4',
               fontWeight: 'semibold',
               lineHeight: 'tight',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             })}
           >
             {title}
           </h1>
           {subtitle ? (
-            <p className={css({ color: 'text.muted', fontSize: '1', pt: '0.5' })}>
+            <span
+              className={css({
+                color: 'text.muted',
+                flexShrink: '0',
+                fontSize: '1',
+              })}
+            >
               {subtitle}
-            </p>
+            </span>
           ) : null}
-        </div>
-        <Flex align="center" gap="2" flexShrink="0">
+        </Flex>
+        <Flex align="center" flexShrink="0" gap="2">
           {actions}
         </Flex>
       </Flex>

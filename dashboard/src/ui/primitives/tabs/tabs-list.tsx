@@ -29,7 +29,8 @@ const tabListStyles = cva({
         borderColor: 'brand.panel.4',
         display: 'flex',
         gap: '5',
-        h: 'auto',
+        // the same 44px band the header rows use
+        h: '2.75rem',
         justifyContent: 'flex-start',
         p: '0',
         rounded: 'none',

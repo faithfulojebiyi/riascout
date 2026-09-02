@@ -1,5 +1,5 @@
 import { css } from '@riascout-ui/styled-system/css';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { stringToDesignSystemColor } from '../../../../lib/color';
 import { ColorBadge } from '../../../../ui/blocks/colored-elements';
@@ -98,7 +98,11 @@ const DateCell = ({ value }: RendererProps) =>
     </>
   );
 
-const Tags = ({ value }: RendererProps) => {
+/**
+ * One row's worth. The grid clips rather than wraps because a wrapped cell would
+ * change row height, so the overflow count carries what does not fit.
+ */
+const Tags = ({ value, options }: RendererProps) => {
   if (!Array.isArray(value) || value.length === 0) {
     return <Blank />;
   }
@@ -106,8 +110,8 @@ const Tags = ({ value }: RendererProps) => {
   return (
     <>
       {value.slice(0, 3).map((v) => (
-        <span className={chip} key={String(v)}>
-          {String(v)}
+        <span className={css({ mr: '1' })} key={String(v)}>
+          <Badge code={String(v)} options={options} />
         </span>
       ))}
       {value.length > 3 ? (
@@ -203,16 +207,15 @@ const formatCode = (value: string): string =>
  * The dimension's own label wins where one arrived. Which fallback applies when
  * it did not depends on the column, hence `humanise`.
  */
-const Chip = ({
-  value,
+const Badge = ({
+  code,
   options,
-  humanise,
-}: RendererProps & { humanise: boolean }) => {
-  if (isBlank(value)) {
-    return <Blank />;
-  }
-
-  const code = String(value);
+  humanise = true,
+}: {
+  code: string;
+  options?: CodeOption[];
+  humanise?: boolean;
+}) => {
   const label =
     options?.find((option) => option.value === code)?.label ??
     (humanise ? formatCode(code) : code);
@@ -237,6 +240,17 @@ const Chip = ({
     </ColorBadge>
   );
 };
+
+const Chip = ({
+  value,
+  options,
+  humanise,
+}: RendererProps & { humanise: boolean }) =>
+  isBlank(value) ? (
+    <Blank />
+  ) : (
+    <Badge code={String(value)} humanise={humanise} options={options} />
+  );
 
 /** words split cleanly: pure_ria -> Pure RIA */
 const CodeBadge = (props: RendererProps) => <Chip {...props} humanise />;
@@ -293,6 +307,55 @@ export const rendererForColumn = (
   }
 
   return rendererFor(type, isMultiValue);
+};
+
+/**
+ * The record panel's multi-value renderer. It wraps rather than clipping — the
+ * panel has no row height to preserve — and the overflow expands in place, so a
+ * firm's full client-type list is reachable without leaving the page.
+ */
+export const TagList = ({
+  value,
+  options,
+  max = 6,
+}: RendererProps & { max?: number }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!Array.isArray(value) || value.length === 0) {
+    return <Blank />;
+  }
+
+  const hidden = value.length - max;
+  const shown = expanded ? value : value.slice(0, max);
+
+  return (
+    <div
+      className={css({
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '1',
+        minW: '0',
+      })}
+    >
+      {shown.map((v) => (
+        <Badge code={String(v)} key={String(v)} options={options} />
+      ))}
+      {hidden > 0 ? (
+        <button
+          className={css({
+            color: 'text.muted',
+            cursor: 'pointer',
+            fontSize: '1',
+            _hover: { color: 'text.app' },
+          })}
+          onClick={() => setExpanded(!expanded)}
+          type="button"
+        >
+          {expanded ? 'Show less' : `+${hidden}`}
+        </button>
+      ) : null}
+    </div>
+  );
 };
 
 export { Identifier, Blank };

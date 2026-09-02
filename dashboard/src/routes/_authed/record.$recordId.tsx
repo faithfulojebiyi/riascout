@@ -28,7 +28,8 @@ const panel = css({
   borderColor: 'brand.panel.4',
   flexShrink: '0',
   overflowY: 'auto',
-  w: '20rem',
+  // wide enough that a firm name and a wrapped chip list do not fight for it
+  w: '28rem',
 });
 
 function RecordPage() {

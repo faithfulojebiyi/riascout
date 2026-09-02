@@ -2,16 +2,24 @@ import { css } from '@riascout-ui/styled-system/css';
 import { Flex } from '@riascout-ui/styled-system/jsx';
 
 import type { GetEntityRecordResponse } from '../../../api/generated/rIAScoutAPI.schemas';
-import { rendererForColumn } from '../../entities/components/attribute-renderers';
+import {
+  TagList,
+  rendererForColumn,
+} from '../../entities/components/attribute-renderers';
+import { attributeIcon } from '../../entities/components/grid/attribute-icon';
 import { valuesByAttribute, type RecordValue } from '../record-values';
 
 const UNGROUPED = 'Details';
 
+/** minW 0 is what lets the ellipsis engage; without it the label ran under the value */
 const label = css({
   color: 'text.muted',
-  flexShrink: '0',
+  flex: '1',
   fontSize: '1',
-  w: '9.5rem',
+  minW: '0',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 const heading = css({
@@ -25,20 +33,28 @@ const heading = css({
 });
 
 const Row = ({ attribute, value }: RecordValue) => {
-  const Renderer = rendererForColumn(
-    attribute.referenceColumn,
-    attribute.type,
-    attribute.isMultiValue,
-  );
+  const Icon = attributeIcon(attribute.icon, attribute.type);
+
+  /**
+   * The panel wraps its multi-value chips rather than clipping them: it has no
+   * row height to preserve, and a clipped list hid most of a firm's client
+   * types behind the panel edge.
+   */
+  const Renderer = attribute.isMultiValue
+    ? TagList
+    : rendererForColumn(attribute.referenceColumn, attribute.type, false);
 
   return (
-    <Flex align="baseline" gap="2" py="1">
-      <span className={label} title={attribute.label}>
-        {attribute.label}
-      </span>
-      <span className={css({ fontSize: '1', minW: '0' })}>
+    <Flex align="flex-start" gap="2" py="1">
+      <Flex align="center" flexShrink="0" gap="1.5" pt="0.5" w="10.5rem">
+        <Icon className={css({ color: 'text.placeholder', flexShrink: '0' })} />
+        <span className={label} title={attribute.label}>
+          {attribute.label}
+        </span>
+      </Flex>
+      <div className={css({ flex: '1', fontSize: '1', minW: '0' })}>
         <Renderer options={attribute.options} value={value} />
-      </span>
+      </div>
     </Flex>
   );
 };
@@ -56,7 +72,7 @@ export const RecordAttributesPanel = ({
   const groups = new Map<string, RecordValue[]>();
 
   for (const entry of valuesByAttribute(record)) {
-    const key = entry.attribute.group ?? UNGROUPED;
+    const key = entry.attribute.group?.trim() || UNGROUPED;
 
     groups.set(key, [...(groups.get(key) ?? []), entry]);
   }
