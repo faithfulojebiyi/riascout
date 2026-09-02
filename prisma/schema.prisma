@@ -1103,6 +1103,10 @@ model AdvisorSearch {
 
   @@index([state, firmAumBand, firmChannel])
   @@index([currentFirmCrd])
+  /// the firm record page's roster tab, which pages a firm's advisers by name.
+  /// currentFirmCrd alone bitmap-scans 20,357 heap blocks then top-N sorts —
+  /// 962ms on a 29,020-adviser firm against 0.5ms on a typical one
+  @@index([currentFirmCrd, fullName])
   @@index([searchTsv], type: Gin, map: "advisor_search_tsv_gin")
   @@index([previousFirmCrds], type: Gin, map: "advisor_search_previous_firm_crds_gin")
   @@index([examCodes], type: Gin, map: "advisor_search_exam_codes_gin")
