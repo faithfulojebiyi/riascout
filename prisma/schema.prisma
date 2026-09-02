@@ -18,8 +18,8 @@ model HealthCheck {
   id        String   @id @default(uuid(7))
   checkedAt DateTime @default(now()) @map("checked_at")
 
-  @@schema("app")
   @@map("health_check")
+  @@schema("app")
 }
 
 // ─────────────────────── market · dimensions ───────────────────────
@@ -40,8 +40,8 @@ model DimSource {
   firmNames          FirmNameObservation[]
   observationRuns    ObservationRun[]
 
-  @@schema("market")
   @@map("dim_source")
+  @@schema("market")
 }
 
 model DimClientType {
@@ -50,8 +50,8 @@ model DimClientType {
 
   facts FirmFactClientType[]
 
-  @@schema("market")
   @@map("dim_client_type")
+  @@schema("market")
 }
 
 model DimServiceType {
@@ -60,8 +60,8 @@ model DimServiceType {
 
   facts FirmFactService[]
 
-  @@schema("market")
   @@map("dim_service_type")
+  @@schema("market")
 }
 
 /// Form ADV Item 5.E. A firm with no rows has not reported a method, which is
@@ -72,8 +72,8 @@ model DimFeeMethod {
 
   facts FirmFactFeeMethod[]
 
-  @@schema("market")
   @@map("dim_fee_method")
+  @@schema("market")
 }
 
 model DimAssetCategory {
@@ -82,8 +82,8 @@ model DimAssetCategory {
 
   facts FirmFactAssetAllocation[]
 
-  @@schema("market")
   @@map("dim_asset_category")
+  @@schema("market")
 }
 
 model DimFundType {
@@ -92,22 +92,22 @@ model DimFundType {
 
   facts FirmFactPrivateFund[]
 
-  @@schema("market")
   @@map("dim_fund_type")
+  @@schema("market")
 }
 
 /// Form ADV Schedule A ownership bands. Verify bounds against the ADV
 /// instructions before rendering as percentages to users.
 model DimOwnershipCode {
-  code       String @id
-  name       String
-  lowerPct   Int?   @map("lower_pct")
-  upperPct   Int?   @map("upper_pct")
+  code     String @id
+  name     String
+  lowerPct Int?   @map("lower_pct")
+  upperPct Int?   @map("upper_pct")
 
   owners FirmFactOwner[]
 
-  @@schema("market")
   @@map("dim_ownership_code")
+  @@schema("market")
 }
 
 /// The FINRA meaning of each status, mapped explicitly. NULL is "we have never
@@ -119,8 +119,8 @@ model DimRegistrationStatus {
   registrationCurrent Boolean? @map("registration_current")
   canConductBusiness  Boolean? @map("can_conduct_business")
 
-  @@schema("market")
   @@map("dim_registration_status")
+  @@schema("market")
 }
 
 /**
@@ -147,8 +147,8 @@ model ObservationRun {
   observations AdvisorFirmObservation[]
 
   @@index([sourceCode, observedOn(sort: Desc)])
-  @@schema("market")
   @@map("observation_run")
+  @@schema("market")
 }
 
 /// exam_name is functionally dependent on exam_code — stored once here,
@@ -159,8 +159,8 @@ model DimExam {
 
   exams AdvisorExam[]
 
-  @@schema("market")
   @@map("dim_exam")
+  @@schema("market")
 }
 
 /// Derived classification. The derivation rule is unit-tested — a
@@ -171,20 +171,20 @@ model DimFirmChannel {
 
   derived FirmFactDerived[]
 
-  @@schema("market")
   @@map("dim_firm_channel")
+  @@schema("market")
 }
 
 model DimAumBand {
-  code     String  @id
+  code     String   @id
   name     String
   lowerAum Decimal? @map("lower_aum") @db.Decimal(20, 2)
   upperAum Decimal? @map("upper_aum") @db.Decimal(20, 2)
 
   derived FirmFactDerived[]
 
-  @@schema("market")
   @@map("dim_aum_band")
+  @@schema("market")
 }
 
 /// Custodian is a top-line recruiter filter, and the source carries only
@@ -196,8 +196,8 @@ model DimCustodian {
   aliases DimCustodianAlias[]
   facts   FirmFactCustodian[]
 
-  @@schema("market")
   @@map("dim_custodian")
+  @@schema("market")
 }
 
 model DimCustodianAlias {
@@ -209,8 +209,8 @@ model DimCustodianAlias {
   custodian DimCustodian @relation(fields: [custodianId], references: [id])
 
   @@index([custodianId])
-  @@schema("market")
   @@map("dim_custodian_alias")
+  @@schema("market")
 }
 
 // ──────────────────────── market · identity ────────────────────────
@@ -228,8 +228,8 @@ model Firm {
   domain             FirmDomain?
   search             FirmSearch?
 
-  @@schema("market")
   @@map("firm")
+  @@schema("market")
 }
 
 /// identity only. one human may hold several CRDs over a career.
@@ -251,8 +251,8 @@ model Advisor {
   observations   AdvisorFirmObservation[]
   movements      AdvisorMovement[]
 
-  @@schema("market")
   @@map("advisor")
+  @@schema("market")
 }
 
 // ───────────────────── market · the filing spine ────────────────────
@@ -287,8 +287,8 @@ model Filing {
 
   @@index([firmCrd, effectiveDate(sort: Desc)])
   @@index([firmCrd, submittedAt(sort: Desc)])
-  @@schema("market")
   @@map("filing")
+  @@schema("market")
 }
 
 // ────────────────────── market · firm facts ────────────────────────
@@ -310,28 +310,34 @@ model FirmFactIdentity {
 
   @@index([state])
   @@index([city])
-  @@schema("market")
   @@map("firm_fact_identity")
+  @@schema("market")
 }
 
 /// Money is numeric, never float. AUM is NULL for ~25% of filings —
 /// preserve the NULL, never coerce to 0.
 model FirmFactMetrics {
-  filingId              String   @id @map("filing_id")
-  regulatoryAum         Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
-  discretionaryAum      Decimal? @map("discretionary_aum") @db.Decimal(20, 2)
-  nonDiscretionaryAum   Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
+  filingId             String   @id @map("filing_id")
+  regulatoryAum        Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
+  discretionaryAum     Decimal? @map("discretionary_aum") @db.Decimal(20, 2)
+  nonDiscretionaryAum  Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
   /// Usable value: NULL when the source reported something impossible, so it
   /// can never reach a ratio, percentile or aggregate. The exact reported
   /// figure is preserved in *_raw, and *_quality says why it was withheld.
   /// Corrections are never invented here — see docs/plans/04-market-etl.md.
-  employeeCount        BigInt? @map("employee_count")
-  employeeCountRaw     BigInt? @map("employee_count_raw")
-  employeeCountQuality String? @map("employee_count_quality")
+  employeeCount        BigInt?  @map("employee_count")
+  employeeCountRaw     BigInt?  @map("employee_count_raw")
+  employeeCountQuality String?  @map("employee_count_quality")
 
-  clientCount        BigInt? @map("client_count")
-  clientCountRaw     BigInt? @map("client_count_raw")
-  clientCountQuality String? @map("client_count_quality")
+  discretionaryAccountCount    BigInt? @map("discretionary_account_count")
+  nonDiscretionaryAccountCount BigInt? @map("non_discretionary_account_count")
+  accountCount                 BigInt? @map("account_count")
+  accountCountRaw              BigInt? @map("account_count_raw")
+  accountCountQuality          String? @map("account_count_quality")
+
+  reportedClientCountMin     BigInt? @map("reported_client_count_min")
+  reportedClientCountMax     BigInt? @map("reported_client_count_max")
+  reportedClientCountQuality String  @default("unavailable") @map("reported_client_count_quality")
 
   advisoryEmployeeCount BigInt? @map("advisory_employee_count")
   officeCount           BigInt? @map("office_count")
@@ -339,8 +345,8 @@ model FirmFactMetrics {
   filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
 
   @@index([regulatoryAum(sort: Desc)])
-  @@schema("market")
   @@map("firm_fact_metrics")
+  @@schema("market")
 }
 
 model FirmFactRegistration {
@@ -355,8 +361,8 @@ model FirmFactRegistration {
   filing Filing @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
 
   @@index([isSecRegistered, isEra])
-  @@schema("market")
   @@map("firm_fact_registration")
+  @@schema("market")
 }
 
 /// Ratios and classifications derived from metrics + our registered-advisor
@@ -366,16 +372,16 @@ model FirmFactDerived {
 
   /// OUR count of advisors with an open registration — distinct from the
   /// ADV's self-reported advisoryEmployeeCount. Both are kept.
-  advisorCount      Int?     @map("advisor_count")
-  aumPerAdvisor     Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
-  aumPerClient      Decimal? @map("aum_per_client") @db.Decimal(20, 2)
-  aumPerEmployee    Decimal? @map("aum_per_employee") @db.Decimal(20, 2)
-  clientsPerAdvisor Decimal? @map("clients_per_advisor") @db.Decimal(12, 2)
+  advisorCount       Int?     @map("advisor_count")
+  aumPerAdvisor      Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
+  aumPerAccount      Decimal? @map("aum_per_account") @db.Decimal(20, 2)
+  aumPerEmployee     Decimal? @map("aum_per_employee") @db.Decimal(20, 2)
+  accountsPerAdvisor Decimal? @map("accounts_per_advisor") @db.Decimal(12, 2)
 
   /// percentile ranks within the same filing period, 0-100
   aumPercentile           Int? @map("aum_percentile")
   aumPerAdvisorPercentile Int? @map("aum_per_advisor_percentile")
-  aumPerClientPercentile  Int? @map("aum_per_client_percentile")
+  aumPerAccountPercentile Int? @map("aum_per_account_percentile")
 
   channelCode String? @map("channel_code")
   aumBandCode String? @map("aum_band_code")
@@ -386,14 +392,15 @@ model FirmFactDerived {
 
   @@index([aumPerAdvisor(sort: Desc)])
   @@index([channelCode, aumBandCode])
-  @@schema("market")
   @@map("firm_fact_derived")
+  @@schema("market")
 }
 
 model FirmFactClientType {
   filingId       String   @map("filing_id")
   clientTypeCode String   @map("client_type_code")
   clientCount    BigInt?  @map("client_count")
+  fewerThanFive  Boolean? @map("fewer_than_five")
   regulatoryAum  Decimal? @map("regulatory_aum") @db.Decimal(20, 2)
 
   filing     Filing        @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
@@ -401,8 +408,8 @@ model FirmFactClientType {
 
   @@id([filingId, clientTypeCode])
   @@index([clientTypeCode, regulatoryAum(sort: Desc)])
-  @@schema("market")
   @@map("firm_fact_client_type")
+  @@schema("market")
 }
 
 model FirmFactService {
@@ -414,8 +421,8 @@ model FirmFactService {
 
   @@id([filingId, serviceTypeCode])
   @@index([serviceTypeCode])
-  @@schema("market")
   @@map("firm_fact_service")
+  @@schema("market")
 }
 
 model FirmFactFeeMethod {
@@ -427,8 +434,8 @@ model FirmFactFeeMethod {
 
   @@id([filingId, feeMethodCode])
   @@index([feeMethodCode])
-  @@schema("market")
   @@map("firm_fact_fee_method")
+  @@schema("market")
 }
 
 model FirmFactAssetAllocation {
@@ -442,16 +449,16 @@ model FirmFactAssetAllocation {
 
   @@id([filingId, assetCategoryCode])
   @@index([assetCategoryCode, percentage(sort: Desc)])
-  @@schema("market")
   @@map("firm_fact_asset_allocation")
+  @@schema("market")
 }
 
 model FirmFactOffice {
-  filingId        String  @map("filing_id")
-  officeReference String  @map("office_reference")
-  city            String?
-  regionRaw       String? @map("region_raw")
-  countryRaw      String? @map("country_raw")
+  filingId             String  @map("filing_id")
+  officeReference      String  @map("office_reference")
+  city                 String?
+  regionRaw            String? @map("region_raw")
+  countryRaw           String? @map("country_raw")
   /// NULL when the source value is impossible; the reported figure is kept
   /// in employee_count_raw. CRD 283824 filed its telephone number here.
   employeeCount        BigInt? @map("employee_count")
@@ -463,8 +470,8 @@ model FirmFactOffice {
   @@id([filingId, officeReference])
   @@index([city])
   @@index([regionRaw])
-  @@schema("market")
   @@map("firm_fact_office")
+  @@schema("market")
 }
 
 model FirmFactCustodian {
@@ -486,8 +493,8 @@ model FirmFactCustodian {
   @@id([filingId, custodianRef])
   @@index([custodianId, aumAtCustodian(sort: Desc)])
   @@index([privateFundId])
-  @@schema("market")
   @@map("firm_fact_custodian")
+  @@schema("market")
 }
 
 model FirmFactPrivateFund {
@@ -505,8 +512,8 @@ model FirmFactPrivateFund {
   @@id([filingId, privateFundId])
   @@index([fundTypeCode, grossAssetValue(sort: Desc)])
   @@index([privateFundId])
-  @@schema("market")
   @@map("firm_fact_private_fund")
+  @@schema("market")
 }
 
 /// One affiliation model preserves source and provenance without overlapping current-state tables.
@@ -525,8 +532,8 @@ model FirmFactAffiliation {
 
   @@id([filingId, affiliationRef])
   @@index([relatedCrd])
-  @@schema("market")
   @@map("firm_fact_affiliation")
+  @@schema("market")
 }
 
 /// Schedule A (direct) and B (indirect) owners. ownerAdvisorCrd is a nullable
@@ -538,16 +545,16 @@ model FirmFactOwner {
   ownerRef String @map("owner_ref")
 
   /// individual | domestic_entity | foreign_entity  (source DE/FE/I)
-  ownerKind       String  @map("owner_kind")
-  ownerAdvisorCrd BigInt? @map("owner_advisor_crd")
-  fullLegalName   String  @map("full_legal_name")
-  titleOrStatus   String? @map("title_or_status")
-  ownershipCode   String? @map("ownership_code")
-  isControlPerson Boolean? @map("is_control_person")
+  ownerKind         String    @map("owner_kind")
+  ownerAdvisorCrd   BigInt?   @map("owner_advisor_crd")
+  fullLegalName     String    @map("full_legal_name")
+  titleOrStatus     String?   @map("title_or_status")
+  ownershipCode     String?   @map("ownership_code")
+  isControlPerson   Boolean?  @map("is_control_person")
   /// month precision in the source (MM/YYYY)
-  statusAcquired  DateTime? @map("status_acquired") @db.Date
+  statusAcquired    DateTime? @map("status_acquired") @db.Date
   /// Schedule B only: the entity the interest is held through
-  heldThroughEntity String? @map("held_through_entity")
+  heldThroughEntity String?   @map("held_through_entity")
 
   filing Filing            @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
   code   DimOwnershipCode? @relation(fields: [ownershipCode], references: [code])
@@ -556,14 +563,14 @@ model FirmFactOwner {
   @@index([ownerAdvisorCrd])
   @@index([ownershipCode])
   @@index([isControlPerson])
-  @@schema("market")
   @@map("firm_fact_owner")
+  @@schema("market")
 }
 
 /// Form ADV Schedule D 1.I — website addresses and, in recent versions,
 /// social media accounts. The domain is the enrichment join key.
 model FirmWebPresence {
-  filingId String @map("filing_id")
+  filingId String  @map("filing_id")
   sequence Int
   /// website | social
   kind     String
@@ -578,8 +585,8 @@ model FirmWebPresence {
   @@id([filingId, sequence])
   @@index([domain])
   @@index([kind, platform])
-  @@schema("market")
   @@map("firm_web_presence")
+  @@schema("market")
 }
 
 /// One row per distinct name per source, so a rename stays distinguishable from
@@ -599,8 +606,8 @@ model FirmNameObservation {
   @@id([firmCrd, sourceCode, firmName])
   @@index([firmCrd, lastObservedOn(sort: Desc)])
   @@index([firmName])
-  @@schema("market")
   @@map("firm_name_observation")
+  @@schema("market")
 }
 
 /// Derived: the canonical domain per firm, from the most recent filing that
@@ -615,8 +622,8 @@ model FirmDomain {
   pattern FirmEmailPattern?
 
   @@index([domain])
-  @@schema("market")
   @@map("firm_domain")
+  @@schema("market")
 }
 
 /// Learned per firm, refined as verifications land. Yields work email — an
@@ -633,8 +640,8 @@ model FirmEmailPattern {
   firmDomain FirmDomain @relation(fields: [firmCrd], references: [firmCrd], onDelete: Cascade)
 
   @@index([domain])
-  @@schema("market")
   @@map("firm_email_pattern")
+  @@schema("market")
 }
 
 model FirmRegistrationEvent {
@@ -651,8 +658,8 @@ model FirmRegistrationEvent {
 
   @@index([firmCrd, effectiveDate(sort: Desc)])
   @@index([jurisdiction])
-  @@schema("market")
   @@map("firm_registration_event")
+  @@schema("market")
 }
 
 /// Field-level provenance, imported rather than invented — it already exists
@@ -667,8 +674,8 @@ model FirmFieldProvenance {
   transformationMethod String?   @map("transformation_method")
 
   @@id([firmCrd, snapshotYear, fieldName])
-  @@schema("market")
   @@map("firm_field_provenance")
+  @@schema("market")
 }
 
 // ────────────────────── market · advisor side ──────────────────────
@@ -701,8 +708,8 @@ model AdvisorRegistration {
   @@index([advisorCrd, endDate])
   @@index([employerFirmCrd, startDate(sort: Desc)])
   @@index([employerFirmCrd, jurisdiction])
-  @@schema("market")
   @@map("advisor_registration")
+  @@schema("market")
 }
 
 /// Context only. No firm CRD exists in the source (0 of 2,295,866) and dates
@@ -721,24 +728,24 @@ model AdvisorEmployment {
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
   @@index([advisorCrd, startMonth(sort: Desc)])
-  @@schema("market")
   @@map("advisor_employment")
+  @@schema("market")
 }
 
 /// Observation-versioned. Names are never identity.
 model AdvisorName {
-  advisorCrd BigInt    @map("advisor_crd")
-  observedOn DateTime  @map("observed_on") @db.Date
-  firstName  String?   @map("first_name")
-  middleName String?   @map("middle_name")
-  lastName   String?   @map("last_name")
-  suffixName String?   @map("suffix_name")
+  advisorCrd BigInt   @map("advisor_crd")
+  observedOn DateTime @map("observed_on") @db.Date
+  firstName  String?  @map("first_name")
+  middleName String?  @map("middle_name")
+  lastName   String?  @map("last_name")
+  suffixName String?  @map("suffix_name")
 
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
   @@id([advisorCrd, observedOn])
-  @@schema("market")
   @@map("advisor_name")
+  @@schema("market")
 }
 
 model AdvisorExam {
@@ -751,8 +758,8 @@ model AdvisorExam {
 
   @@id([advisorCrd, examCode])
   @@index([examCode])
-  @@schema("market")
   @@map("advisor_exam")
+  @@schema("market")
 }
 
 model AdvisorDesignation {
@@ -763,8 +770,8 @@ model AdvisorDesignation {
 
   @@id([advisorCrd, designationName])
   @@index([designationName])
-  @@schema("market")
   @@map("advisor_designation")
+  @@schema("market")
 }
 
 /// Flags are all this source has. Model an event table when a richer source
@@ -784,8 +791,8 @@ model AdvisorDisclosureFlag {
 
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
-  @@schema("market")
   @@map("advisor_disclosure_flag")
+  @@schema("market")
 }
 
 /// Work addresses, SEC-sourced. No enrichment needed.
@@ -811,8 +818,8 @@ model AdvisorLocation {
   @@index([registrationId])
   @@index([city, regionRaw])
   @@index([postalCode])
-  @@schema("market")
   @@map("advisor_location")
+  @@schema("market")
 }
 
 /// Rebuilt by the projection refresh, not hand-maintained.
@@ -832,8 +839,8 @@ model FacetOption {
   @@id([allowKey, value])
   @@index([allowKey, label])
   @@index([allowKey, rowCount(sort: Desc)])
-  @@schema("market")
   @@map("facet_option")
+  @@schema("market")
 }
 
 model AdvisorDerived {
@@ -852,8 +859,8 @@ model AdvisorDerived {
 
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
-  @@schema("market")
   @@map("advisor_derived")
+  @@schema("market")
 }
 
 // ─────────────────── market · contact + enrichment ──────────────────
@@ -870,7 +877,7 @@ model AdvisorContactPoint {
   /// fax | linkedin | twitter | facebook | website
   subtype String
 
-  valueRaw String @map("value_raw")
+  valueRaw  String @map("value_raw")
   /// normalized: E.164 for phone, lowercased for email, canonical URL for
   /// social. The dedup key — an unnormalized unique is cosmetic.
   valueNorm String @map("value_norm")
@@ -898,22 +905,22 @@ model AdvisorContactPoint {
   @@index([advisorCrd, kind, isPrimary])
   @@index([valueNorm])
   @@index([doNotContact])
-  @@schema("market")
   @@map("advisor_contact_point")
+  @@schema("market")
 }
 
 /// Append-only log of enrichment attempts. A miss is information: without it
 /// we retry forever and cost per usable channel per tier is unmeasurable.
 model EnrichmentRequest {
-  id          BigInt @id @default(autoincrement())
+  id           BigInt   @id @default(autoincrement())
   /// advisor | firm
-  subjectKind String @map("subject_kind")
-  subjectCrd  BigInt @map("subject_crd")
+  subjectKind  String   @map("subject_kind")
+  subjectCrd   BigInt   @map("subject_crd")
   /// which waterfall tier ran
-  tier        Int
-  sourceCode  String @map("source_code")
+  tier         Int
+  sourceCode   String   @map("source_code")
   /// hit | miss | error | rate_limited | skipped
-  outcome     String
+  outcome      String
   /// what came back by channel, e.g. { personal_email: 1, mobile: 0 }
   yieldSummary Json?    @map("yield_summary") @db.JsonB
   costCents    Int?     @map("cost_cents")
@@ -925,8 +932,8 @@ model EnrichmentRequest {
   @@index([subjectKind, subjectCrd, requestedAt(sort: Desc)])
   @@index([sourceCode, requestedAt(sort: Desc)])
   @@index([tier, outcome])
-  @@schema("market")
   @@map("enrichment_request")
+  @@schema("market")
 }
 
 // ───────────────────────── market · movement ────────────────────────
@@ -939,7 +946,6 @@ model EnrichmentRequest {
  * One row per advisor per snapshot per firm. Append-only; movement is the diff
  * between successive observations, so a vendor dropping a registration shows up
  * as a DEPARTURE rather than silently erasing history.
- *
  */
 model AdvisorFirmObservation {
   id                   BigInt   @id @default(autoincrement())
@@ -972,8 +978,8 @@ model AdvisorFirmObservation {
   @@index([firmCrd, observedOn])
   @@index([firmCrd, canConductBusiness])
   @@index([collectionId, advisorCrd])
-  @@schema("market")
   @@map("advisor_firm_observation")
+  @@schema("market")
 }
 
 /**
@@ -981,17 +987,17 @@ model AdvisorFirmObservation {
  * representable; event_type carries the distinction instead.
  */
 model AdvisorMovement {
-  id           BigInt    @id @default(autoincrement())
-  advisorCrd   BigInt    @map("advisor_crd")
-  fromFirmCrd  BigInt?   @map("from_firm_crd")
-  toFirmCrd    BigInt?   @map("to_firm_crd")
+  id          BigInt    @id @default(autoincrement())
+  advisorCrd  BigInt    @map("advisor_crd")
+  fromFirmCrd BigInt?   @map("from_firm_crd")
+  toFirmCrd   BigInt?   @map("to_firm_crd")
   /// FIRST_REGISTRATION | FIRM_CHANGE | DEPARTURE
-  eventType    String    @map("event_type")
+  eventType   String    @map("event_type")
   /// valid time — when it happened. NULL when the source gives no start date
-  occurredOn   DateTime? @map("occurred_on") @db.Date
+  occurredOn  DateTime? @map("occurred_on") @db.Date
   /// know time — when we saw it. Never null; this is what latency is measured on
-  detectedOn   DateTime  @map("detected_on") @db.Date
-  tenureDays   Int?      @map("tenure_days")
+  detectedOn  DateTime  @map("detected_on") @db.Date
+  tenureDays  Int?      @map("tenure_days")
 
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
@@ -1001,8 +1007,8 @@ model AdvisorMovement {
   @@index([toFirmCrd, detectedOn(sort: Desc)])
   @@index([fromFirmCrd, detectedOn(sort: Desc)])
   @@index([advisorCrd, occurredOn(sort: Desc)])
-  @@schema("market")
   @@map("advisor_movement")
+  @@schema("market")
 }
 
 // ───────────────────── market · search projections ─────────────────────
@@ -1019,16 +1025,16 @@ model AdvisorSearch {
   isActive   Boolean? @map("is_active")
 
   /// primary registration = the longest-running open one
-  currentFirmCrd   BigInt?   @map("current_firm_crd")
-  currentFirmName  String?   @map("current_firm_name")
+  currentFirmCrd        BigInt?   @map("current_firm_crd")
+  currentFirmName       String?   @map("current_firm_name")
   /// NULL whenever the link is observation-only: no authentic start exists, and
   /// a status-change date is not one
-  currentFirmSince DateTime? @map("current_firm_since") @db.Date
+  currentFirmSince      DateTime? @map("current_firm_since") @db.Date
   /// registration | observation — which evidence the link rests on
   currentFirmSource     String?   @map("current_firm_source")
   /// know time for an observation-backed link; NULL for a registration
   currentFirmObservedOn DateTime? @map("current_firm_observed_on") @db.Date
-  currentFirmCount Int       @default(0) @map("current_firm_count")
+  currentFirmCount      Int       @default(0) @map("current_firm_count")
 
   tenureMonths            Int?     @map("tenure_months")
   experienceMonths        Int?     @map("experience_months")
@@ -1067,25 +1073,30 @@ model AdvisorSearch {
   previousFirmCrd BigInt?   @map("previous_firm_crd")
   moveCount5y     Int?      @map("move_count_5y")
 
-  firmAum             Decimal? @map("firm_aum") @db.Decimal(20, 2)
-  firmAumBand         String?  @map("firm_aum_band")
-  firmClientCount     Int?     @map("firm_client_count")
-  firmEmployeeCount   Int?     @map("firm_employee_count")
-  firmAdvisorCount    Int?     @map("firm_advisor_count")
-  firmOfficeCount     Int?     @map("firm_office_count")
-  firmAumPerAdvisor   Decimal? @map("firm_aum_per_advisor") @db.Decimal(20, 2)
-  firmAumPerClient    Decimal? @map("firm_aum_per_client") @db.Decimal(20, 2)
-  firmAumCagr3y       Decimal? @map("firm_aum_cagr_3y") @db.Decimal(12, 6)
-  firmChannel         String?  @map("firm_channel")
-  firmState           String?  @map("firm_state")
-  firmDomain          String?  @map("firm_domain")
-  firmLinkedinUrl     String?  @map("firm_linkedin_url")
-  firmIsSecRegistered Boolean? @map("firm_is_sec_registered")
-  firmIsEra           Boolean? @map("firm_is_era")
-  firmClientTypeCodes String[] @map("firm_client_type_codes")
-  firmServiceCodes    String[] @map("firm_service_codes")
-  firmCustodianIds    Int[]    @map("firm_custodian_ids")
-  firmFundTypeCodes   String[] @map("firm_fund_type_codes")
+  firmAum                          Decimal? @map("firm_aum") @db.Decimal(20, 2)
+  firmAumBand                      String?  @map("firm_aum_band")
+  firmDiscretionaryAccountCount    Int?     @map("firm_discretionary_account_count")
+  firmNonDiscretionaryAccountCount Int?     @map("firm_non_discretionary_account_count")
+  firmAccountCount                 Int?     @map("firm_account_count")
+  firmReportedClientCountMin       Int?     @map("firm_reported_client_count_min")
+  firmReportedClientCountMax       Int?     @map("firm_reported_client_count_max")
+  firmReportedClientCountQuality   String?  @map("firm_reported_client_count_quality")
+  firmEmployeeCount                Int?     @map("firm_employee_count")
+  firmAdvisorCount                 Int?     @map("firm_advisor_count")
+  firmOfficeCount                  Int?     @map("firm_office_count")
+  firmAumPerAdvisor                Decimal? @map("firm_aum_per_advisor") @db.Decimal(20, 2)
+  firmAumPerAccount                Decimal? @map("firm_aum_per_account") @db.Decimal(20, 2)
+  firmAumCagr3y                    Decimal? @map("firm_aum_cagr_3y") @db.Decimal(12, 6)
+  firmChannel                      String?  @map("firm_channel")
+  firmState                        String?  @map("firm_state")
+  firmDomain                       String?  @map("firm_domain")
+  firmLinkedinUrl                  String?  @map("firm_linkedin_url")
+  firmIsSecRegistered              Boolean? @map("firm_is_sec_registered")
+  firmIsEra                        Boolean? @map("firm_is_era")
+  firmClientTypeCodes              String[] @map("firm_client_type_codes")
+  firmServiceCodes                 String[] @map("firm_service_codes")
+  firmCustodianIds                 Int[]    @map("firm_custodian_ids")
+  firmFundTypeCodes                String[] @map("firm_fund_type_codes")
 
   /// no contact source yet — null means unknown, not false
   hasPersonalEmail Boolean? @map("has_personal_email")
@@ -1096,8 +1107,8 @@ model AdvisorSearch {
   doNotContact     Boolean  @default(false) @map("do_not_contact")
 
   /// populated by the projection refresh; the ETL asserts it is non-empty
-  searchTsv   Unsupported("tsvector")?  @map("search_tsv")
-  refreshedAt DateTime                  @default(now()) @map("refreshed_at") @db.Timestamptz(6)
+  searchTsv   Unsupported("tsvector")? @map("search_tsv")
+  refreshedAt DateTime                 @default(now()) @map("refreshed_at") @db.Timestamptz(6)
 
   advisor Advisor @relation(fields: [advisorCrd], references: [advisorCrd], onDelete: Cascade)
 
@@ -1120,18 +1131,18 @@ model AdvisorSearch {
   @@index([lastMovedOn(sort: Desc)])
   @@index([tenureMonths])
   @@index([firmAum(sort: Desc)])
-  @@schema("market")
   @@map("advisor_search")
+  @@schema("market")
 }
 
 model FirmSearch {
-  firmCrd   BigInt  @id @map("firm_crd")
-  firmName  String? @map("firm_name")
-  secNumber String? @map("sec_number")
-  domain    String?
-  linkedinUrl String? @map("linkedin_url")
+  firmCrd         BigInt   @id @map("firm_crd")
+  firmName        String?  @map("firm_name")
+  secNumber       String?  @map("sec_number")
+  domain          String?
+  linkedinUrl     String?  @map("linkedin_url")
   /// [SocialProfiles] every profile as {platform, url}
-  socialProfiles Json? @map("social_profiles") @db.JsonB
+  socialProfiles  Json?    @map("social_profiles") @db.JsonB
   /// flat facet of the platforms present, for GIN filtering
   socialPlatforms String[] @map("social_platforms")
 
@@ -1150,22 +1161,27 @@ model FirmSearch {
   nonDiscretionaryAum Decimal? @map("non_discretionary_aum") @db.Decimal(20, 2)
   aumBand             String?  @map("aum_band")
 
-  clientCount           Int? @map("client_count")
-  employeeCount         Int? @map("employee_count")
-  advisoryEmployeeCount Int? @map("advisory_employee_count")
-  officeCount           Int? @map("office_count")
+  discretionaryAccountCount    Int?    @map("discretionary_account_count")
+  nonDiscretionaryAccountCount Int?    @map("non_discretionary_account_count")
+  accountCount                 Int?    @map("account_count")
+  reportedClientCountMin       Int?    @map("reported_client_count_min")
+  reportedClientCountMax       Int?    @map("reported_client_count_max")
+  reportedClientCountQuality   String? @map("reported_client_count_quality")
+  employeeCount                Int?    @map("employee_count")
+  advisoryEmployeeCount        Int?    @map("advisory_employee_count")
+  officeCount                  Int?    @map("office_count")
   /// our count of open registrations, not the ADV's self-report
-  advisorCount          Int? @map("advisor_count")
+  advisorCount                 Int?    @map("advisor_count")
   /// the same count plus current observations that carry no open interval, so
   /// advisor_count never shifts under a saved view
-  observedAdvisorCount  Int? @map("observed_advisor_count")
+  observedAdvisorCount         Int?    @map("observed_advisor_count")
   /// linked | self_reported_only | unknown — so a null count is never read as
   /// zero. self_reported_only means the firm reports advisory employees but no
   /// individual record links to it.
-  advisorLinkageStatus  String? @map("advisor_linkage_status")
+  advisorLinkageStatus         String? @map("advisor_linkage_status")
 
   aumPerAdvisor           Decimal? @map("aum_per_advisor") @db.Decimal(20, 2)
-  aumPerClient            Decimal? @map("aum_per_client") @db.Decimal(20, 2)
+  aumPerAccount           Decimal? @map("aum_per_account") @db.Decimal(20, 2)
   aumPerEmployee          Decimal? @map("aum_per_employee") @db.Decimal(20, 2)
   aumPercentile           Int?     @map("aum_percentile")
   aumPerAdvisorPercentile Int?     @map("aum_per_advisor_percentile")
@@ -1223,8 +1239,8 @@ model FirmSearch {
   @@index([socialPlatforms], type: Gin, map: "firm_search_social_platforms_gin")
   @@index([advisorCount(sort: Desc)])
   @@index([netAdvisorFlow90d(sort: Desc)])
-  @@schema("market")
   @@map("firm_search")
+  @@schema("market")
 }
 
 /**
@@ -1244,16 +1260,16 @@ model FirmSearch {
 // organization.id; session.activeOrganizationId is where it comes from.
 
 model User {
-  id            String   @id
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false) @map("email_verified")
-  image         String?
+  id             String    @id
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  image          String?
   /// null until the onboarding wizard finishes; the dashboard gate routes on it
   onboardedAt    DateTime? @map("onboarded_at") @db.Timestamptz(6)
   marketingOptIn Boolean   @default(false) @map("marketing_opt_in")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   sessions    Session[]
   accounts    Account[]
@@ -1261,8 +1277,8 @@ model User {
   members     Member[]
   invitations Invitation[]
 
-  @@schema("app")
   @@map("user")
+  @@schema("app")
 }
 
 model Session {
@@ -1281,8 +1297,8 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@schema("app")
   @@map("session")
+  @@schema("app")
 }
 
 model Account {
@@ -1305,8 +1321,8 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@schema("app")
   @@map("account")
+  @@schema("app")
 }
 
 model Verification {
@@ -1318,8 +1334,8 @@ model Verification {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([identifier])
-  @@schema("app")
   @@map("verification")
+  @@schema("app")
 }
 
 /// the workspace / tenant. app.workspace_id points here.
@@ -1336,20 +1352,20 @@ model Organization {
   invitations Invitation[]
 
   /// every app table's workspace_id points here — one organization is one workspace
-  entitys Entity[]
-  entityAttributes EntityAttribute[]
-  entityAttributeChoices EntityAttributeChoice[]
-  entityRecords EntityRecord[]
-  entityRecordValues EntityRecordValue[]
+  entitys                   Entity[]
+  entityAttributes          EntityAttribute[]
+  entityAttributeChoices    EntityAttributeChoice[]
+  entityRecords             EntityRecord[]
+  entityRecordValues        EntityRecordValue[]
   entityRecordRelationships EntityRecordRelationship[]
-  entityViews EntityView[]
-  entityViewFields EntityViewField[]
-  entityViewFieldPaths EntityViewFieldPath[]
-  lists List[]
-  listMembers ListMember[]
+  entityViews               EntityView[]
+  entityViewFields          EntityViewField[]
+  entityViewFieldPaths      EntityViewFieldPath[]
+  lists                     List[]
+  listMembers               ListMember[]
 
-  @@schema("app")
   @@map("organization")
+  @@schema("app")
 }
 
 /// a sub-unit within a workspace — never repurposed as a tenant boundary
@@ -1365,8 +1381,8 @@ model Team {
   teamMembers  TeamMember[]
 
   @@index([organizationId])
-  @@schema("app")
   @@map("team")
+  @@schema("app")
 }
 
 model TeamMember {
@@ -1381,8 +1397,8 @@ model TeamMember {
 
   @@index([teamId])
   @@index([userId])
-  @@schema("app")
   @@map("team_member")
+  @@schema("app")
 }
 
 /// membership of an organization — not repurposed for anything else
@@ -1398,8 +1414,8 @@ model Member {
 
   @@index([organizationId])
   @@index([userId])
-  @@schema("app")
   @@map("member")
+  @@schema("app")
 }
 
 model Invitation {
@@ -1418,8 +1434,8 @@ model Invitation {
 
   @@index([organizationId])
   @@index([email])
-  @@schema("app")
   @@map("invitation")
+  @@schema("app")
 }
 
 // ────────────────────────── app · EAV substrate ─────────────────────────
@@ -1452,8 +1468,8 @@ enum AttributeType {
   country
   file
 
-  @@schema("app")
   @@map("attribute_type")
+  @@schema("app")
 }
 
 enum AttributeRelationshipType {
@@ -1462,8 +1478,8 @@ enum AttributeRelationshipType {
   manyToOne
   manyToMany
 
-  @@schema("app")
   @@map("attribute_relationship_type")
+  @@schema("app")
 }
 
 /// records who set a cell. NULL = user. Lets an enrichment refresh overwrite
@@ -1473,40 +1489,40 @@ enum CellSource {
   import
   ai
 
-  @@schema("app")
   @@map("cell_source")
+  @@schema("app")
 }
 
 enum ViewType {
   table
   pipeline
 
-  @@schema("app")
   @@map("view_type")
+  @@schema("app")
 }
 
 enum SourceKind {
   advisor
   firm
 
-  @@schema("app")
   @@map("source_kind")
+  @@schema("app")
 }
 
 /// A table definition. Entity owns the attribute schema; List owns membership.
 model Entity {
-  id                 String   @id @default(uuid(7))
-  workspaceId        String   @map("workspace_id")
+  id                 String      @id @default(uuid(7))
+  workspaceId        String      @map("workspace_id")
   name               String
-  singularNoun       String?  @map("singular_noun")
+  singularNoun       String?     @map("singular_noun")
   slug               String
   icon               String?
   color              String?
   /// advisor | firm when this entity mirrors market data
   sourceKind         SourceKind? @map("source_kind")
-  primaryAttributeId String?  @map("primary_attribute_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+  primaryAttributeId String?     @map("primary_attribute_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @default(now()) @updatedAt @map("updated_at")
 
   attributes EntityAttribute[]
   records    EntityRecord[]
@@ -1516,8 +1532,8 @@ model Entity {
 
   @@unique([slug, workspaceId])
   @@index([workspaceId])
-  @@schema("app")
   @@map("entity")
+  @@schema("app")
 }
 
 /// A field definition. Three kinds, distinguished by how the grid resolves them:
@@ -1525,39 +1541,39 @@ model Entity {
 ///   relationship — an edge in entity_record_relationship
 ///   reference    — a column in a market projection, resolved by JOIN, never copied
 model EntityAttribute {
-  id          String        @id @default(uuid(7))
-  entityId    String        @map("entity_id")
-  workspaceId String        @map("workspace_id")
-  label       String
-  key         String
-  type        AttributeType
-  description String?
+  id           String        @id @default(uuid(7))
+  entityId     String        @map("entity_id")
+  workspaceId  String        @map("workspace_id")
+  label        String
+  key          String
+  type         AttributeType
+  description  String?
   /// lexorank
-  position    String
-  icon        String?
-  defaultValue Json?        @map("default_value") @db.JsonB
+  position     String
+  icon         String?
+  defaultValue Json?         @map("default_value") @db.JsonB
 
-  isUnique        Boolean @default(false) @map("is_unique")
-  isSystem        Boolean @default(false) @map("is_system")
-  isPrimary       Boolean @default(false) @map("is_primary")
-  isRequired      Boolean @default(false) @map("is_required")
-  isEditable      Boolean @default(true) @map("is_editable")
-  isArchived      Boolean @default(false) @map("is_archived")
-  isMultiValue    Boolean @default(false) @map("is_multi_value")
+  isUnique     Boolean @default(false) @map("is_unique")
+  isSystem     Boolean @default(false) @map("is_system")
+  isPrimary    Boolean @default(false) @map("is_primary")
+  isRequired   Boolean @default(false) @map("is_required")
+  isEditable   Boolean @default(true) @map("is_editable")
+  isArchived   Boolean @default(false) @map("is_archived")
+  isMultiValue Boolean @default(false) @map("is_multi_value")
   /// written by the enrichment waterfall; the cell writer still refuses to
   /// overwrite a value a human entered
-  isEnriched      Boolean @default(false) @map("is_enriched")
+  isEnriched   Boolean @default(false) @map("is_enriched")
 
   /// set for reference attributes: the market projection column this resolves to.
   /// Validated against an allowlist at compile time — identifiers never come
   /// from user input.
   referenceColumn String? @map("reference_column")
 
-  relationshipType                AttributeRelationshipType? @map("relationship_type")
+  relationshipType                 AttributeRelationshipType? @map("relationship_type")
   /// which side of a relationship pair owns the canonical edge row
-  isCanonicalSide                 Boolean?                   @map("is_canonical_side")
-  otherRelationshipSideAttributeId String?                   @unique @map("other_relationship_side_attribute_id")
-  relationEntityId                String?                    @map("relation_entity_id")
+  isCanonicalSide                  Boolean?                   @map("is_canonical_side")
+  otherRelationshipSideAttributeId String?                    @unique @map("other_relationship_side_attribute_id")
+  relationEntityId                 String?                    @map("relation_entity_id")
 
   /// per-type config blob, validated on write by the attribute-type registry
   config Json @default("{}") @db.JsonB
@@ -1569,7 +1585,7 @@ model EntityAttribute {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  entity        Entity                  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  entity        Entity                     @relation(fields: [entityId], references: [id], onDelete: Cascade)
   choices       EntityAttributeChoice[]
   values        EntityRecordValue[]
   relationships EntityRecordRelationship[]
@@ -1580,8 +1596,8 @@ model EntityAttribute {
   @@unique([entityId, key])
   @@index([workspaceId, entityId])
   @@index([referenceColumn])
-  @@schema("app")
   @@map("entity_attribute")
+  @@schema("app")
 }
 
 /// Unified labelled choices for status/select attributes. isWon/isLost carry
@@ -1603,8 +1619,8 @@ model EntityAttributeChoice {
 
   @@unique([attributeId, position])
   @@index([workspaceId])
-  @@schema("app")
   @@map("entity_attribute_choice")
+  @@schema("app")
 }
 
 /// A row. Points at market by CRD value — never by FK, and never at the firm
@@ -1629,24 +1645,24 @@ model EntityRecord {
   @@unique([entityId, sourceKind, sourceCrd, workspaceId])
   @@index([entityId, workspaceId])
   @@index([sourceKind, sourceCrd])
-  @@schema("app")
   @@map("entity_record")
+  @@schema("app")
 }
 
 /// EAV cell storage: one row per (record, attribute), one typed column
 /// populated per row, dispatched by attribute.type. The per-type composite
 /// indexes are what make EAV filtering fast rather than pathological.
 model EntityRecordValue {
-  id          String      @id @default(uuid(7))
-  recordId    String      @map("record_id")
-  attributeId String      @map("attribute_id")
-  workspaceId String      @map("workspace_id")
+  id          String @id @default(uuid(7))
+  recordId    String @map("record_id")
+  attributeId String @map("attribute_id")
+  workspaceId String @map("workspace_id")
 
-  textValue    String?  @map("text_value")
-  numericValue Decimal? @map("numeric_value") @db.Decimal(30, 10)
+  textValue    String?   @map("text_value")
+  numericValue Decimal?  @map("numeric_value") @db.Decimal(30, 10)
   dateValue    DateTime? @map("date_value") @db.Timestamptz(6)
-  booleanValue Boolean? @map("boolean_value")
-  jsonValue    Json?    @map("json_value") @db.JsonB
+  booleanValue Boolean?  @map("boolean_value")
+  jsonValue    Json?     @map("json_value") @db.JsonB
 
   /// optimistic concurrency token
   version Int         @default(0)
@@ -1667,8 +1683,8 @@ model EntityRecordValue {
   @@index([attributeId, booleanValue])
   @@index([recordId])
   @@index([workspaceId, attributeId])
-  @@schema("app")
   @@map("entity_record_value")
+  @@schema("app")
 }
 
 /// Edges are written and read on the canonical side only; the non-canonical
@@ -1695,8 +1711,8 @@ model EntityRecordRelationship {
   @@unique([sourceRecordId, attributeId, targetRecordId])
   @@index([sourceRecordId, attributeId])
   @@index([targetRecordId])
-  @@schema("app")
   @@map("entity_record_relationship")
+  @@schema("app")
 }
 
 /// A saved view: filter AST, sort AST and column configuration.
@@ -1725,8 +1741,8 @@ model EntityView {
   workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([entityId, workspaceId])
-  @@schema("app")
   @@map("entity_view")
+  @@schema("app")
 }
 
 model EntityViewField {
@@ -1750,8 +1766,8 @@ model EntityViewField {
   workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([viewId])
-  @@schema("app")
   @@map("entity_view_field")
+  @@schema("app")
 }
 
 /// Ordered hops enabling lookup columns through relationships, max 3.
@@ -1768,8 +1784,8 @@ model EntityViewFieldPath {
 
   @@id([fieldId, position])
   @@index([attributeId])
-  @@schema("app")
   @@map("entity_view_field_path")
+  @@schema("app")
 }
 
 // ───────────────────────────── app · lists ──────────────────────────────
@@ -1778,23 +1794,23 @@ enum ListKind {
   static
   dynamic
 
-  @@schema("app")
   @@map("list_kind")
+  @@schema("app")
 }
 
 /// One shared cell set keeps values consistent when a record belongs to multiple lists.
 model List {
-  id            String   @id @default(uuid(7))
-  workspaceId   String   @map("workspace_id")
-  userId        String   @map("user_id")
-  entityId      String   @map("entity_id")
+  id            String    @id @default(uuid(7))
+  workspaceId   String    @map("workspace_id")
+  userId        String    @map("user_id")
+  entityId      String    @map("entity_id")
   name          String
-  kind          ListKind @default(static)
+  kind          ListKind  @default(static)
   /// dynamic lists only: the filter AST defining membership
-  filterTree    Json?    @map("filter_tree") @db.JsonB
-  defaultViewId String?  @map("default_view_id")
+  filterTree    Json?     @map("filter_tree") @db.JsonB
+  defaultViewId String?   @map("default_view_id")
   /// workspace | private
-  visibility    String   @default("workspace")
+  visibility    String    @default("workspace")
   deletedAt     DateTime? @map("deleted_at")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1805,8 +1821,8 @@ model List {
   workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, entityId])
-  @@schema("app")
   @@map("list")
+  @@schema("app")
 }
 
 model ListMember {
@@ -1824,6 +1840,6 @@ model ListMember {
   @@id([listId, recordId])
   @@index([recordId])
   @@index([workspaceId])
-  @@schema("app")
   @@map("list_member")
+  @@schema("app")
 }

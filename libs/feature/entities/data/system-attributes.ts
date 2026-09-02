@@ -47,7 +47,12 @@ export const ADVISOR_REFERENCE_ATTRIBUTES = {
   moveCount_5y: '01a04af1-e871-7e0b-a52d-e69461f421df', // advisor.move_count_5y
   firmAum: '01a04af1-e872-7753-9e23-0d2f30a978f3', // advisor.firm_aum
   firmAumBand: '01a04af1-e873-7bdf-b318-f62acafe292a', // advisor.firm_aum_band
-  firmClientCount: '01a04af1-e874-7707-aa95-c721825ed984', // advisor.firm_client_count
+  firmAccountCount: '01a04af1-e874-7707-aa95-c721825ed984', // advisor.firm_account_count
+  firmDiscretionaryAccountCount: '01a06227-fc31-7b2e-accc-d0ddcc7cb848', // advisor.firm_discretionary_account_count
+  firmNonDiscretionaryAccountCount: '01a06227-fc31-7920-8020-022ccc4ca426', // advisor.firm_non_discretionary_account_count
+  firmReportedClientCountMin: '01a06220-25f0-76bd-a12c-d1a46a127dc4', // advisor.firm_reported_client_count_min
+  firmReportedClientCountMax: '01a06220-25f0-7a3d-9877-c904e2e7fbb0', // advisor.firm_reported_client_count_max
+  firmReportedClientCountQuality: '01a06220-25f0-7cde-ae91-f59411ce5158', // advisor.firm_reported_client_count_quality
   firmEmployeeCount: '01a04af1-e876-70d1-b1d6-100cb3ee6660', // advisor.firm_employee_count
   firmAdvisorCount: '01a04af1-e877-74a6-8f94-7ac9705d8083', // advisor.firm_advisor_count
   firmAumPerAdvisor: '01a04af1-e878-7eba-9fc2-5f0cd2fe95d7', // advisor.firm_aum_per_advisor
@@ -61,7 +66,7 @@ export const ADVISOR_REFERENCE_ATTRIBUTES = {
   isUsWorkplace: '01a04b01-33a2-7157-ad2d-b5a0b52dc3cb', // advisor.is_us_workplace
   firmLinkedinUrl: '01a04b01-33a3-7b34-a396-7577332794d8', // advisor.firm_linkedin_url
   firmOfficeCount: '01a04b01-33a4-7ab2-a88e-a61bc9fe6490', // advisor.firm_office_count
-  firmAumPerClient: '01a04b01-33a6-782c-8d73-2f8327cb645c', // advisor.firm_aum_per_client
+  firmAumPerAccount: '01a04b01-33a6-782c-8d73-2f8327cb645c', // advisor.firm_aum_per_account
   firmAumCagr_3y: '01a04b01-33a7-7f0c-9767-c053f950aff8', // advisor.firm_aum_cagr_3y
   firmIsSecRegistered: '01a04b01-33a8-79c1-86db-bec68bbf41ec', // advisor.firm_is_sec_registered
   firmIsEra: '01a04b01-33a9-7d89-b31a-942b990eeb63', // advisor.firm_is_era
@@ -84,14 +89,19 @@ export const FIRM_REFERENCE_ATTRIBUTES = {
   isEra: '01a04af1-e882-7665-a76b-d0e64da63532', // firm.is_era
   regulatoryAum: '01a04af1-e883-7382-8352-6ab966c4c158', // firm.regulatory_aum
   aumBand: '01a04af1-e884-7ae9-9066-89f4d96f2caa', // firm.aum_band
-  clientCount: '01a04af1-e885-7ee6-8bc6-ae10c013d04f', // firm.client_count
+  accountCount: '01a04af1-e885-7ee6-8bc6-ae10c013d04f', // firm.account_count
+  discretionaryAccountCount: '01a06227-fc31-7802-ab27-0baa8494779d', // firm.discretionary_account_count
+  nonDiscretionaryAccountCount: '01a06227-fc31-7fee-9693-0c9060e28dc7', // firm.non_discretionary_account_count
+  reportedClientCountMin: '01a06220-25f0-7767-bbb3-1028755d3680', // firm.reported_client_count_min
+  reportedClientCountMax: '01a06220-25f0-7c0e-9e0c-998661640974', // firm.reported_client_count_max
+  reportedClientCountQuality: '01a06220-25f0-7a0b-829f-c96b8084cc98', // firm.reported_client_count_quality
   employeeCount: '01a04af1-e886-7d9d-aab9-ed679f4db5aa', // firm.employee_count
   advisorCount: '01a04af1-e887-703a-897b-2574528425ec', // firm.advisor_count
   advisorLinkageStatus: '01a04b0c-4d21-7a6e-9c3f-5b81e7402db4', // firm.advisor_linkage_status
   observedAdvisorCount: '01a04b0c-4d22-7b13-8e57-2c9d6a4413f8', // firm.observed_advisor_count
   feeMethodCodes: '01a04b0c-4d25-7e91-8a73-3f60d2c85b47', // firm.fee_method_codes
   aumPerAdvisor: '01a04af1-e888-7097-856c-c8799b7ef4df', // firm.aum_per_advisor
-  aumPerClient: '01a04af1-e889-7f5f-8bb8-ab8bad855866', // firm.aum_per_client
+  aumPerAccount: '01a04af1-e889-7f5f-8bb8-ab8bad855866', // firm.aum_per_account
   aumCagr_3y: '01a04af1-e88a-7260-b668-928b4a2042c0', // firm.aum_cagr_3y
   clientTypeCodes: '01a04af1-e88b-7de0-b7cc-94c5441236a9', // firm.client_type_codes
   serviceCodes: '01a04af1-e88c-7e02-94eb-b1fbd27b2190', // firm.service_codes

@@ -13,7 +13,10 @@ const CLIENT_TYPES = [
   ['Pooled_Investment_Vehicles', 'Pooled investment vehicles'],
   ['Pension_and_Profit_Sharing', 'Pension and profit sharing plans'],
   ['Charitable_Organizations', 'Charitable organizations'],
-  ['Sovereign_Wealth_Funds', 'Sovereign wealth funds and foreign official institutions'],
+  [
+    'Sovereign_Wealth_Funds',
+    'Sovereign wealth funds and foreign official institutions',
+  ],
   ['Investment_Companies', 'Investment companies'],
   ['Corporations_or_Other_Businesses', 'Corporations or other businesses'],
   ['Other_Investment_Advisers', 'Other investment advisers'],
@@ -21,17 +24,30 @@ const CLIENT_TYPES = [
   ['Banking_or_Thrift', 'Banking or thrift institutions'],
   ['Insurance_Companies', 'Insurance companies'],
   ['Business_Development_Companies', 'Business development companies'],
+  ['Other', 'Other'],
 ] as const;
 
 const SERVICE_TYPES = [
-  ['portfolio_mgmt_individuals', 'Portfolio Management for Individuals & Small Businesses'],
+  [
+    'portfolio_mgmt_individuals',
+    'Portfolio Management for Individuals & Small Businesses',
+  ],
   ['financial_planning', 'Financial Planning Services'],
-  ['portfolio_mgmt_institutional', 'Portfolio Management for Businesses or Institutional Clients'],
+  [
+    'portfolio_mgmt_institutional',
+    'Portfolio Management for Businesses or Institutional Clients',
+  ],
   ['selection_other_advisers', 'Selection of Other Advisers'],
-  ['portfolio_mgmt_pooled', 'Portfolio Management for Pooled Investment Vehicles'],
+  [
+    'portfolio_mgmt_pooled',
+    'Portfolio Management for Pooled Investment Vehicles',
+  ],
   ['pension_consulting', 'Pension Consulting Services'],
   ['educational_seminars', 'Educational Seminars/Workshops'],
-  ['portfolio_mgmt_inv_companies', 'Portfolio Management for Investment Companies'],
+  [
+    'portfolio_mgmt_inv_companies',
+    'Portfolio Management for Investment Companies',
+  ],
   ['publication_periodicals', 'Publication of Periodicals or Newsletters'],
   ['market_timing', 'Market Timing Services'],
   ['security_ratings', 'Security Ratings or Pricing Services'],
@@ -130,7 +146,12 @@ const SOURCES = [
   ['sec_iapd', 'SEC IAPD individual records', 'internal', 10],
   ['sec_iapd_current', 'SEC IAPD current employment', 'internal', 10],
   ['derived', 'Derived by our own transforms', 'internal', 20],
-  ['pattern_inference', 'Email pattern inference (identifier only)', 'internal', 60],
+  [
+    'pattern_inference',
+    'Email pattern inference (identifier only)',
+    'internal',
+    60,
+  ],
   ['user', 'Entered by a user', 'user', 5],
   ['scrape', 'Firm website scrape', 'scrape', 70],
 ] as const;
@@ -142,7 +163,9 @@ async function main(): Promise<void> {
     throw new Error('APP_DATABASE_URL is required');
   }
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
 
   const report = (label: string, count: number): void => {
     console.log(`  ${label}: ${count}`);
@@ -151,13 +174,21 @@ async function main(): Promise<void> {
   console.log('seeding dimensions');
 
   for (const [code, name] of CLIENT_TYPES) {
-    await prisma.dimClientType.upsert({ where: { code }, create: { code, name }, update: { name } });
+    await prisma.dimClientType.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
   }
 
   report('dim_client_type', CLIENT_TYPES.length);
 
   for (const [code, name] of SERVICE_TYPES) {
-    await prisma.dimServiceType.upsert({ where: { code }, create: { code, name }, update: { name } });
+    await prisma.dimServiceType.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
   }
 
   report('dim_service_type', SERVICE_TYPES.length);
@@ -183,7 +214,11 @@ async function main(): Promise<void> {
   report('dim_fee_method', FEE_METHODS.length);
 
   for (const [code, name] of FUND_TYPES) {
-    await prisma.dimFundType.upsert({ where: { code }, create: { code, name }, update: { name } });
+    await prisma.dimFundType.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
   }
 
   report('dim_fund_type', FUND_TYPES.length);

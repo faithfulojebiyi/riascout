@@ -22,3 +22,15 @@ select 'discretionary_aum',
       from market.filing f
       join market.firm_fact_metrics m on m.filing_id = f.filing_id
   ) t;
+
+select fs.firm_crd,
+       fs.regulatory_aum,
+       fs.account_count,
+       fs.aum_per_account,
+       fs.reported_client_count_min,
+       fs.reported_client_count_max,
+       fs.reported_client_count_quality,
+       fs.aum_percentile,
+       fs.aum_per_advisor_percentile
+from market.firm_search fs
+where fs.firm_crd = 149777;

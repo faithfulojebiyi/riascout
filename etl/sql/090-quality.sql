@@ -10,10 +10,62 @@
 -- is deliberately NOT gated.
 
 select 'firm employee_count > 1M' as issue, count(*) as rows
-from pg.market.firm_fact_metrics where employee_count > 1000000
+from pg.market.firm_fact_metrics where employee_count_raw > 1000000
 union all
-select 'firm client_count > 100M', count(*)
-from pg.market.firm_fact_metrics where client_count > 100000000
+select 'firm account_count > 100M', count(*)
+from pg.market.firm_fact_metrics where account_count_raw > 100000000
+union all
+select 'account components differ from total', count(*)
+from pg.market.firm_fact_metrics
+where discretionary_account_count is not null
+  and non_discretionary_account_count is not null
+  and account_count_raw is not null
+  and discretionary_account_count + non_discretionary_account_count <> account_count_raw
+union all
+select 'reported client bounds invalid', count(*)
+from pg.market.firm_fact_metrics
+where reported_client_count_quality not in ('reported_number', 'bounded_range', 'unavailable')
+   or reported_client_count_min < 0
+   or reported_client_count_max < reported_client_count_min
+   or (reported_client_count_quality = 'unavailable'
+       and (reported_client_count_min is not null or reported_client_count_max is not null))
+   or (reported_client_count_quality = 'reported_number'
+       and reported_client_count_min is distinct from reported_client_count_max)
+   or (reported_client_count_quality = 'bounded_range'
+       and reported_client_count_min >= reported_client_count_max)
+union all
+select 'positive client AUM without count evidence', count(*)
+from pg.market.firm_fact_client_type
+where regulatory_aum > 0 and coalesce(client_count, 0) <= 0
+  and fewer_than_five is not true
+union all
+select 'client type AUM differs from regulatory AUM', count(*)
+from pg.market.firm_fact_metrics m
+join (
+  select filing_id, sum(regulatory_aum) as client_type_aum
+  from pg.market.firm_fact_client_type
+  group by filing_id
+) c using (filing_id)
+where m.regulatory_aum is not null and c.client_type_aum is not null
+  and m.regulatory_aum <> c.client_type_aum
+union all
+select 'AUM per account ratio mismatch', count(*)
+from pg.market.firm_fact_metrics m
+join pg.market.firm_fact_derived d using (filing_id)
+where m.regulatory_aum is not null and m.account_count > 0
+  and abs(d.aum_per_account - m.regulatory_aum / m.account_count) > 0.01
+union all
+select 'AUM per linked adviser ratio mismatch', count(*)
+from pg.market.firm_fact_metrics m
+join pg.market.firm_fact_derived d using (filing_id)
+where m.regulatory_aum is not null and d.advisor_count > 0
+  and abs(d.aum_per_advisor - m.regulatory_aum / d.advisor_count) > 0.01
+union all
+select 'AUM per employee ratio mismatch', count(*)
+from pg.market.firm_fact_metrics m
+join pg.market.firm_fact_derived d using (filing_id)
+where m.regulatory_aum is not null and m.employee_count > 0
+  and abs(d.aum_per_employee - m.regulatory_aum / m.employee_count) > 0.01
 union all
 select 'office employee_count > 100k', count(*)
 from pg.market.firm_fact_office where employee_count > 100000

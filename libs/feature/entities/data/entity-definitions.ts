@@ -84,6 +84,27 @@ const LABEL_OVERRIDES: Record<string, string> = {
   advisor_linkage_status: 'Adviser Linkage',
 };
 
+const DESCRIPTION_OVERRIDES: Readonly<Record<string, string>> = {
+  'advisor.firm_aum':
+    'Regulatory assets under management reported by the current firm on Form ADV.',
+  'advisor.firm_aum_per_advisor':
+    'Regulatory AUM divided by linked active advisers; unavailable when adviser linkage is incomplete.',
+  'advisor.firm_aum_per_account':
+    'Regulatory AUM divided by total regulatory accounts reported on Form ADV.',
+  'firm.regulatory_aum':
+    'Regulatory assets under management reported on Form ADV.',
+  'firm.discretionary_aum':
+    'Regulatory AUM managed with discretionary authority, as reported on Form ADV.',
+  'firm.non_discretionary_aum':
+    'Regulatory AUM managed without discretionary authority, as reported on Form ADV.',
+  'firm.aum_per_advisor':
+    'Regulatory AUM divided by linked active advisers; unavailable when adviser linkage is incomplete.',
+  'firm.aum_per_account':
+    'Regulatory AUM divided by total regulatory accounts reported on Form ADV.',
+  'firm.aum_per_employee':
+    'Regulatory AUM divided by the firm-reported employee count.',
+};
+
 const humanise = (column: string): string =>
   LABEL_OVERRIDES[column] ??
   column
@@ -125,6 +146,7 @@ const referenceAttributes = (
         pinned: meta?.pinned ?? false,
         isPrimary: meta?.primary ?? false,
         icon: iconFor(allowKey, ref.type),
+        description: DESCRIPTION_OVERRIDES[allowKey],
       };
     });
 

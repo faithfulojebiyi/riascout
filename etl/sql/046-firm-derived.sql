@@ -36,7 +36,7 @@ base as (
   select c.firm_crd,
          c.filing_id,
          m.regulatory_aum,
-         m.client_count,
+         m.account_count,
          m.employee_count,
          ac.advisor_count,
          r.is_era,
@@ -46,25 +46,44 @@ base as (
     left join market.firm_fact_registration r  on r.filing_id  = c.filing_id
     left join advisor_counts                ac on ac.firm_crd  = c.firm_crd
     left join bd_affiliated                 bd on bd.filing_id = c.filing_id
+),
+ratios as (
+  select b.*,
+         (b.regulatory_aum / nullif(b.advisor_count, 0)) as aum_per_advisor,
+         (b.regulatory_aum / nullif(b.account_count, 0)) as aum_per_account,
+         (b.regulatory_aum / nullif(b.employee_count, 0)) as aum_per_employee,
+         (b.account_count::numeric / nullif(b.advisor_count, 0)) as accounts_per_advisor
+    from base b
+),
+aum_population as (
+  select filing_id,
+         round(percent_rank() over (order by regulatory_aum) * 100)::int as percentile
+    from ratios
+   where regulatory_aum is not null
+),
+aum_per_advisor_population as (
+  select filing_id,
+         round(percent_rank() over (order by aum_per_advisor) * 100)::int as percentile
+    from ratios
+   where aum_per_advisor is not null
+),
+aum_per_account_population as (
+  select filing_id,
+         round(percent_rank() over (order by aum_per_account) * 100)::int as percentile
+    from ratios
+   where aum_per_account is not null
 )
-select b.filing_id,
-       b.advisor_count,
+select r.filing_id,
+       r.advisor_count,
 
-       (b.regulatory_aum / nullif(b.advisor_count, 0))   as aum_per_advisor,
-       (b.regulatory_aum / nullif(b.client_count, 0))    as aum_per_client,
-       (b.regulatory_aum / nullif(b.employee_count, 0))  as aum_per_employee,
-       (b.client_count::numeric / nullif(b.advisor_count, 0)) as clients_per_advisor,
+       r.aum_per_advisor,
+       r.aum_per_account,
+       r.aum_per_employee,
+       r.accounts_per_advisor,
 
-       -- percentiles rank against the current population, not all of history
-       case when b.regulatory_aum is not null then
-         (percent_rank() over (order by b.regulatory_aum) * 100)::int
-       end                                               as aum_percentile,
-       case when b.regulatory_aum is not null and b.advisor_count > 0 then
-         (percent_rank() over (order by b.regulatory_aum / nullif(b.advisor_count, 0)) * 100)::int
-       end                                               as aum_per_advisor_percentile,
-       case when b.regulatory_aum is not null and b.client_count > 0 then
-         (percent_rank() over (order by b.regulatory_aum / nullif(b.client_count, 0)) * 100)::int
-       end                                               as aum_per_client_percentile,
+       ap.percentile                                     as aum_percentile,
+       aap.percentile                                    as aum_per_advisor_percentile,
+       aacp.percentile                                   as aum_per_account_percentile,
 
        /**
         * Only era and hybrid are evidenced. bank_affiliated and
@@ -73,19 +92,22 @@ select b.filing_id,
         * so absence is taken as none.
         */
        case
-         when b.is_era                          then 'era'
-         when b.has_bd_affiliate                then 'hybrid'
-         when b.is_era is not null              then 'pure_ria'
+         when r.is_era                          then 'era'
+         when r.has_bd_affiliate                then 'hybrid'
+         when r.is_era is not null              then 'pure_ria'
        end                                               as channel_code,
 
        band.code                                         as aum_band_code
-  from base b
+  from ratios r
+  left join aum_population ap on ap.filing_id = r.filing_id
+  left join aum_per_advisor_population aap on aap.filing_id = r.filing_id
+  left join aum_per_account_population aacp on aacp.filing_id = r.filing_id
   left join lateral (
     select d.code
       from market.dim_aum_band d
-     where b.regulatory_aum is not null
-       and (d.lower_aum is null or b.regulatory_aum >= d.lower_aum)
-       and (d.upper_aum is null or b.regulatory_aum <  d.upper_aum)
+     where r.regulatory_aum is not null
+       and (d.lower_aum is null or r.regulatory_aum >= d.lower_aum)
+       and (d.upper_aum is null or r.regulatory_aum <  d.upper_aum)
      limit 1
   ) band on true;
 
@@ -93,14 +115,14 @@ truncate market.firm_fact_derived;
 
 insert into market.firm_fact_derived (
   filing_id, advisor_count,
-  aum_per_advisor, aum_per_client, aum_per_employee, clients_per_advisor,
-  aum_percentile, aum_per_advisor_percentile, aum_per_client_percentile,
+  aum_per_advisor, aum_per_account, aum_per_employee, accounts_per_advisor,
+  aum_percentile, aum_per_advisor_percentile, aum_per_account_percentile,
   channel_code, aum_band_code
 )
 select
   filing_id, advisor_count,
-  aum_per_advisor, aum_per_client, aum_per_employee, clients_per_advisor,
-  aum_percentile, aum_per_advisor_percentile, aum_per_client_percentile,
+  aum_per_advisor, aum_per_account, aum_per_employee, accounts_per_advisor,
+  aum_percentile, aum_per_advisor_percentile, aum_per_account_percentile,
   channel_code, aum_band_code
 from _firm_derived;
 

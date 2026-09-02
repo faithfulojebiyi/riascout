@@ -22,14 +22,36 @@ export type ProvisionClient = {
   entityAttribute: {
     findMany: (args: {
       where: { entityId: string };
-      select: { id: true; key: true };
-    }) => Promise<{ id: string; key: string }[]>;
+      select: Record<string, true>;
+    }) => Promise<
+      Array<{
+        id: string;
+        key: string;
+        label: string;
+        type: string;
+        isMultiValue: boolean;
+        referenceColumn: string | null;
+        isEditable: boolean;
+        isSystem: boolean;
+        isPrimary: boolean;
+        isUnique: boolean;
+        isEnriched: boolean;
+        icon: string | null;
+        description: string | null;
+        group: string | null;
+      }>
+    >;
     create: (args: {
       data: Record<string, unknown>;
       select: { id: true };
     }) => Promise<{
       id: string;
     }>;
+    update: (args: {
+      where: { id: string };
+      data: Record<string, unknown>;
+      select: { id: true };
+    }) => Promise<{ id: string }>;
   };
   entityAttributeChoice: {
     create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
@@ -70,6 +92,7 @@ export type ProvisionClient = {
 export type ProvisionResult = {
   entitiesCreated: number;
   attributesCreated: number;
+  attributesUpdated: number;
   viewsCreated: number;
   fieldsCreated: number;
 };
@@ -86,6 +109,7 @@ export const provisionWorkspace = async (
 ): Promise<ProvisionResult> => {
   let entitiesCreated = 0;
   let attributesCreated = 0;
+  let attributesUpdated = 0;
   let viewsCreated = 0;
   let fieldsCreated = 0;
 
@@ -113,11 +137,28 @@ export const provisionWorkspace = async (
 
     const existingAttributes = await client.entityAttribute.findMany({
       where: { entityId: entity.id },
-      select: { id: true, key: true },
+      select: {
+        id: true,
+        key: true,
+        label: true,
+        type: true,
+        isMultiValue: true,
+        referenceColumn: true,
+        isEditable: true,
+        isSystem: true,
+        isPrimary: true,
+        isUnique: true,
+        isEnriched: true,
+        icon: true,
+        description: true,
+        group: true,
+      },
     });
 
     const idByKey = new Map(existingAttributes.map((a) => [a.key, a.id]));
-    const present = new Set(idByKey.keys());
+    const existingByKey = new Map(
+      existingAttributes.map((attribute) => [attribute.key, attribute]),
+    );
 
     // LexoRank keeps columns reorderable without renumbering the whole set
     let rank = LexoRank.middle();
@@ -125,7 +166,37 @@ export const provisionWorkspace = async (
     for (const attribute of definition.attributes) {
       rank = rank.genNext();
 
-      if (present.has(attribute.key)) {
+      const desiredMetadata = {
+        label: attribute.label,
+        type: attribute.type,
+        isMultiValue: attribute.isMultiValue,
+        referenceColumn: attribute.referenceColumn,
+        isEditable: attribute.isEditable,
+        isSystem: true,
+        isPrimary: attribute.isPrimary,
+        isUnique: attribute.isUnique ?? false,
+        isEnriched: attribute.isEnriched ?? false,
+        icon: attribute.icon ?? null,
+        description: attribute.description ?? null,
+        group: attribute.group,
+      };
+      const current = existingByKey.get(attribute.key);
+
+      if (current) {
+        const isStale = Object.entries(desiredMetadata).some(
+          ([field, value]) =>
+            current[field as keyof typeof desiredMetadata] !== value,
+        );
+
+        if (isStale) {
+          await client.entityAttribute.update({
+            where: { id: current.id },
+            data: desiredMetadata,
+            select: { id: true },
+          });
+          attributesUpdated += 1;
+        }
+
         continue;
       }
 
@@ -134,18 +205,7 @@ export const provisionWorkspace = async (
           entityId: entity.id,
           workspaceId,
           key: attribute.key,
-          label: attribute.label,
-          type: attribute.type,
-          isMultiValue: attribute.isMultiValue,
-          referenceColumn: attribute.referenceColumn,
-          isEditable: attribute.isEditable,
-          isSystem: true,
-          isPrimary: attribute.isPrimary,
-          isUnique: attribute.isUnique ?? false,
-          isEnriched: attribute.isEnriched ?? false,
-          icon: attribute.icon ?? null,
-          description: attribute.description ?? null,
-          group: attribute.group,
+          ...desiredMetadata,
           position: rank.toString(),
         },
         select: { id: true },
@@ -246,5 +306,11 @@ export const provisionWorkspace = async (
     }
   }
 
-  return { entitiesCreated, attributesCreated, viewsCreated, fieldsCreated };
+  return {
+    entitiesCreated,
+    attributesCreated,
+    attributesUpdated,
+    viewsCreated,
+    fieldsCreated,
+  };
 };

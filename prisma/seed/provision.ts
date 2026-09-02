@@ -19,7 +19,9 @@ async function main(): Promise<void> {
     throw new Error('APP_DATABASE_URL is required');
   }
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
   const workspaces = await prisma.organization.findMany({
     select: { id: true, name: true },
     orderBy: { createdAt: 'asc' },
@@ -28,25 +30,30 @@ async function main(): Promise<void> {
   console.log(`provisioning ${workspaces.length} workspaces`);
 
   let attributes = 0;
+  let attributesUpdated = 0;
   let fields = 0;
 
   for (const workspace of workspaces) {
-    const result = await provisionWorkspace(
-      prisma as never,
-      workspace.id,
-    );
+    const result = await provisionWorkspace(prisma as never, workspace.id);
 
     attributes += result.attributesCreated;
+    attributesUpdated += result.attributesUpdated;
     fields += result.fieldsCreated;
 
-    if (result.attributesCreated > 0 || result.fieldsCreated > 0) {
+    if (
+      result.attributesCreated > 0 ||
+      result.attributesUpdated > 0 ||
+      result.fieldsCreated > 0
+    ) {
       console.log(
-        `  ${workspace.name}: +${result.attributesCreated} attributes, +${result.fieldsCreated} fields`,
+        `  ${workspace.name}: +${result.attributesCreated} attributes, ~${result.attributesUpdated} attributes, +${result.fieldsCreated} fields`,
       );
     }
   }
 
-  console.log(`done: ${attributes} attributes, ${fields} fields added`);
+  console.log(
+    `done: ${attributes} attributes added, ${attributesUpdated} attributes updated, ${fields} fields added`,
+  );
 
   await prisma.$disconnect();
 }

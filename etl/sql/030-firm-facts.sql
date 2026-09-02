@@ -35,18 +35,27 @@ delete from pg.market.firm_fact_metrics;
 insert into pg.market.firm_fact_metrics (
   filing_id, regulatory_aum, discretionary_aum, non_discretionary_aum,
   employee_count, employee_count_raw, employee_count_quality,
-  client_count, client_count_raw, client_count_quality,
+  discretionary_account_count, non_discretionary_account_count,
+  account_count, account_count_raw, account_count_quality,
+  reported_client_count_min, reported_client_count_max,
+  reported_client_count_quality,
   advisory_employee_count, office_count
 )
 select m.filing_id, m.regulatory_aum, m.discretionary_aum, m.non_discretionary_aum,
        case when m.employee_count > 1000000 then null else m.employee_count end,
        m.employee_count,
        case when m.employee_count > 1000000 then 'invalid_source_value' end,
-       case when m.client_count > 100000000 then null else m.client_count end,
-       m.client_count,
-       case when m.client_count > 100000000 then 'invalid_source_value' end,
+       m.discretionary_account_count,
+       m.non_discretionary_account_count,
+       case when m.account_count > 100000000 then null else m.account_count end,
+       m.account_count,
+       case when m.account_count > 100000000 then 'invalid_source_value' end,
+       totals.reported_client_count_min,
+       totals.reported_client_count_max,
+       coalesce(totals.reported_client_count_quality, 'unavailable'),
        m.advisory_employee_count, m.office_count
 from firm_metrics m
+left join filing_reported_client_totals totals using (filing_id)
 where exists (select 1 from pg.market.filing f where f.filing_id = m.filing_id);
 
 -- ── registration category from the filing itself ────────────────────────────
@@ -67,9 +76,10 @@ where f.registration_category is not null
 delete from pg.market.firm_fact_client_type;
 
 insert into pg.market.firm_fact_client_type (
-  filing_id, client_type_code, client_count, regulatory_aum
+  filing_id, client_type_code, client_count, fewer_than_five, regulatory_aum
 )
-select c.filing_id, c.client_type, max(c.client_count), max(c.regulatory_aum)
+select c.filing_id, c.client_type, max(c.client_count),
+       bool_or(c.fewer_than_five), max(c.regulatory_aum)
 from filing_client_types c
 where exists (select 1 from pg.market.filing f where f.filing_id = c.filing_id)
   and exists (select 1 from pg.market.dim_client_type d where d.code = c.client_type)

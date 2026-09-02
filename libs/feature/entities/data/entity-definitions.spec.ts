@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_COLUMNS } from '../attribute-types/reference-columns.js';
 import { ATTRIBUTE_GROUPS, iconFor } from './column-meta.js';
-import { ADVISOR_ENTITY, DEFAULT_ENTITIES } from './entity-definitions.js';
+import {
+  ADVISOR_ENTITY,
+  DEFAULT_ENTITIES,
+  FIRM_ENTITY,
+} from './entity-definitions.js';
 import {
   ADVISOR_REFERENCE_ATTRIBUTES,
   ADVISOR_WORKFLOW_ATTRIBUTES,
@@ -208,6 +212,79 @@ describe('default entities', () => {
     expect(visible).toContain('Tenure (Years)');
     // months stay allowlisted for precise filtering, just not as a column
     expect(visible).not.toContain('Experience (Months)');
+  });
+
+  it('distinguishes regulatory accounts from reported clients', () => {
+    const advisorByKey = new Map(
+      ADVISOR_ENTITY.attributes.map((attribute) => [attribute.key, attribute]),
+    );
+    const firmByKey = new Map(
+      FIRM_ENTITY.attributes.map((attribute) => [attribute.key, attribute]),
+    );
+
+    expect(
+      advisorByKey.get(ADVISOR_REFERENCE_ATTRIBUTES.firmAccountCount),
+    ).toMatchObject({
+      label: 'Firm Account Count',
+      referenceColumn: 'advisor.firm_account_count',
+    });
+    expect(
+      advisorByKey.get(ADVISOR_REFERENCE_ATTRIBUTES.firmAumPerAccount),
+    ).toMatchObject({
+      label: 'Firm AUM Per Account',
+      referenceColumn: 'advisor.firm_aum_per_account',
+    });
+    expect(firmByKey.get(FIRM_REFERENCE_ATTRIBUTES.accountCount)).toMatchObject(
+      {
+        label: 'Account Count',
+        referenceColumn: 'firm.account_count',
+      },
+    );
+    expect(
+      firmByKey.get(FIRM_REFERENCE_ATTRIBUTES.aumPerAccount),
+    ).toMatchObject({
+      label: 'AUM Per Account',
+      referenceColumn: 'firm.aum_per_account',
+    });
+
+    const reportedClientAttributes = [
+      ADVISOR_REFERENCE_ATTRIBUTES.firmReportedClientCountMin,
+      ADVISOR_REFERENCE_ATTRIBUTES.firmReportedClientCountMax,
+      ADVISOR_REFERENCE_ATTRIBUTES.firmReportedClientCountQuality,
+      FIRM_REFERENCE_ATTRIBUTES.reportedClientCountMin,
+      FIRM_REFERENCE_ATTRIBUTES.reportedClientCountMax,
+      FIRM_REFERENCE_ATTRIBUTES.reportedClientCountQuality,
+    ].map((key) => advisorByKey.get(key) ?? firmByKey.get(key));
+
+    expect(reportedClientAttributes.every(Boolean)).toBe(true);
+    expect(
+      reportedClientAttributes.every((attribute) => !attribute?.visible),
+    ).toBe(true);
+  });
+
+  it('explains the denominators used by AUM metrics', () => {
+    const describedReferences = DEFAULT_ENTITIES.flatMap((entity) =>
+      entity.attributes.filter(
+        (attribute) =>
+          attribute.referenceColumn?.includes('aum') && attribute.description,
+      ),
+    );
+
+    expect(
+      describedReferences.map((attribute) => attribute.referenceColumn),
+    ).toEqual(
+      expect.arrayContaining([
+        'advisor.firm_aum',
+        'advisor.firm_aum_per_advisor',
+        'advisor.firm_aum_per_account',
+        'firm.regulatory_aum',
+        'firm.discretionary_aum',
+        'firm.non_discretionary_aum',
+        'firm.aum_per_advisor',
+        'firm.aum_per_account',
+        'firm.aum_per_employee',
+      ]),
+    );
   });
 
   describe('social and contact channels', () => {
