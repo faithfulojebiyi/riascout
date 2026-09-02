@@ -29,7 +29,7 @@ const panel = css({
   flexShrink: '0',
   overflowY: 'auto',
   // wide enough that a firm name and a wrapped chip list do not fight for it
-  w: '28rem',
+  w: '32rem',
 });
 
 function RecordPage() {
