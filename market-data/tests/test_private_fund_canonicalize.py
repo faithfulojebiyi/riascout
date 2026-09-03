@@ -53,6 +53,7 @@ def _database_with_complete_private_fund(tmp_path: Path) -> OfficialDatabase:
             "IA_Schedule_D_7B1A7d1_fund.csv": (
                 'FilingID,ReferenceID,SubreferenceID,"Name of General Partner, etc."\n'
                 "F-FUND,REF-1,MASTER-GP-1,Master GP LLC\n"
+                "F-FUND,REF-1,MASTER-GP-1,Master Manager LLC\n"
             ),
             "IA_Schedule_D_7B1A7d2_fund.csv": (
                 "FilingID,ReferenceID,SubreferenceID,Filing/Relying Adviser\n"
@@ -196,12 +197,14 @@ def test_private_fund_children_resolve_to_sec_fund_id(tmp_path: Path) -> None:
             "FROM filing_private_fund_related_funds"
         ).fetchone() == ("feeder_fund", "Example Feeder Fund", "PF-FEEDER")
         assert connection.execute(
-            "SELECT manager_role, manager_name FROM filing_private_fund_managers ORDER BY manager_role"
+            "SELECT manager_role, manager_name "
+            "FROM filing_private_fund_managers ORDER BY manager_role, source_row_number"
         ).fetchall() == [
             ("fund_filing_or_relying_adviser", "Complete Fund Adviser"),
             ("fund_partner_or_manager", "Example GP LLC"),
             ("master_fund_filing_or_relying_adviser", "Master Adviser LLC"),
             ("master_fund_partner_or_manager", "Master GP LLC"),
+            ("master_fund_partner_or_manager", "Master Manager LLC"),
         ]
         assert connection.execute(
             "SELECT authority_role, authority_name FROM filing_private_fund_foreign_authorities ORDER BY authority_role"
@@ -243,6 +246,27 @@ def test_private_fund_children_resolve_to_sec_fund_id(tmp_path: Path) -> None:
     assert websites == [
         ("MARKETER-1", "https://example.com/fund"),
         ("MARKETER-1", "https://example.com/fund/strategy"),
+    ]
+
+
+def test_private_fund_child_key_disambiguates_reused_sec_subreference(tmp_path: Path) -> None:
+    database = _database_with_complete_private_fund(tmp_path)
+
+    HistoricalCanonicalizer(database).publish(["private-fund:abc"])
+
+    with database.connection() as connection:
+        managers = connection.execute(
+            """
+            SELECT source_record_key, manager_name
+            FROM filing_private_fund_managers
+            WHERE manager_role = 'master_fund_partner_or_manager'
+            ORDER BY source_row_number
+            """
+        ).fetchall()
+
+    assert managers == [
+        ("MASTER-GP-1:row-1", "Master GP LLC"),
+        ("MASTER-GP-1:row-2", "Master Manager LLC"),
     ]
 
 

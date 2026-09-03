@@ -335,8 +335,22 @@ def _publish_child(
             )
         private_fund_id = fund_ids[(filing_id, fund_reference)]
         source_row = _source_row(row)
-        source_reference = _field(row, mapped.columns.get("source_reference")) or f"row-{source_row}"
-        _insert_child(connection, mapped, row, filing_id, private_fund_id, fund_reference, source_reference, source_row)
+        explicit_reference = _field(row, mapped.columns.get("source_reference"))
+        source_reference = explicit_reference or f"row-{source_row}"
+        source_record_key = (
+            f"{explicit_reference}:row-{source_row}" if explicit_reference is not None else source_reference
+        )
+        _insert_child(
+            connection,
+            mapped,
+            row,
+            filing_id,
+            private_fund_id,
+            fund_reference,
+            source_reference,
+            source_record_key,
+            source_row,
+        )
 
 
 def _insert_child(
@@ -347,6 +361,7 @@ def _insert_child(
     private_fund_id: str,
     fund_reference: str,
     source_reference: str,
+    source_record_key: str,
     source_row: int,
 ) -> None:
     family = mapped.family
@@ -355,7 +370,7 @@ def _insert_child(
     if family == "a6b":
         connection.execute(
             "INSERT INTO filing_private_fund_related_funds VALUES (?, ?, ?, 'feeder_fund', ?, ?, ?, ?, ?, ?)",
-            [*common, source_reference, _value(mapped, row, "name"), _value(mapped, row, "related_id"), *provenance],
+            [*common, source_record_key, _value(mapped, row, "name"), _value(mapped, row, "related_id"), *provenance],
         )
     elif family in {"a3a", "a3b", "a7d1", "a7d2"}:
         roles = {
@@ -366,13 +381,13 @@ def _insert_child(
         }
         connection.execute(
             "INSERT INTO filing_private_fund_managers VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [*common, roles[family], source_reference, _value(mapped, row, "name"), *provenance],
+            [*common, roles[family], source_record_key, _value(mapped, row, "name"), *provenance],
         )
     elif family in {"a5", "a7f"}:
         role = "fund" if family == "a5" else "master_fund"
         connection.execute(
             "INSERT INTO filing_private_fund_foreign_authorities VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [*common, role, source_reference, _value(mapped, row, "name"), *provenance],
+            [*common, role, source_record_key, _value(mapped, row, "name"), *provenance],
         )
     elif family in {"a17b", "a18b"}:
         role = "primary_adviser" if family == "a17b" else "other_adviser"
@@ -381,7 +396,7 @@ def _insert_child(
             [
                 *common,
                 role,
-                source_reference,
+                source_record_key,
                 _value(mapped, row, "name"),
                 _value(mapped, row, "sec_number"),
                 _integer(_value(mapped, row, "crd_number")),
@@ -391,7 +406,7 @@ def _insert_child(
     elif family == "a22":
         connection.execute(
             "INSERT INTO filing_private_fund_form_d VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [*common, source_reference, _value(mapped, row, "form_d_file_number"), *provenance],
+            [*common, source_record_key, _value(mapped, row, "form_d_file_number"), *provenance],
         )
     elif family == "a28_websites":
         connection.execute(
@@ -399,13 +414,13 @@ def _insert_child(
             [
                 *common,
                 source_reference,
-                f"row-{source_row}",
+                source_record_key,
                 _value(mapped, row, "website_address"),
                 *provenance,
             ],
         )
     else:
-        _insert_service_provider(connection, mapped, row, common, source_reference, provenance)
+        _insert_service_provider(connection, mapped, row, common, source_record_key, provenance)
         if family == "a25":
             connection.execute(
                 """
