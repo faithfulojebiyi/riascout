@@ -5,7 +5,7 @@ import { workerEnvSchema } from './worker.env.schema.js';
 describe('workerEnvSchema', () => {
   const retiredDataDirKey = ['ASSET', 'DATA', 'DIR'].join('_');
 
-  /** every valid payload needs these; asserted on its own below */
+  /** the default transport is resend, which needs a key; see the cases below */
   const required = { RESEND_API_KEY: 're_test_key' };
 
   it('accepts MARKET_DATA_DIR', () => {
@@ -31,10 +31,17 @@ describe('workerEnvSchema', () => {
    * The worker sends queued invites, so a missing key is a boot failure rather
    * than a job that fails once it is already queued.
    */
-  it('requires a mail key', () => {
+  it('requires a mail key when resend is the transport', () => {
     const result = workerEnvSchema.validate({});
 
     expect(result.error?.message).toContain('RESEND_API_KEY');
+  });
+
+  /** so a developer with no provider account can still run the worker */
+  it('does not require a key when nothing is sent', () => {
+    const result = workerEnvSchema.validate({ MAIL_TRANSPORT: 'log' });
+
+    expect(result.error).toBeUndefined();
   });
 
   it('defaults the sender to the sandbox address', () => {

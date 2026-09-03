@@ -9,7 +9,13 @@ export const workerEnvSchema = Joi.object({
     .uri({ scheme: ['postgres', 'postgresql'] })
     .optional(),
   MARKET_DATA_DIR: Joi.string().allow('').optional(),
-  RESEND_API_KEY: Joi.string().required(),
+  MAIL_TRANSPORT: Joi.string().valid('resend', 'log').default('resend'),
+  // only the transport that actually calls the api needs a key
+  RESEND_API_KEY: Joi.string().when('MAIL_TRANSPORT', {
+    is: 'resend',
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
   MAIL_FROM: Joi.string().default('onboarding@resend.dev'),
 });
 
@@ -17,6 +23,7 @@ export type WorkerEnv = BaseEnv & {
   PORT: number;
   APP_DATABASE_URL?: string;
   MARKET_DATA_DIR?: string;
-  RESEND_API_KEY: string;
+  MAIL_TRANSPORT: 'resend' | 'log';
+  RESEND_API_KEY?: string;
   MAIL_FROM: string;
 };

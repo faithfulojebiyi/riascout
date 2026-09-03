@@ -11,6 +11,7 @@ import {
 } from './failover.js';
 import { renderTemplate, type MailTemplateName, type MailTemplates } from './templates.js';
 import type { MailSendResult, MailTransport } from './transport.js';
+import { logTransport } from './transports/log.transport.js';
 import { resendTransport } from './transports/resend.transport.js';
 
 export type SendMailInput<K extends MailTemplateName = MailTemplateName> = {
@@ -21,7 +22,27 @@ export type SendMailInput<K extends MailTemplateName = MailTemplateName> = {
   idempotencyKey?: string;
 };
 
-const TRANSPORTS: MailTransport[] = [resendTransport];
+const REGISTRY: Record<string, MailTransport> = {
+  [resendTransport.name]: resendTransport,
+  [logTransport.name]: logTransport,
+};
+
+/**
+ * A list, because the send walks it in order. One entry today — the second is
+ * what canFallback exists for.
+ */
+const transports = (): MailTransport[] => {
+  const name = process.env.MAIL_TRANSPORT ?? resendTransport.name;
+  const transport = REGISTRY[name];
+
+  if (!transport) {
+    throw new Error(
+      `Unknown MAIL_TRANSPORT "${name}"; expected one of ${Object.keys(REGISTRY).join(', ')}`,
+    );
+  }
+
+  return [transport];
+};
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,9 +74,11 @@ export const sendMail = async (
   const shouldRetry = options.retry?.shouldRetry ?? defaultShouldRetry;
   const delay = options.retry?.delay ?? defaultDelay;
 
+  const chain = transports();
+
   let last: MailTransportError | undefined;
 
-  for (const [index, transport] of TRANSPORTS.entries()) {
+  for (const [index, transport] of chain.entries()) {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         return await transport.send(message);
@@ -75,7 +98,7 @@ export const sendMail = async (
       }
     }
 
-    const hasNext = index < TRANSPORTS.length - 1;
+    const hasNext = index < chain.length - 1;
 
     if (!last || !hasNext || !canFallback(last, options.fallback)) {
       break;

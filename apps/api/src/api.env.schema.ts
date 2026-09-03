@@ -17,7 +17,13 @@ export const apiEnvSchema = Joi.object({
   TIGRIS_STORAGE_SECRET_ACCESS_KEY: Joi.string().required(),
   TIGRIS_STORAGE_ENDPOINT: Joi.string().uri().default('https://t3.storage.dev'),
   TIGRIS_STORAGE_BUCKET: Joi.string().required(),
-  RESEND_API_KEY: Joi.string().required(),
+  MAIL_TRANSPORT: Joi.string().valid('resend', 'log').default('resend'),
+  // only the transport that actually calls the api needs a key
+  RESEND_API_KEY: Joi.string().when('MAIL_TRANSPORT', {
+    is: 'resend',
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
   MAIL_FROM: Joi.string().default('onboarding@resend.dev'),
   APP_URL: Joi.string().uri().default('http://localhost:3020'),
 });
@@ -34,7 +40,8 @@ export type ApiEnv = BaseEnv & {
   TIGRIS_STORAGE_SECRET_ACCESS_KEY: string;
   TIGRIS_STORAGE_ENDPOINT: string;
   TIGRIS_STORAGE_BUCKET: string;
-  RESEND_API_KEY: string;
+  MAIL_TRANSPORT: 'resend' | 'log';
+  RESEND_API_KEY?: string;
   MAIL_FROM: string;
   APP_URL: string;
 };
