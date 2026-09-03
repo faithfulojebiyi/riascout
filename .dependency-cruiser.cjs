@@ -26,6 +26,14 @@ module.exports = {
       to: { path: '^libs/system/als' },
     },
     {
+      name: 'assistant-no-als',
+      comment:
+        'Assistant tools and the mastra provider run outside the Nest request scope; identity arrives via RequestContext, and only apps/api bridges it to ALS.',
+      severity: 'error',
+      from: { path: '^libs/(feature/assistant|providers/mastra)' },
+      to: { path: '^libs/system/als' },
+    },
+    {
       name: 'libs-not-from-apps',
       comment: 'libs must not reach up into apps',
       severity: 'error',
