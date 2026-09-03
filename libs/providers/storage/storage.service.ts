@@ -8,6 +8,7 @@ import type {
   StorageListing,
   StorageObject,
 } from './adapter.js';
+import { localAdapter } from './adapters/local.adapter.js';
 import { tigrisAdapter } from './adapters/tigris.adapter.js';
 
 export const STORAGE_IMAGE_TYPES = [
@@ -29,6 +30,7 @@ const AVATAR_PREFIX = 'avatars';
 
 const ADAPTERS: Record<string, StorageAdapter> = {
   [tigrisAdapter.name]: tigrisAdapter,
+  [localAdapter.name]: localAdapter,
 };
 
 const selectAdapter = (): StorageAdapter => {
