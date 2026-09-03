@@ -2,6 +2,7 @@ import { css } from '@riascout-ui/styled-system/css';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 import { authClient } from '../lib/auth-client';
+import { MastraProvider } from '../modules/assistant/mastra-provider';
 import { AppSidebar } from '../modules/layout/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '../ui/primitives/sidebar';
 
@@ -37,7 +38,9 @@ function AuthedLayout() {
       <div className={css({ display: 'flex', h: '100dvh', w: 'full' })}>
         <AppSidebar workspaceName={user.name ?? 'Workspace'} />
         <SidebarInset>
-          <Outlet />
+          <MastraProvider>
+            <Outlet />
+          </MastraProvider>
         </SidebarInset>
       </div>
     </SidebarProvider>
