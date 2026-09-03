@@ -42,6 +42,9 @@ export const apiEnvSchema = Joi.object({
   }),
   MAIL_FROM: Joi.string().default('onboarding@resend.dev'),
   APP_URL: Joi.string().uri().default('http://localhost:3020'),
+  // the assistant's model provider; mastra reads it by this exact name
+  ANTHROPIC_API_KEY: Joi.string().required(),
+  MASTRA_TELEMETRY_DISABLED: Joi.string().default('1'),
 });
 
 export type ApiEnv = BaseEnv & {
@@ -62,4 +65,6 @@ export type ApiEnv = BaseEnv & {
   RESEND_API_KEY?: string;
   MAIL_FROM: string;
   APP_URL: string;
+  ANTHROPIC_API_KEY: string;
+  MASTRA_TELEMETRY_DISABLED: string;
 };

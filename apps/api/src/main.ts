@@ -22,6 +22,8 @@ import {
 import { auth } from '@system/auth/auth.js';
 import { AppLogger } from '@system/logger/logger.service.js';
 
+import { MastraService } from './modules/assistant/mastra.service.js';
+import { mountMastra } from './modules/assistant/mount-mastra.js';
 import { inngest } from './modules/event-publisher/event-publisher.service.js';
 import { getInngestRegistry } from './modules/event-publisher/inngest.registry.js';
 import { ApiModule } from './api.module.js';
@@ -151,6 +153,13 @@ async function bootstrap(): Promise<void> {
       url: `${prefix}/api/inngest`,
       handler: serve({ client: inngest, functions: getInngestRegistry() }),
     });
+
+  // mastra's routes live under /agent on a child fastify instance, before ready()
+  await mountMastra(
+    fastify,
+    app.get(MastraService),
+    prefix ? `/${prefix}` : '',
+  );
 
   const port = Number(process.env.PORT ?? 3320);
   await app.listen({ port, host: '0.0.0.0' });
