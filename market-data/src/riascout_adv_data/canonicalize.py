@@ -12,11 +12,16 @@ from duckdb import DuckDBPyConnection
 
 from riascout_adv_data.field_mapping import ColumnMappingError, ColumnResolver
 from riascout_adv_data.official_db import OfficialDatabase
+from riascout_adv_data.private_funds import (
+    PrivateFundMappingError,
+    private_fund_family,
+    publish_private_fund_tables,
+)
 from riascout_adv_data.raw_ingest import quote_ident
 
-# v5 separates Item 5.F accounts from Item 5.D clients and preserves
-# range evidence; the immutable artifacts are re-canonicalized.
-TRANSFORMATION_VERSION = "official-v5"
+# v6 preserves the complete Schedule D 7.B.1 questionnaire and resolves every
+# child record from its filing/reference pair to the SEC private-fund identity.
+TRANSFORMATION_VERSION = "official-v6"
 
 BASE_FIELDS = {
     "filing_id": ("FilingID", "Filing ID"),
@@ -174,19 +179,23 @@ class HistoricalCanonicalizer:
                 }
                 for category in ("SEC", "ERA")
             }
+            try:
+                publish_private_fund_tables(connection, tables, valid_filing_ids_by_category)
+            except PrivateFundMappingError as error:
+                raise CanonicalMappingError(str(error)) from error
             for table in tables:
                 normalized = Path(table.member_name).name.lower()
                 source_category = _source_registration_category(normalized)
                 source_filing_ids = (
                     valid_filing_ids if source_category is None else valid_filing_ids_by_category[source_category]
                 )
-                if normalized.startswith(("ia_schedule_d_7b1_", "era_schedule_d_7b1_")):
-                    self._publish_private_funds(connection, table, source_filing_ids)
-                elif normalized.startswith(("ia_schedule_d_1f_", "era_schedule_d_1f_")):
+                if private_fund_family(table.member_name) is not None:
+                    continue
+                if normalized.startswith(("ia_schedule_d_1f_", "era_schedule_d_1f_")):
                     self._publish_offices(connection, table, source_filing_ids)
                 elif normalized.startswith("ia_schedule_d_5k1_"):
                     self._publish_asset_allocations(connection, table, source_filing_ids)
-                elif normalized.startswith(("ia_schedule_d_5k3_", "ia_schedule_d_7b1a25_", "era_schedule_d_7b1a25_")):
+                elif normalized.startswith("ia_schedule_d_5k3_"):
                     assert source_category is not None
                     self._publish_custodians(connection, table, source_category)
                 elif _is_primary_affiliation_member(normalized):
@@ -231,6 +240,13 @@ class HistoricalCanonicalizer:
         ):
             connection.execute(f"DELETE FROM {table}")
         for table in (
+            "filing_private_fund_provider_websites",
+            "filing_private_fund_service_providers",
+            "filing_private_fund_form_d",
+            "filing_private_fund_advisers",
+            "filing_private_fund_foreign_authorities",
+            "filing_private_fund_managers",
+            "filing_private_fund_related_funds",
             "filing_client_types",
             "filing_services",
             "filing_fee_methods",
@@ -516,44 +532,6 @@ class HistoricalCanonicalizer:
                 )
 
     @staticmethod
-    def _publish_private_funds(
-        connection: DuckDBPyConnection,
-        table: _RawTable,
-        valid_filing_ids: set[str],
-    ) -> None:
-        resolver = ColumnResolver(table.columns)
-        filing_column = resolver.require("filing_id", ("FilingID", "Filing ID"))
-        fund_id_column = resolver.require("private_fund_id", ("Fund ID", "Private Fund ID", "PrivateFundID"))
-        optional = {
-            "name": resolver.optional("private_fund_name", ("Fund Name", "Name of the Private Fund")),
-            "type": resolver.optional("private_fund_type", ("Fund Type", "Type of Private Fund")),
-            "gross": resolver.optional("gross_asset_value", ("Gross Asset Value",)),
-            "country": resolver.optional("country", ("Country",)),
-            "region": resolver.optional("region", ("State",)),
-        }
-        for row in _iter_rows(connection, table.table_name):
-            filing_id = _text(row.get(filing_column))
-            fund_id = _text(row.get(fund_id_column))
-            if not filing_id or filing_id not in valid_filing_ids or not fund_id:
-                continue
-            source_row = _source_row(row)
-            connection.execute(
-                "INSERT INTO filing_private_funds VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    filing_id,
-                    fund_id,
-                    _field(row, optional["name"]),
-                    _field(row, optional["type"]),
-                    _decimal(_field(row, optional["gross"])),
-                    _field(row, optional["country"]),
-                    _field(row, optional["region"]),
-                    table.artifact_id,
-                    table.member_name,
-                    source_row,
-                ],
-            )
-
-    @staticmethod
     def _publish_offices(connection: DuckDBPyConnection, table: _RawTable, valid_filing_ids: set[str]) -> None:
         resolver = ColumnResolver(table.columns)
         filing_column = resolver.require("filing_id", ("FilingID", "Filing ID"))
@@ -634,14 +612,8 @@ class HistoricalCanonicalizer:
             "country": resolver.optional("country", ("Country", "5K(3)(c) Country")),
             "aum": resolver.optional("aum", ("AUM at Custodian", "5K(3)(g)")),
         }
-        subtype = "SMA" if "5k3" in table.member_name.lower() else "PRIVATE_FUND"
         source_reference = _sql_text(fields["reference"])
-        if subtype == "PRIVATE_FUND":
-            custodian_reference = "'row-' || cast(r._source_row_number AS VARCHAR)"
-            private_fund_id = source_reference
-        else:
-            custodian_reference = f"coalesce({source_reference}, 'row-' || cast(r._source_row_number AS VARCHAR))"
-            private_fund_id = "NULL::VARCHAR"
+        custodian_reference = f"coalesce({source_reference}, 'row-' || cast(r._source_row_number AS VARCHAR))"
         valid_row_condition = (
             "r._raw_values_json IS NULL"
             if _table_has_column(connection, table.table_name, "_raw_values_json")
@@ -654,7 +626,7 @@ class HistoricalCanonicalizer:
                 custodian_name, city, region_raw, country_raw, aum_at_custodian,
                 artifact_id, source_member, source_row_number
             )
-            SELECT f.filing_id, {custodian_reference}, ?, {private_fund_id},
+            SELECT f.filing_id, {custodian_reference}, 'SMA', NULL::VARCHAR,
                    {_sql_text(fields["name"])}, {_sql_text(fields["city"])},
                    {_sql_text(fields["region"])}, {_sql_text(fields["country"])},
                    {_sql_decimal(fields["aum"])}, ?, ?, r._source_row_number
@@ -662,7 +634,7 @@ class HistoricalCanonicalizer:
             JOIN filings f ON f.filing_id = {_sql_text(filing_column)}
             WHERE {valid_row_condition} AND f.registration_category = ?
             """,
-            [subtype, table.artifact_id, table.member_name, expected_category],
+            [table.artifact_id, table.member_name, expected_category],
         )
 
     @staticmethod

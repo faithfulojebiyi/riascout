@@ -89,6 +89,67 @@ def test_validation_detects_selected_filing_after_snapshot_date(tmp_path: Path) 
     assert "selected_filing_after_snapshot" in {failure.code for failure in result.failures}
 
 
+def test_validation_rejects_private_fund_children_without_parent_fact(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    with database.transaction() as connection:
+        connection.execute("INSERT INTO firms VALUES (1, DATE '2020-01-01', DATE '2020-01-01')")
+        connection.execute(
+            """
+            INSERT INTO filings VALUES (
+                'F-FUND', 1, TIMESTAMP '2020-01-01', NULL, 'Annual', '801-1',
+                'SEC', 'history', 'base.csv', 2
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO filing_private_fund_advisers VALUES (
+                'F-FUND', 'PF-MISSING', 'REF-1', 'primary_adviser', 'row-1',
+                'Adviser LLC', '801-1', 1, 'history', '7b1a17b.csv', 2
+            )
+            """
+        )
+    _insert_snapshot(database, year=2020, firm_crd=1, filing_id="F-FUND")
+
+    result = validate_official_pipeline(database, years=[2020])
+
+    assert "private_fund_orphan_child" in {failure.code for failure in result.failures}
+
+
+def test_validation_rejects_invalid_private_fund_measurements_and_codes(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    with database.transaction() as connection:
+        connection.execute("INSERT INTO firms VALUES (1, DATE '2020-01-01', DATE '2020-01-01')")
+        connection.execute(
+            """
+            INSERT INTO filings VALUES (
+                'F-FUND', 1, TIMESTAMP '2020-01-01', NULL, 'Annual', '801-1',
+                'SEC', 'history', 'base.csv', 2
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO filing_private_funds (
+                filing_id, private_fund_id, fund_reference, gross_asset_value,
+                owned_by_non_us_pct, audit_opinion_status,
+                artifact_id, source_member, source_row_number
+            ) VALUES (
+                'F-FUND', 'PF-1', 'REF-1', -1, 101, 'unexpected',
+                'history', '7b1.csv', 2
+            )
+            """
+        )
+    _insert_snapshot(database, year=2020, firm_crd=1, filing_id="F-FUND")
+
+    result = validate_official_pipeline(database, years=[2020])
+    failure_codes = {failure.code for failure in result.failures}
+
+    assert "private_fund_percentage_range" in failure_codes
+    assert "private_fund_negative_measure" in failure_codes
+    assert "private_fund_invalid_code" in failure_codes
+
+
 def test_coverage_distinguishes_unavailable_from_false(tmp_path: Path) -> None:
     database = _database(tmp_path)
     _insert_snapshot(database, year=2020, firm_crd=1, filing_id=None)

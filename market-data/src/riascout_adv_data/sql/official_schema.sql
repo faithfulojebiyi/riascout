@@ -238,15 +238,162 @@ ADD COLUMN IF NOT EXISTS private_fund_id VARCHAR;
 CREATE TABLE IF NOT EXISTS filing_private_funds (
     filing_id VARCHAR NOT NULL,
     private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
     private_fund_name VARCHAR,
     private_fund_type VARCHAR,
-    gross_asset_value DECIMAL(38, 2),
-    country_raw VARCHAR,
+    private_fund_type_other VARCHAR,
     region_raw VARCHAR,
+    country_raw VARCHAR,
+    exclusion_3c1 BOOLEAN,
+    exclusion_3c7 BOOLEAN,
+    is_master_fund BOOLEAN,
+    is_feeder_fund BOOLEAN,
+    master_fund_name VARCHAR,
+    master_fund_id VARCHAR,
+    is_fund_of_funds BOOLEAN,
+    adviser_or_related_invested BOOLEAN,
+    invested_in_registered_investment_companies BOOLEAN,
+    gross_asset_value DECIMAL(38, 2),
+    minimum_investment DECIMAL(38, 2),
+    beneficial_owner_count BIGINT,
+    owned_by_adviser_related_pct DECIMAL(18, 8),
+    owned_by_funds_pct DECIMAL(18, 8),
+    sales_limited_to_qualified_clients BOOLEAN,
+    owned_by_non_us_pct DECIMAL(18, 8),
+    is_subadviser BOOLEAN,
+    has_other_advisers BOOLEAN,
+    clients_solicited BOOLEAN,
+    clients_invested_pct DECIMAL(18, 8),
+    relied_on_regulation_d BOOLEAN,
+    annual_audit BOOLEAN,
+    financial_statements_gaap BOOLEAN,
+    financial_statements_distributed BOOLEAN,
+    audit_opinion_status VARCHAR,
+    uses_prime_brokers BOOLEAN,
+    uses_custodians BOOLEAN,
+    uses_administrator BOOLEAN,
+    externally_valued_assets_pct DECIMAL(18, 8),
+    uses_marketers BOOLEAN,
     artifact_id VARCHAR NOT NULL,
     source_member VARCHAR NOT NULL,
     source_row_number UBIGINT NOT NULL,
-    PRIMARY KEY (filing_id, private_fund_id)
+    PRIMARY KEY (filing_id, private_fund_id),
+    UNIQUE (filing_id, fund_reference)
+);
+
+CREATE TABLE IF NOT EXISTS private_funds (
+    private_fund_id VARCHAR PRIMARY KEY,
+    first_seen_date DATE,
+    last_seen_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_related_funds (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    relation_role VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    related_private_fund_name VARCHAR,
+    related_private_fund_id VARCHAR,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, relation_role, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_managers (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    manager_role VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    manager_name VARCHAR,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, manager_role, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_foreign_authorities (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    authority_role VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    authority_name VARCHAR,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, authority_role, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_advisers (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    adviser_role VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    adviser_name VARCHAR,
+    sec_file_number VARCHAR,
+    crd_number BIGINT,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, adviser_role, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_form_d (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    form_d_file_number VARCHAR,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_service_providers (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    provider_role VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    legal_name VARCHAR,
+    business_name VARCHAR,
+    sec_number VARCHAR,
+    crd_number BIGINT,
+    pcaob_number VARCHAR,
+    lei VARCHAR,
+    city VARCHAR,
+    region_raw VARCHAR,
+    country_raw VARCHAR,
+    related_person BOOLEAN,
+    independent BOOLEAN,
+    pcaob_registered BOOLEAN,
+    pcaob_inspected BOOLEAN,
+    acts_as_custodian BOOLEAN,
+    sends_statements BOOLEAN,
+    statement_sender VARCHAR,
+    has_websites BOOLEAN,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, provider_role, source_record_key)
+);
+
+CREATE TABLE IF NOT EXISTS filing_private_fund_provider_websites (
+    filing_id VARCHAR NOT NULL,
+    private_fund_id VARCHAR NOT NULL,
+    fund_reference VARCHAR NOT NULL,
+    provider_reference VARCHAR NOT NULL,
+    source_record_key VARCHAR NOT NULL,
+    website_address VARCHAR,
+    artifact_id VARCHAR NOT NULL,
+    source_member VARCHAR NOT NULL,
+    source_row_number UBIGINT NOT NULL,
+    PRIMARY KEY (filing_id, private_fund_id, provider_reference, source_record_key)
 );
 
 CREATE TABLE IF NOT EXISTS filing_affiliations (
@@ -411,8 +558,19 @@ JOIN filing_custodians c ON c.filing_id = s.selected_filing_id;
 
 CREATE OR REPLACE VIEW firm_snapshot_private_funds AS
 SELECT s.snapshot_year, s.snapshot_date, s.snapshot_status, s.firm_crd,
-       c.filing_id, c.private_fund_id, c.private_fund_name, c.private_fund_type,
-       c.gross_asset_value, c.country_raw, c.region_raw,
+       c.filing_id, c.private_fund_id, c.fund_reference, c.private_fund_name,
+       c.private_fund_type, c.private_fund_type_other, c.region_raw, c.country_raw,
+       c.exclusion_3c1, c.exclusion_3c7, c.is_master_fund, c.is_feeder_fund,
+       c.master_fund_name, c.master_fund_id, c.is_fund_of_funds,
+       c.adviser_or_related_invested, c.invested_in_registered_investment_companies,
+       c.gross_asset_value, c.minimum_investment, c.beneficial_owner_count,
+       c.owned_by_adviser_related_pct, c.owned_by_funds_pct,
+       c.sales_limited_to_qualified_clients, c.owned_by_non_us_pct,
+       c.is_subadviser, c.has_other_advisers, c.clients_solicited,
+       c.clients_invested_pct, c.relied_on_regulation_d, c.annual_audit,
+       c.financial_statements_gaap, c.financial_statements_distributed,
+       c.audit_opinion_status, c.uses_prime_brokers, c.uses_custodians,
+       c.uses_administrator, c.externally_valued_assets_pct, c.uses_marketers,
        c.artifact_id, c.source_member, c.source_row_number
 FROM firm_snapshots s
 JOIN filing_private_funds c ON c.filing_id = s.selected_filing_id;

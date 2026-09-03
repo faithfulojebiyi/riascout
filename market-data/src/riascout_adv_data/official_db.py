@@ -40,6 +40,7 @@ class OfficialDatabase:
         schema = resources.files("riascout_adv_data.sql").joinpath("official_schema.sql").read_text()
         with self.connection() as connection:
             _upgrade_account_client_schema(connection)
+            _upgrade_private_fund_schema(connection)
             connection.execute(schema)
 
     @contextmanager
@@ -137,6 +138,47 @@ def _upgrade_account_client_schema(connection: DuckDBPyConnection) -> None:
 
     if _column_names(connection, "filing_client_types"):
         connection.execute("ALTER TABLE filing_client_types ADD COLUMN IF NOT EXISTS fewer_than_five BOOLEAN")
+
+
+def _upgrade_private_fund_schema(connection: DuckDBPyConnection) -> None:
+    """Add the complete Schedule D 7.B.1 questionnaire before views bind."""
+    if not _column_names(connection, "filing_private_funds"):
+        return
+    columns = {
+        "fund_reference": "VARCHAR",
+        "private_fund_type_other": "VARCHAR",
+        "exclusion_3c1": "BOOLEAN",
+        "exclusion_3c7": "BOOLEAN",
+        "is_master_fund": "BOOLEAN",
+        "is_feeder_fund": "BOOLEAN",
+        "master_fund_name": "VARCHAR",
+        "master_fund_id": "VARCHAR",
+        "is_fund_of_funds": "BOOLEAN",
+        "adviser_or_related_invested": "BOOLEAN",
+        "invested_in_registered_investment_companies": "BOOLEAN",
+        "minimum_investment": "DECIMAL(38, 2)",
+        "beneficial_owner_count": "BIGINT",
+        "owned_by_adviser_related_pct": "DECIMAL(18, 8)",
+        "owned_by_funds_pct": "DECIMAL(18, 8)",
+        "sales_limited_to_qualified_clients": "BOOLEAN",
+        "owned_by_non_us_pct": "DECIMAL(18, 8)",
+        "is_subadviser": "BOOLEAN",
+        "has_other_advisers": "BOOLEAN",
+        "clients_solicited": "BOOLEAN",
+        "clients_invested_pct": "DECIMAL(18, 8)",
+        "relied_on_regulation_d": "BOOLEAN",
+        "annual_audit": "BOOLEAN",
+        "financial_statements_gaap": "BOOLEAN",
+        "financial_statements_distributed": "BOOLEAN",
+        "audit_opinion_status": "VARCHAR",
+        "uses_prime_brokers": "BOOLEAN",
+        "uses_custodians": "BOOLEAN",
+        "uses_administrator": "BOOLEAN",
+        "externally_valued_assets_pct": "DECIMAL(18, 8)",
+        "uses_marketers": "BOOLEAN",
+    }
+    for column_name, column_type in columns.items():
+        connection.execute(f"ALTER TABLE filing_private_funds ADD COLUMN IF NOT EXISTS {column_name} {column_type}")
 
 
 def _column_names(connection: DuckDBPyConnection, table_name: str) -> set[str]:

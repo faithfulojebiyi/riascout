@@ -103,6 +103,56 @@ def validate_official_pipeline(
         _append_count_issue(
             connection,
             failures,
+            code="private_fund_duplicate_reference",
+            message="A filing-local private-fund ReferenceID maps to more than one SEC Fund ID.",
+            query="""
+                SELECT count(*) FROM (
+                    SELECT filing_id, fund_reference FROM filing_private_funds
+                    GROUP BY filing_id, fund_reference HAVING count(DISTINCT private_fund_id) > 1
+                ) duplicate_references
+            """,
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="private_fund_orphan_child",
+            message="A private-fund child record does not match a filing-level private-fund fact.",
+            query=_private_fund_orphan_query(),
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="private_fund_child_id_mismatch",
+            message="A private-fund child resolves its ReferenceID to the wrong SEC Fund ID.",
+            query=_private_fund_child_id_mismatch_query(),
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="private_fund_percentage_range",
+            message="A private-fund percentage is outside the inclusive 0-100 range.",
+            query=_private_fund_percentage_range_query(),
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="private_fund_negative_measure",
+            message="A private-fund money or count measure is negative.",
+            query="""
+                SELECT count(*) FROM filing_private_funds
+                WHERE gross_asset_value < 0 OR minimum_investment < 0 OR beneficial_owner_count < 0
+            """,
+        )
+        _append_count_issue(
+            connection,
+            failures,
+            code="private_fund_invalid_code",
+            message="A private-fund role or audit status is outside the modeled source vocabulary.",
+            query=_private_fund_invalid_code_query(),
+        )
+        _append_count_issue(
+            connection,
+            failures,
             code="unrecognized_nonempty_country",
             message="A nonempty source country could not be normalized.",
             query="""
@@ -379,6 +429,100 @@ def _filing_mismatch_query() -> str:
             WHERE f.firm_crd <> s.firm_crd
             UNION ALL {view_checks}
         ) mismatches
+    """
+
+
+def _private_fund_orphan_query() -> str:
+    child_tables = (
+        "filing_private_fund_related_funds",
+        "filing_private_fund_managers",
+        "filing_private_fund_foreign_authorities",
+        "filing_private_fund_advisers",
+        "filing_private_fund_form_d",
+        "filing_private_fund_service_providers",
+        "filing_private_fund_provider_websites",
+    )
+    checks = " UNION ALL ".join(
+        f"""
+        SELECT c.filing_id, c.private_fund_id
+        FROM {table} c
+        LEFT JOIN filing_private_funds p
+          ON p.filing_id = c.filing_id
+         AND p.private_fund_id = c.private_fund_id
+         AND p.fund_reference = c.fund_reference
+        WHERE p.filing_id IS NULL
+        """
+        for table in child_tables
+    )
+    return f"SELECT count(*) FROM ({checks}) orphan_rows"
+
+
+def _private_fund_child_id_mismatch_query() -> str:
+    child_tables = (
+        "filing_private_fund_related_funds",
+        "filing_private_fund_managers",
+        "filing_private_fund_foreign_authorities",
+        "filing_private_fund_advisers",
+        "filing_private_fund_form_d",
+        "filing_private_fund_service_providers",
+        "filing_private_fund_provider_websites",
+    )
+    checks = " UNION ALL ".join(
+        f"""
+        SELECT c.filing_id, c.private_fund_id
+        FROM {table} c
+        JOIN filing_private_funds p
+          ON p.filing_id = c.filing_id AND p.fund_reference = c.fund_reference
+        WHERE p.private_fund_id <> c.private_fund_id
+        """
+        for table in child_tables
+    )
+    return f"SELECT count(*) FROM ({checks}) mismatches"
+
+
+def _private_fund_percentage_range_query() -> str:
+    columns = (
+        "owned_by_adviser_related_pct",
+        "owned_by_funds_pct",
+        "owned_by_non_us_pct",
+        "clients_invested_pct",
+        "externally_valued_assets_pct",
+    )
+    predicate = " OR ".join(f"{column} < 0 OR {column} > 100" for column in columns)
+    return f"SELECT count(*) FROM filing_private_funds WHERE {predicate}"
+
+
+def _private_fund_invalid_code_query() -> str:
+    return """
+        SELECT count(*) FROM (
+            SELECT filing_id FROM filing_private_funds
+            WHERE audit_opinion_status IS NOT NULL
+              AND audit_opinion_status NOT IN (
+                  'unqualified', 'not_unqualified', 'report_not_yet_received'
+              )
+            UNION ALL
+            SELECT filing_id FROM filing_private_fund_related_funds
+            WHERE relation_role NOT IN ('feeder_fund')
+            UNION ALL
+            SELECT filing_id FROM filing_private_fund_managers
+            WHERE manager_role NOT IN (
+                'fund_partner_or_manager', 'fund_filing_or_relying_adviser',
+                'master_fund_partner_or_manager', 'master_fund_filing_or_relying_adviser'
+            )
+            UNION ALL
+            SELECT filing_id FROM filing_private_fund_foreign_authorities
+            WHERE authority_role NOT IN ('fund', 'master_fund')
+            UNION ALL
+            SELECT filing_id FROM filing_private_fund_advisers
+            WHERE adviser_role NOT IN ('primary_adviser', 'other_adviser')
+            UNION ALL
+            SELECT filing_id FROM filing_private_fund_service_providers
+            WHERE provider_role NOT IN ('auditor', 'prime_broker', 'custodian', 'administrator', 'marketer')
+               OR (
+                   provider_role <> 'administrator'
+                   AND (sends_statements IS NOT NULL OR statement_sender IS NOT NULL)
+               )
+        ) invalid_codes
     """
 
 

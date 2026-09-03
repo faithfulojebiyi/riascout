@@ -63,14 +63,14 @@ def _history_members() -> dict[str, str]:
             "F-2022-ERA-FINAL,ERA Final Report\n"
         ),
         "IA_Schedule_D_7B1_sample.csv": (
-            "FilingID,Fund ID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
-            "F-2020-OLD,PF-OLD,Old Fund,Hedge Fund,10,UNITED STATES,NY\n"
-            "F-2020-LATEST,PF-LATEST,Latest Fund,Hedge Fund,20,CAYMAN ISLANDS,\n"
+            "FilingID,Fund ID,ReferenceID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
+            "F-2020-OLD,PF-OLD,REF-OLD,Old Fund,Hedge Fund,10,UNITED STATES,NY\n"
+            "F-2020-LATEST,PF-LATEST,REF-LATEST,Latest Fund,Hedge Fund,20,CAYMAN ISLANDS,\n"
         ),
         "ERA_Schedule_D_7B1_sample.csv": (
-            "FilingID,Fund ID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
-            "F-2020-ERA,ERA-PF-1,ERA Fund,Venture Capital Fund,30,CAYMAN ISLANDS,\n"
-            "F-2020-LATEST,ERA-DUPLICATE,Wrong Cohort Fund,Hedge Fund,99,UNITED STATES,NY\n"
+            "FilingID,Fund ID,ReferenceID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
+            "F-2020-ERA,ERA-PF-1,ERA-REF-1,ERA Fund,Venture Capital Fund,30,CAYMAN ISLANDS,\n"
+            "F-2020-LATEST,ERA-DUPLICATE,ERA-DUP-REF,Wrong Cohort Fund,Hedge Fund,99,UNITED STATES,NY\n"
         ),
         "IA_Schedule_D_1F_sample.csv": (
             "FilingID,ReferenceID,City,State,Country,Number of Employees\n"
@@ -83,8 +83,8 @@ def _history_members() -> dict[str, str]:
         ),
         "IA_Schedule_D_7B1A25_sample.csv": (
             "FilingID,ReferenceID,Legal Name of Custodian,Primary Business Name,City,State,Country\n"
-            "F-2020-LATEST,PF-LATEST,Fund Custodian One,Fund Custodian One,New York,NY,UNITED STATES\n"
-            "F-2020-LATEST,PF-LATEST,Fund Custodian Two,Fund Custodian Two,Boston,MA,UNITED STATES\n"
+            "F-2020-LATEST,REF-LATEST,Fund Custodian One,Fund Custodian One,New York,NY,UNITED STATES\n"
+            "F-2020-LATEST,REF-LATEST,Fund Custodian Two,Fund Custodian Two,Boston,MA,UNITED STATES\n"
         ),
         "IA_Schedule_D_7A_sample.csv": (
             "FilingID,ReferenceID,Legal Name,Business Name,SEC Number,CRD Number,Relationship Types,State,Country\n"
@@ -424,8 +424,8 @@ def test_canonicalizer_keeps_monthly_filing_versions_after_2024(tmp_path: Path) 
                 "FilingID,FilingType\nF-2025-1,Other-than-Annual Amendment\nF-2025-2,Annual Updating Amendment\n"
             ),
             "IA_Schedule_D_7B1_20250101_20250131.csv": (
-                "FilingID,Fund ID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
-                "F-2025-1,PF-2025,Current Fund,Hedge Fund,25,UNITED STATES,NY\n"
+                "FilingID,Fund ID,ReferenceID,Fund Name,Fund Type,Gross Asset Value,Country,State\n"
+                "F-2025-1,PF-2025,REF-2025,Current Fund,Hedge Fund,25,UNITED STATES,NY\n"
             ),
         },
     )

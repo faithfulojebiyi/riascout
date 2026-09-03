@@ -43,6 +43,15 @@ def test_official_schema_installs_canonical_tables(tmp_path: Path) -> None:
         "individual_collection_runs",
         "individual_registration_intervals",
         "individual_employment_intervals",
+        "private_funds",
+        "filing_private_funds",
+        "filing_private_fund_related_funds",
+        "filing_private_fund_managers",
+        "filing_private_fund_foreign_authorities",
+        "filing_private_fund_advisers",
+        "filing_private_fund_form_d",
+        "filing_private_fund_service_providers",
+        "filing_private_fund_provider_websites",
     } <= database.table_names()
 
 
@@ -53,6 +62,49 @@ def test_schema_installation_is_idempotent(tmp_path: Path) -> None:
     database.install_schema()
 
     assert "source_artifacts" in database.table_names()
+
+
+def test_schema_installation_upgrades_legacy_private_fund_columns(tmp_path: Path) -> None:
+    path = tmp_path / "analysis.duckdb"
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            """
+            CREATE TABLE filing_private_funds (
+                filing_id VARCHAR NOT NULL,
+                private_fund_id VARCHAR NOT NULL,
+                private_fund_name VARCHAR,
+                private_fund_type VARCHAR,
+                gross_asset_value DECIMAL(38, 2),
+                country_raw VARCHAR,
+                region_raw VARCHAR,
+                artifact_id VARCHAR NOT NULL,
+                source_member VARCHAR NOT NULL,
+                source_row_number UBIGINT NOT NULL,
+                PRIMARY KEY (filing_id, private_fund_id)
+            )
+            """
+        )
+
+    database = OfficialDatabase(path)
+    database.install_schema()
+
+    with database.connection() as connection:
+        columns = {
+            str(row[0])
+            for row in connection.execute(
+                """
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'filing_private_funds'
+                """
+            ).fetchall()
+        }
+    assert {
+        "fund_reference",
+        "minimum_investment",
+        "beneficial_owner_count",
+        "audit_opinion_status",
+        "externally_valued_assets_pct",
+    } <= columns
 
 
 def test_schema_installation_upgrades_legacy_account_and_client_columns(tmp_path: Path) -> None:

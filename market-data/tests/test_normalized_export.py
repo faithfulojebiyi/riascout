@@ -33,6 +33,15 @@ def test_export_writes_queryable_partitioned_parquet_and_manifest(tmp_path: Path
         "firm_metrics.parquet",
         "filing_client_types.parquet",
         "filing_reported_client_totals.parquet",
+        "private_funds.parquet",
+        "filing_private_funds.parquet",
+        "filing_private_fund_related_funds.parquet",
+        "filing_private_fund_managers.parquet",
+        "filing_private_fund_foreign_authorities.parquet",
+        "filing_private_fund_advisers.parquet",
+        "filing_private_fund_form_d.parquet",
+        "filing_private_fund_service_providers.parquet",
+        "filing_private_fund_provider_websites.parquet",
     } <= paths
     with duckdb.connect() as connection:
         assert connection.execute(

@@ -147,12 +147,22 @@ def test_historical_snapshot_selects_latest_filing_and_exact_child_version(tmp_p
     )
     with database.transaction() as connection:
         connection.execute(
-            "INSERT INTO filing_private_funds VALUES (?, ?, ?, NULL, NULL, NULL, NULL, 'history', 'fund.csv', 2)",
-            ["F-2020-ANNUAL", "PF-OLD", "Old Fund"],
+            """
+            INSERT INTO filing_private_funds (
+                filing_id, private_fund_id, fund_reference, private_fund_name,
+                artifact_id, source_member, source_row_number
+            ) VALUES (?, ?, ?, ?, 'history', 'fund.csv', 2)
+            """,
+            ["F-2020-ANNUAL", "PF-OLD", "REF-OLD", "Old Fund"],
         )
         connection.execute(
-            "INSERT INTO filing_private_funds VALUES (?, ?, ?, NULL, NULL, NULL, NULL, 'history', 'fund.csv', 3)",
-            ["F-2020-LATEST", "PF-LATEST", "Latest Fund"],
+            """
+            INSERT INTO filing_private_funds (
+                filing_id, private_fund_id, fund_reference, private_fund_name,
+                artifact_id, source_member, source_row_number
+            ) VALUES (?, ?, ?, ?, 'history', 'fund.csv', 3)
+            """,
+            ["F-2020-LATEST", "PF-LATEST", "REF-LATEST", "Latest Fund"],
         )
 
     result = FirmSnapshotBuilder(database).rebuild([2020], COLLECTED_AT)

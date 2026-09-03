@@ -206,6 +206,46 @@ def _base_exports(collection_id: str) -> list[tuple[Path, str, list[object]]]:
             [collection_id],
         ),
     ]
+    for filename, table, order_by in (
+        ("private_funds.parquet", "private_funds", "private_fund_id"),
+        ("filing_private_funds.parquet", "filing_private_funds", "filing_id, private_fund_id"),
+        (
+            "filing_private_fund_related_funds.parquet",
+            "filing_private_fund_related_funds",
+            "filing_id, private_fund_id, relation_role, source_record_key",
+        ),
+        (
+            "filing_private_fund_managers.parquet",
+            "filing_private_fund_managers",
+            "filing_id, private_fund_id, manager_role, source_record_key",
+        ),
+        (
+            "filing_private_fund_foreign_authorities.parquet",
+            "filing_private_fund_foreign_authorities",
+            "filing_id, private_fund_id, authority_role, source_record_key",
+        ),
+        (
+            "filing_private_fund_advisers.parquet",
+            "filing_private_fund_advisers",
+            "filing_id, private_fund_id, adviser_role, source_record_key",
+        ),
+        (
+            "filing_private_fund_form_d.parquet",
+            "filing_private_fund_form_d",
+            "filing_id, private_fund_id, source_record_key",
+        ),
+        (
+            "filing_private_fund_service_providers.parquet",
+            "filing_private_fund_service_providers",
+            "filing_id, private_fund_id, provider_role, source_record_key",
+        ),
+        (
+            "filing_private_fund_provider_websites.parquet",
+            "filing_private_fund_provider_websites",
+            "filing_id, private_fund_id, provider_reference, source_record_key",
+        ),
+    ):
+        exports.append((Path(filename), f"SELECT * FROM {table} ORDER BY {order_by}", []))
     for filename, table in (
         ("individual_registration_intervals.parquet", "individual_registration_intervals"),
         ("individual_registration_locations.parquet", "individual_registration_locations"),
