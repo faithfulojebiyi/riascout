@@ -14,6 +14,8 @@
     "@base-ui/react": "^1.7.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@mastra/core": "1.64.0",
+    "@mastra/react": "1.4.10",
     "@radix-ui/react-slider": "^1.4.7",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-router": "^1.170.32",
@@ -36,6 +38,7 @@
     "react-tag-input": "^6.10.6",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
+    "streamdown": "2.6.0",
     "usehooks-ts": "^3.1.1",
     "vaul": "^1.1.2"
   },
