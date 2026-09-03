@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-email-inbox": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/agent-email-inbox/SKILL.md",
+      "computedHash": "65ed829de5d962d032c4d0aa96c8557bc48b79e5ba00ee13eb29b3bc881623d2"
+    },
+    "conventional-commits": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/conventional-commits/SKILL.md",
+      "computedHash": "306552bc23618f5d446b8a4448cb5f32daa25d68ae1e47230aaa698f62c553d4"
+    },
+    "email-best-practices": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/email-best-practices/SKILL.md",
+      "computedHash": "c7218333381fa335b8a912bd55b3bb58b5b567a174f9e1d8b41940ff82f1a6b6"
+    },
+    "file-storage": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/file-storage/SKILL.md",
+      "computedHash": "ae6888dd3be6fa7eebd3952a539b944dbfec86c2a4318b29273deaec2926ed72"
+    },
+    "mastra": {
+      "source": "mastra-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/mastra/SKILL.md",
+      "computedHash": "6482dad39fb72d1fe9d02078c15c3ee708774fd026a8557b4c7dc37fb554977a"
+    },
+    "react-email": {
+      "source": "resend/react-email",
+      "sourceType": "github",
+      "skillPath": "skills/react-email/SKILL.md",
+      "computedHash": "da0feefc6ddf4aaeff930ab203d269774da464429e35b178d2403d69d2dc2fb3"
+    },
+    "resend": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/resend/SKILL.md",
+      "computedHash": "8db208d4ca936e078d15bedbe29713463b33eb0084c45eecc011d6a58e0f258b"
+    },
+    "tigris-agent-kit": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-agent-kit/SKILL.md",
+      "computedHash": "e84192cf18d8792a47ed4ddc5bead91ce121973c94bdb85586b0fd830e8d7c5b"
+    },
+    "tigris-backup-export": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-backup-export/SKILL.md",
+      "computedHash": "c2d01c9a9a3feb92b307f0546f984a0944b24f5e255adde55e4df734ac766be6"
+    },
+    "tigris-bucket-management": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-bucket-management/SKILL.md",
+      "computedHash": "815258a09357925254f35f1e429a934ff66e74cb91589ee85b4c3d427529f1ea"
+    },
+    "tigris-egress-optimizer": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-egress-optimizer/SKILL.md",
+      "computedHash": "172ef78b1c9a9bdf48a7d626a44a5e8c37673d89aec1204f066bb8d68b0ace90"
+    },
+    "tigris-image-optimization": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-image-optimization/SKILL.md",
+      "computedHash": "adb42ffc4117e53197d402cb6aa3b11f99843579ea1fb944eeda04f680c6ff08"
+    },
+    "tigris-object-operations": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-object-operations/SKILL.md",
+      "computedHash": "5bb9180d39e0e5e39d228e28c7db5762bd4a86f34d85c92829a512a2e53ac27d"
+    },
+    "tigris-sdk-guide": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-sdk-guide/SKILL.md",
+      "computedHash": "b421a62389fa59c11c60d2d2d98bc31eda8caab03a4c490e01375635f45cfbad"
+    },
+    "tigris-static-assets": {
+      "source": "tigrisdata/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tigris-static-assets/SKILL.md",
+      "computedHash": "a77f023e29b92bb6e298a8baa75db9c7b0267aa2e00ef0ce98f796dfd36d4862"
+    }
+  }
+}
