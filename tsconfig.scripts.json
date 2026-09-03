@@ -9,7 +9,8 @@
     "prisma/**/*.ts",
     "etl/**/*.ts",
     "orm/**/*",
-    "libs/**/*.ts"
+    "libs/**/*.ts",
+    "libs/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
