@@ -22,6 +22,13 @@ delete from pg.market.firm_fact_fee_method;
 delete from pg.market.firm_fact_asset_allocation;
 delete from pg.market.firm_fact_office;
 delete from pg.market.firm_fact_custodian;
+delete from pg.market.firm_fact_private_fund_provider_website;
+delete from pg.market.firm_fact_private_fund_service_provider;
+delete from pg.market.firm_fact_private_fund_form_d;
+delete from pg.market.firm_fact_private_fund_adviser;
+delete from pg.market.firm_fact_private_fund_foreign_authority;
+delete from pg.market.firm_fact_private_fund_manager;
+delete from pg.market.firm_fact_private_fund_related_fund;
 delete from pg.market.firm_fact_private_fund;
 delete from pg.market.firm_fact_affiliation;
 delete from pg.market.firm_fact_owner;
@@ -33,6 +40,7 @@ delete from pg.market.firm_name_observation;
 delete from pg.market.filing;
 
 delete from pg.market.advisor;
+delete from pg.market.private_fund;
 delete from pg.market.firm;
 
 commit;

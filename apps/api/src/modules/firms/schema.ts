@@ -153,10 +153,46 @@ export const GetFirmFundsSchema = FirmRequestSchema.extend(
 
 const FirmFundSchema = z
   .object({
-    privateFundId: z.string().nullable(),
+    privateFundId: z.string(),
+    fundReference: z.string(),
     fundName: z.string().nullable(),
     fundTypeCode: z.string().nullable(),
+    fundTypeRaw: z.string().nullable(),
+    fundTypeOther: z.string().nullable(),
+    region: z.string().nullable(),
+    country: z.string().nullable(),
+    exclusion3c1: z.boolean().nullable(),
+    exclusion3c7: z.boolean().nullable(),
+    isMasterFund: z.boolean().nullable(),
+    isFeederFund: z.boolean().nullable(),
+    masterFundName: z.string().nullable(),
+    masterFundId: z.string().nullable(),
+    isFundOfFunds: z.boolean().nullable(),
+    adviserOrRelatedInvested: z.boolean().nullable(),
+    investedInRegisteredInvestmentCompanies: z.boolean().nullable(),
     grossAssetValue: money,
+    minimumInvestment: money,
+    beneficialOwnerCount: count,
+    ownedByAdviserRelatedPct: money,
+    ownedByFundsPct: money,
+    salesLimitedToQualifiedClients: z.boolean().nullable(),
+    ownedByNonUsPct: money,
+    isSubadviser: z.boolean().nullable(),
+    hasOtherAdvisers: z.boolean().nullable(),
+    clientsSolicited: z.boolean().nullable(),
+    clientsInvestedPct: money,
+    reliedOnRegulationD: z.boolean().nullable(),
+    annualAudit: z.boolean().nullable(),
+    financialStatementsGaap: z.boolean().nullable(),
+    financialStatementsDistributed: z.boolean().nullable(),
+    auditOpinionStatus: z
+      .enum(['unqualified', 'not_unqualified', 'report_not_yet_received'])
+      .nullable(),
+    usesPrimeBrokers: z.boolean().nullable(),
+    usesCustodians: z.boolean().nullable(),
+    usesAdministrator: z.boolean().nullable(),
+    externallyValuedAssetsPct: money,
+    usesMarketers: z.boolean().nullable(),
   })
   .meta({ id: 'FirmFund' });
 

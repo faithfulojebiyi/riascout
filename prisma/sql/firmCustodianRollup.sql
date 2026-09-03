@@ -11,7 +11,7 @@ select coalesce(d.canonical_name, c.source_name) as custodian_name,
        -- resolved means it matched the dimension, so the name is comparable
        -- across firms; an unresolved one is only as good as the filer typed it
        (d.id is not null)                        as is_resolved,
-       count(*)                                  as fund_count,
+       count(distinct c.private_fund_id)          as fund_count,
        -- sums nulls away rather than to zero: a custodian holding unreported
        -- assets is unknown, not empty
        sum(c.aum_at_custodian)                   as aum_at_custodian

@@ -96,6 +96,18 @@ model DimFundType {
   @@schema("market")
 }
 
+/// Stable SEC private-fund identity. Names and attributes remain filing observations.
+model PrivateFund {
+  privateFundId String    @id @map("private_fund_id")
+  firstSeenDate DateTime? @map("first_seen_date") @db.Date
+  lastSeenDate  DateTime? @map("last_seen_date") @db.Date
+
+  filingFacts FirmFactPrivateFund[]
+
+  @@map("private_fund")
+  @@schema("market")
+}
+
 /// Form ADV Schedule A ownership bands. Verify bounds against the ADV
 /// instructions before rendering as percentages to users.
 model DimOwnershipCode {
@@ -270,20 +282,27 @@ model Filing {
 
   firm Firm @relation(fields: [firmCrd], references: [firmCrd])
 
-  identity     FirmFactIdentity?
-  metrics      FirmFactMetrics?
-  registration FirmFactRegistration?
-  derived      FirmFactDerived?
-  clientTypes  FirmFactClientType[]
-  services     FirmFactService[]
-  feeMethods   FirmFactFeeMethod[]
-  allocations  FirmFactAssetAllocation[]
-  offices      FirmFactOffice[]
-  custodians   FirmFactCustodian[]
-  privateFunds FirmFactPrivateFund[]
-  affiliations FirmFactAffiliation[]
-  owners       FirmFactOwner[]
-  webPresence  FirmWebPresence[]
+  identity                      FirmFactIdentity?
+  metrics                       FirmFactMetrics?
+  registration                  FirmFactRegistration?
+  derived                       FirmFactDerived?
+  clientTypes                   FirmFactClientType[]
+  services                      FirmFactService[]
+  feeMethods                    FirmFactFeeMethod[]
+  allocations                   FirmFactAssetAllocation[]
+  offices                       FirmFactOffice[]
+  custodians                    FirmFactCustodian[]
+  privateFunds                  FirmFactPrivateFund[]
+  privateFundRelatedFunds       FirmFactPrivateFundRelatedFund[]
+  privateFundManagers           FirmFactPrivateFundManager[]
+  privateFundForeignAuthorities FirmFactPrivateFundForeignAuthority[]
+  privateFundAdvisers           FirmFactPrivateFundAdviser[]
+  privateFundFormD              FirmFactPrivateFundFormD[]
+  privateFundServiceProviders   FirmFactPrivateFundServiceProvider[]
+  privateFundProviderWebsites   FirmFactPrivateFundProviderWebsite[]
+  affiliations                  FirmFactAffiliation[]
+  owners                        FirmFactOwner[]
+  webPresence                   FirmWebPresence[]
 
   @@index([firmCrd, effectiveDate(sort: Desc)])
   @@index([firmCrd, submittedAt(sort: Desc)])
@@ -487,8 +506,9 @@ model FirmFactCustodian {
   regionRaw      String?  @map("region_raw")
   countryRaw     String?  @map("country_raw")
 
-  filing    Filing        @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
-  custodian DimCustodian? @relation(fields: [custodianId], references: [id])
+  filing      Filing               @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  custodian   DimCustodian?        @relation(fields: [custodianId], references: [id])
+  privateFund FirmFactPrivateFund? @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId])
 
   @@id([filingId, custodianRef])
   @@index([custodianId, aumAtCustodian(sort: Desc)])
@@ -498,21 +518,198 @@ model FirmFactCustodian {
 }
 
 model FirmFactPrivateFund {
-  filingId        String   @map("filing_id")
-  privateFundId   String   @map("private_fund_id")
-  fundName        String?  @map("fund_name")
-  fundTypeCode    String?  @map("fund_type_code")
-  grossAssetValue Decimal? @map("gross_asset_value") @db.Decimal(20, 2)
-  countryRaw      String?  @map("country_raw")
-  regionRaw       String?  @map("region_raw")
+  filingId                                String   @map("filing_id")
+  privateFundId                           String   @map("private_fund_id")
+  fundReference                           String   @map("fund_reference")
+  fundName                                String?  @map("fund_name")
+  fundTypeCode                            String?  @map("fund_type_code")
+  fundTypeRaw                             String?  @map("fund_type_raw")
+  fundTypeOther                           String?  @map("fund_type_other")
+  regionRaw                               String?  @map("region_raw")
+  countryRaw                              String?  @map("country_raw")
+  exclusion3c1                            Boolean? @map("exclusion_3c1")
+  exclusion3c7                            Boolean? @map("exclusion_3c7")
+  isMasterFund                            Boolean? @map("is_master_fund")
+  isFeederFund                            Boolean? @map("is_feeder_fund")
+  masterFundName                          String?  @map("master_fund_name")
+  masterFundId                            String?  @map("master_fund_id")
+  isFundOfFunds                           Boolean? @map("is_fund_of_funds")
+  adviserOrRelatedInvested                Boolean? @map("adviser_or_related_invested")
+  investedInRegisteredInvestmentCompanies Boolean? @map("invested_in_registered_investment_companies")
+  grossAssetValue                         Decimal? @map("gross_asset_value") @db.Decimal(20, 2)
+  minimumInvestment                       Decimal? @map("minimum_investment") @db.Decimal(20, 2)
+  beneficialOwnerCount                    BigInt?  @map("beneficial_owner_count")
+  ownedByAdviserRelatedPct                Decimal? @map("owned_by_adviser_related_pct") @db.Decimal(11, 8)
+  ownedByFundsPct                         Decimal? @map("owned_by_funds_pct") @db.Decimal(11, 8)
+  salesLimitedToQualifiedClients          Boolean? @map("sales_limited_to_qualified_clients")
+  ownedByNonUsPct                         Decimal? @map("owned_by_non_us_pct") @db.Decimal(11, 8)
+  isSubadviser                            Boolean? @map("is_subadviser")
+  hasOtherAdvisers                        Boolean? @map("has_other_advisers")
+  clientsSolicited                        Boolean? @map("clients_solicited")
+  clientsInvestedPct                      Decimal? @map("clients_invested_pct") @db.Decimal(11, 8)
+  reliedOnRegulationD                     Boolean? @map("relied_on_regulation_d")
+  annualAudit                             Boolean? @map("annual_audit")
+  financialStatementsGaap                 Boolean? @map("financial_statements_gaap")
+  financialStatementsDistributed          Boolean? @map("financial_statements_distributed")
+  auditOpinionStatus                      String?  @map("audit_opinion_status")
+  usesPrimeBrokers                        Boolean? @map("uses_prime_brokers")
+  usesCustodians                          Boolean? @map("uses_custodians")
+  usesAdministrator                       Boolean? @map("uses_administrator")
+  externallyValuedAssetsPct               Decimal? @map("externally_valued_assets_pct") @db.Decimal(11, 8)
+  usesMarketers                           Boolean? @map("uses_marketers")
 
-  filing   Filing       @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
-  fundType DimFundType? @relation(fields: [fundTypeCode], references: [code])
+  filing             Filing                                @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  privateFund        PrivateFund                           @relation(fields: [privateFundId], references: [privateFundId])
+  fundType           DimFundType?                          @relation(fields: [fundTypeCode], references: [code])
+  relatedFunds       FirmFactPrivateFundRelatedFund[]
+  managers           FirmFactPrivateFundManager[]
+  foreignAuthorities FirmFactPrivateFundForeignAuthority[]
+  advisers           FirmFactPrivateFundAdviser[]
+  formD              FirmFactPrivateFundFormD[]
+  serviceProviders   FirmFactPrivateFundServiceProvider[]
+  providerWebsites   FirmFactPrivateFundProviderWebsite[]
+  custodians         FirmFactCustodian[]
 
   @@id([filingId, privateFundId])
+  @@unique([filingId, fundReference])
   @@index([fundTypeCode, grossAssetValue(sort: Desc)])
   @@index([privateFundId])
   @@map("firm_fact_private_fund")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundRelatedFund {
+  filingId               String  @map("filing_id")
+  privateFundId          String  @map("private_fund_id")
+  fundReference          String  @map("fund_reference")
+  relationRole           String  @map("relation_role")
+  sourceRecordKey        String  @map("source_record_key")
+  relatedPrivateFundName String? @map("related_private_fund_name")
+  relatedPrivateFundId   String? @map("related_private_fund_id")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, relationRole, sourceRecordKey])
+  @@index([relatedPrivateFundId])
+  @@map("firm_fact_private_fund_related_fund")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundManager {
+  filingId        String  @map("filing_id")
+  privateFundId   String  @map("private_fund_id")
+  fundReference   String  @map("fund_reference")
+  managerRole     String  @map("manager_role")
+  sourceRecordKey String  @map("source_record_key")
+  managerName     String? @map("manager_name")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, managerRole, sourceRecordKey])
+  @@map("firm_fact_private_fund_manager")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundForeignAuthority {
+  filingId        String  @map("filing_id")
+  privateFundId   String  @map("private_fund_id")
+  fundReference   String  @map("fund_reference")
+  authorityRole   String  @map("authority_role")
+  sourceRecordKey String  @map("source_record_key")
+  authorityName   String? @map("authority_name")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, authorityRole, sourceRecordKey])
+  @@map("firm_fact_private_fund_foreign_authority")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundAdviser {
+  filingId        String  @map("filing_id")
+  privateFundId   String  @map("private_fund_id")
+  fundReference   String  @map("fund_reference")
+  adviserRole     String  @map("adviser_role")
+  sourceRecordKey String  @map("source_record_key")
+  adviserName     String? @map("adviser_name")
+  secFileNumber   String? @map("sec_file_number")
+  crdNumber       BigInt? @map("crd_number")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, adviserRole, sourceRecordKey])
+  @@index([crdNumber])
+  @@map("firm_fact_private_fund_adviser")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundFormD {
+  filingId        String  @map("filing_id")
+  privateFundId   String  @map("private_fund_id")
+  fundReference   String  @map("fund_reference")
+  sourceRecordKey String  @map("source_record_key")
+  formDFileNumber String? @map("form_d_file_number")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, sourceRecordKey])
+  @@index([formDFileNumber])
+  @@map("firm_fact_private_fund_form_d")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundServiceProvider {
+  filingId        String   @map("filing_id")
+  privateFundId   String   @map("private_fund_id")
+  fundReference   String   @map("fund_reference")
+  providerRole    String   @map("provider_role")
+  sourceRecordKey String   @map("source_record_key")
+  legalName       String?  @map("legal_name")
+  businessName    String?  @map("business_name")
+  secNumber       String?  @map("sec_number")
+  crdNumber       BigInt?  @map("crd_number")
+  pcaobNumber     String?  @map("pcaob_number")
+  lei             String?
+  city            String?
+  regionRaw       String?  @map("region_raw")
+  countryRaw      String?  @map("country_raw")
+  relatedPerson   Boolean? @map("related_person")
+  independent     Boolean?
+  pcaobRegistered Boolean? @map("pcaob_registered")
+  pcaobInspected  Boolean? @map("pcaob_inspected")
+  actsAsCustodian Boolean? @map("acts_as_custodian")
+  sendsStatements Boolean? @map("sends_statements")
+  statementSender String?  @map("statement_sender")
+  hasWebsites     Boolean? @map("has_websites")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, providerRole, sourceRecordKey])
+  @@index([crdNumber])
+  @@index([lei])
+  @@map("firm_fact_private_fund_service_provider")
+  @@schema("market")
+}
+
+model FirmFactPrivateFundProviderWebsite {
+  filingId          String  @map("filing_id")
+  privateFundId     String  @map("private_fund_id")
+  fundReference     String  @map("fund_reference")
+  providerReference String  @map("provider_reference")
+  sourceRecordKey   String  @map("source_record_key")
+  websiteAddress    String? @map("website_address")
+
+  filing   Filing              @relation(fields: [filingId], references: [filingId], onDelete: Cascade)
+  fundFact FirmFactPrivateFund @relation(fields: [filingId, privateFundId], references: [filingId, privateFundId], onDelete: Cascade)
+
+  @@id([filingId, privateFundId, providerReference, sourceRecordKey])
+  @@map("firm_fact_private_fund_provider_website")
   @@schema("market")
 }
 

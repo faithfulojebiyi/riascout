@@ -46,6 +46,12 @@ const STAGES: Stage[] = [
   { key: 'filings', file: '020-filings.sql', label: 'filing spine' },
   { key: 'firm-facts', file: '030-firm-facts.sql', label: 'firm facts' },
   {
+    key: 'private-funds',
+    file: '032-private-funds.sql',
+    label: 'private fund details',
+    requiresSeedTable: 'filing_private_fund_service_providers',
+  },
+  {
     key: 'fee-methods',
     file: '031-fee-methods.sql',
     label: 'fee methods',

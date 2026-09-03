@@ -862,15 +862,97 @@ export interface GetFirmFunds {
   offset?: number;
 }
 
+/**
+ * @nullable
+ */
+export type FirmFundAuditOpinionStatus = typeof FirmFundAuditOpinionStatus[keyof typeof FirmFundAuditOpinionStatus] | null;
+
+
+export const FirmFundAuditOpinionStatus = {
+  unqualified: 'unqualified',
+  not_unqualified: 'not_unqualified',
+  report_not_yet_received: 'report_not_yet_received',
+} as const;
+
 export interface FirmFund {
-  /** @nullable */
-  privateFundId: string | null;
+  privateFundId: string;
+  fundReference: string;
   /** @nullable */
   fundName: string | null;
   /** @nullable */
   fundTypeCode: string | null;
   /** @nullable */
+  fundTypeRaw: string | null;
+  /** @nullable */
+  fundTypeOther: string | null;
+  /** @nullable */
+  region: string | null;
+  /** @nullable */
+  country: string | null;
+  /** @nullable */
+  exclusion3c1: boolean | null;
+  /** @nullable */
+  exclusion3c7: boolean | null;
+  /** @nullable */
+  isMasterFund: boolean | null;
+  /** @nullable */
+  isFeederFund: boolean | null;
+  /** @nullable */
+  masterFundName: string | null;
+  /** @nullable */
+  masterFundId: string | null;
+  /** @nullable */
+  isFundOfFunds: boolean | null;
+  /** @nullable */
+  adviserOrRelatedInvested: boolean | null;
+  /** @nullable */
+  investedInRegisteredInvestmentCompanies: boolean | null;
+  /** @nullable */
   grossAssetValue: string | null;
+  /** @nullable */
+  minimumInvestment: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  beneficialOwnerCount: number | null;
+  /** @nullable */
+  ownedByAdviserRelatedPct: string | null;
+  /** @nullable */
+  ownedByFundsPct: string | null;
+  /** @nullable */
+  salesLimitedToQualifiedClients: boolean | null;
+  /** @nullable */
+  ownedByNonUsPct: string | null;
+  /** @nullable */
+  isSubadviser: boolean | null;
+  /** @nullable */
+  hasOtherAdvisers: boolean | null;
+  /** @nullable */
+  clientsSolicited: boolean | null;
+  /** @nullable */
+  clientsInvestedPct: string | null;
+  /** @nullable */
+  reliedOnRegulationD: boolean | null;
+  /** @nullable */
+  annualAudit: boolean | null;
+  /** @nullable */
+  financialStatementsGaap: boolean | null;
+  /** @nullable */
+  financialStatementsDistributed: boolean | null;
+  /** @nullable */
+  auditOpinionStatus: FirmFundAuditOpinionStatus;
+  /** @nullable */
+  usesPrimeBrokers: boolean | null;
+  /** @nullable */
+  usesCustodians: boolean | null;
+  /** @nullable */
+  usesAdministrator: boolean | null;
+  /** @nullable */
+  externallyValuedAssetsPct: string | null;
+  /** @nullable */
+  usesMarketers: boolean | null;
 }
 
 export interface GetFirmFundsResponse {

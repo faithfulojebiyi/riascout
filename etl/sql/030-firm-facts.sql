@@ -149,30 +149,6 @@ where exists (select 1 from pg.market.filing f where f.filing_id = o.filing_id)
   and o.office_reference is not null
 group by o.filing_id, o.office_reference;
 
--- ── private funds ───────────────────────────────────────────────────────────
-delete from pg.market.firm_fact_private_fund;
-
-insert into pg.market.firm_fact_private_fund (
-  filing_id, private_fund_id, fund_name, fund_type_code,
-  gross_asset_value, country_raw, region_raw
-)
-select p.filing_id, p.private_fund_id,
-       max(p.private_fund_name),
-       max(m.code),
-       max(p.gross_asset_value), max(p.country_raw), max(p.region_raw)
-from filing_private_funds p
-left join (values
-  ('Private Equity Fund','private_equity'),
-  ('Hedge Fund','hedge'),
-  ('Venture Capital Fund','venture_capital'),
-  ('Real Estate Fund','real_estate'),
-  ('Securitized Asset Fund','securitized_asset'),
-  ('Liquidity Fund','liquidity'),
-  ('Other Private Fund','other_private')
-) as m(src, code) on m.src = p.private_fund_type
-where exists (select 1 from pg.market.filing f where f.filing_id = p.filing_id)
-group by p.filing_id, p.private_fund_id;
-
 -- ── affiliations ────────────────────────────────────────────────────────────
 delete from pg.market.firm_fact_affiliation;
 
@@ -188,22 +164,6 @@ from filing_affiliations a
 where exists (select 1 from pg.market.filing f where f.filing_id = a.filing_id)
   and a.affiliation_reference is not null
 group by a.filing_id, a.affiliation_reference;
-
--- ── custodians: source_name retained even once resolved to a dim ────────────
-delete from pg.market.firm_fact_custodian;
-
-insert into pg.market.firm_fact_custodian (
-  filing_id, custodian_reference, source_name, aum_at_custodian,
-  private_fund_id, city, region_raw, country_raw
-)
-select c.filing_id, c.custodian_reference,
-       max(coalesce(c.custodian_name, '(unnamed)')),
-       max(c.aum_at_custodian), max(c.private_fund_id),
-       max(c.city), max(c.region_raw), max(c.country_raw)
-from filing_custodians c
-where exists (select 1 from pg.market.filing f where f.filing_id = c.filing_id)
-  and c.custodian_reference is not null
-group by c.filing_id, c.custodian_reference;
 
 -- ── firm registration events ────────────────────────────────────────────────
 delete from pg.market.firm_registration_event;
