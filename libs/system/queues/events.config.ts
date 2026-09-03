@@ -1,9 +1,11 @@
 import { eventType } from 'inngest';
 
 import { bulkAddToListSchema } from './dto/lists.dto.js';
+import { sendMailSchema } from './dto/mail.dto.js';
 
 export const EVENT_KEYS = {
   LIST_BULK_ADD: 'lists/bulk.add',
+  MAIL_SEND: 'mail/send',
 
   // inngest's built-in event, fired when a function exhausts its retries
   FAILED_EVENT: 'inngest/function.failed',
@@ -20,5 +22,8 @@ export const INNGEST_OPTIONS = {
 export const EVENTS = {
   LIST_BULK_ADD: eventType(EVENT_KEYS.LIST_BULK_ADD, {
     schema: bulkAddToListSchema,
+  }),
+  MAIL_SEND: eventType(EVENT_KEYS.MAIL_SEND, {
+    schema: sendMailSchema,
   }),
 };

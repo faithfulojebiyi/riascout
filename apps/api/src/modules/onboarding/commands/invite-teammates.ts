@@ -5,6 +5,9 @@ import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
+import { EVENT_KEYS } from '@system/queues/events.config.js';
+
+import { EventPublisherService } from '../../event-publisher/event-publisher.service.js';
 
 import type {
   InviteTeammatesDto,
@@ -14,6 +17,10 @@ import { requireIdentity } from '../identity.js';
 
 const INVITE_TTL_DAYS = 7;
 
+/** the dashboard origin, which is not BETTER_AUTH_URL — that one is the api */
+const appUrl = (): string =>
+  (process.env.APP_URL ?? 'http://localhost:3020').replace(/\/+$/, '');
+
 export class InviteTeammatesCommand extends Command<InviteTeammatesResponseDto> {
   constructor(public readonly dto: InviteTeammatesDto) {
     super();
@@ -22,12 +29,12 @@ export class InviteTeammatesCommand extends Command<InviteTeammatesResponseDto> 
 
 @CommandHandler(InviteTeammatesCommand)
 export class InviteTeammatesCommandHandler implements ICommandHandler<InviteTeammatesCommand> {
-  /** the link is logged rather than sent; see the emailOTP note in auth.ts */
   private readonly logger = new Logger('WorkspaceInvites');
 
   constructor(
     private readonly appPrismaService: AppPrismaService,
     private readonly alsService: AlsService,
+    private readonly eventPublisherService: EventPublisherService,
   ) {}
 
   async execute({
@@ -71,6 +78,17 @@ export class InviteTeammatesCommandHandler implements ICommandHandler<InviteTeam
       (invite) => !taken.has(invite.email.toLowerCase()),
     );
 
+    const [workspace, inviter] = await Promise.all([
+      this.appPrismaService.organization.findUnique({
+        where: { id: workspaceId },
+        select: { name: true },
+      }),
+      this.appPrismaService.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      }),
+    ]);
+
     for (const invite of fresh) {
       const invitation = await this.appPrismaService.invitation.create({
         data: {
@@ -85,7 +103,25 @@ export class InviteTeammatesCommandHandler implements ICommandHandler<InviteTeam
         select: { id: true, email: true },
       });
 
-      this.logger.log(`invite for ${invitation.email}: ${invitation.id}`);
+      /**
+       * Published after the row exists, so a crash between the two replays the
+       * send rather than mailing a link to an invitation that was never
+       * written. The idempotency key absorbs the replay.
+       */
+      await this.eventPublisherService.sendEvent({
+        name: EVENT_KEYS.MAIL_SEND,
+        data: {
+          template: 'workspace-invite',
+          to: invitation.email,
+          props: {
+            workspaceName: workspace?.name ?? 'your workspace',
+            invitedBy: inviter?.name ?? null,
+            acceptUrl: `${appUrl()}/sign-in?invitation=${invitation.id}`,
+          },
+          idempotencyKey: `workspace-invite/${invitation.id}`,
+        },
+        user: { userId, workspaceId },
+      });
     }
 
     return { invited: fresh.length, skipped: [...taken] };

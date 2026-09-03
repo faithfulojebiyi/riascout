@@ -1,6 +1,7 @@
 import type { InngestFunction } from 'inngest';
 
 import { bulkAddToList } from '../lists/queues/bulk-add-to-list.js';
+import { sendMail } from '../mail/queues/send-mail.js';
 import type { InngestFunctionDto } from './event-publisher.dto.js';
 import { failedEvents } from './failed-events.function.js';
 
@@ -11,4 +12,8 @@ import { failedEvents } from './failed-events.function.js';
  */
 export const getInngestRegistry = (
   deps: InngestFunctionDto,
-): InngestFunction.Any[] => [bulkAddToList(deps), failedEvents()];
+): InngestFunction.Any[] => [
+  bulkAddToList(deps),
+  sendMail(deps),
+  failedEvents(),
+];

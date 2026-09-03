@@ -1,9 +1,12 @@
+import { createHash } from 'node:crypto';
+
 import { Logger } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { emailOTP, organization } from 'better-auth/plugins';
 
+import { sendMail } from '@providers/mail/mail.service.js';
 import { provisionWorkspace } from '@feature/entities/data/provision-workspace.js';
 import { PrismaClient } from '@orm/app';
 
@@ -29,8 +32,13 @@ export const authPrisma = new PrismaClient({
   errorFormat: 'minimal',
 });
 
-/** the code goes to the log until a mail provider exists; see sendVerificationOTP */
 const otpLogger = new Logger('AuthOtp');
+
+/** the plugin's expiresIn and the template's copy must not drift apart */
+const OTP_TTL_SECONDS = 300;
+
+const otpFingerprint = (email: string, otp: string): string =>
+  createHash('sha256').update(`${email}:${otp}`).digest('hex').slice(0, 32);
 
 const trustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? '')
   .split(',')
@@ -140,23 +148,35 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    /**
-     * The code is logged rather than sent: there is no mail provider yet, and
-     * a silent failure would look like a working flow that never delivers.
-     * Swap the body for the provider when libs/providers/resend lands — nothing
-     * else about the flow changes.
-     */
     emailOTP({
       otpLength: 6,
-      expiresIn: 300,
-      async sendVerificationOTP({ email, otp, type }) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error(
-            'No mail provider configured; refusing to issue an OTP that cannot be delivered',
+      expiresIn: OTP_TTL_SECONDS,
+      /**
+       * Sent inline, not queued: a login code that arrives after the user gives
+       * up is worthless, and a queue would hide the failure from the one screen
+       * that can report it. Throwing surfaces it at sign-in.
+       */
+      async sendVerificationOTP({ email, otp }) {
+        try {
+          await sendMail({
+            to: email,
+            template: 'sign-in-otp',
+            props: { otp, expiresIn: OTP_TTL_SECONDS },
+            /**
+             * Varies per issued code. Keying on the address alone would make a
+             * legitimate resend collide with the previous key under a different
+             * payload, which resend answers with a 409. The code is hashed
+             * rather than embedded so the key never carries the secret.
+             */
+            idempotencyKey: `sign-in-otp/${otpFingerprint(email, otp)}`,
+          });
+        } catch (error) {
+          otpLogger.error(
+            `failed to send a sign-in code: ${error instanceof Error ? error.message : String(error)}`,
           );
-        }
 
-        otpLogger.log(`${type} code for ${email}: ${otp}`);
+          throw error;
+        }
       },
     }),
     organization({
