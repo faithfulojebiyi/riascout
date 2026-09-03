@@ -1,11 +1,8 @@
 import './load-env.js';
 
-import { mkdir } from 'node:fs/promises';
-
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
-import fastifyStatic from '@fastify/static';
 import { NestFactory } from '@nestjs/core';
 import { serve } from 'inngest/fastify';
 import {
@@ -15,10 +12,6 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 
-import {
-  STORAGE_URL_PREFIX,
-  storageRoot,
-} from '@providers/storage/storage.service.js';
 import { auth } from '@system/auth/auth.js';
 import { AppLogger } from '@system/logger/logger.service.js';
 
@@ -40,27 +33,6 @@ async function bootstrap(): Promise<void> {
   await app.register(helmet);
   await app.register(cookie);
   await app.register(compress);
-
-  const uploadsRoot = storageRoot();
-
-  // @fastify/static throws on a missing root, and nothing has uploaded yet
-  await mkdir(uploadsRoot, { recursive: true });
-
-  await app.register(fastifyStatic, {
-    root: uploadsRoot,
-    prefix: `${STORAGE_URL_PREFIX}/`,
-    decorateReply: false,
-  });
-
-  // helmet's same-origin default would block the dashboard loading an upload
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .addHook('onSend', async (request, reply) => {
-      if (request.url.startsWith(`${STORAGE_URL_PREFIX}/`)) {
-        reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
-      }
-    });
 
   const prefix = process.env.API_PREFIX ?? '';
 

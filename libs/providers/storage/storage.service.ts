@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
 
 import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
+
+import type {
+  PutOptions,
+  StorageAdapter,
+  StorageListing,
+  StorageObject,
+} from './adapter.js';
+import { tigrisAdapter } from './adapters/tigris.adapter.js';
 
 export const STORAGE_IMAGE_TYPES = [
   'image/jpeg',
@@ -18,18 +24,35 @@ const IMAGE_EXTENSIONS: Record<StorageImageType, string> = {
   'image/webp': 'webp',
 };
 
-/** the url prefix the files are served under, shared with the static route */
-export const STORAGE_URL_PREFIX = '/uploads';
+/** a prefix rather than the bucket root, so objects stay separable by kind */
+const AVATAR_PREFIX = 'avatars';
 
-export const storageRoot = (): string =>
-  resolve(process.env.STORAGE_LOCAL_DIR ?? 'storage/uploads');
+const ADAPTERS: Record<string, StorageAdapter> = {
+  [tigrisAdapter.name]: tigrisAdapter,
+};
+
+const selectAdapter = (): StorageAdapter => {
+  const name = process.env.STORAGE_DRIVER ?? tigrisAdapter.name;
+  const adapter = ADAPTERS[name];
+
+  if (!adapter) {
+    throw new Error(
+      `Unknown STORAGE_DRIVER "${name}"; expected one of ${Object.keys(ADAPTERS).join(', ')}`,
+    );
+  }
+
+  return adapter;
+};
 
 /**
- * Local disk today. The seam exists so an object store swaps in behind putImage
- * without a caller changing — the return is always a url, never a path.
+ * Delegates to the configured adapter. putImage keeps its signature so the
+ * callers that predate object storage are untouched — the return is always a
+ * url, never a path.
  */
 @Injectable()
 export class StorageService {
+  private readonly adapter = selectAdapter();
+
   async putImage(data: Buffer, contentType: StorageImageType): Promise<string> {
     const extension = IMAGE_EXTENSIONS[contentType];
 
@@ -39,22 +62,36 @@ export class StorageService {
       );
     }
 
-    const name = `${randomUUID()}.${extension}`;
-    const root = storageRoot();
+    /**
+     * Public because the dashboard loads these through an <img> with no
+     * session. Everything else defaults to private.
+     */
+    const object = await this.adapter.put(
+      `${AVATAR_PREFIX}/${randomUUID()}.${extension}`,
+      data,
+      { access: 'public', contentType },
+    );
 
-    await mkdir(root, { recursive: true });
-    await writeFile(join(root, name), data);
-
-    return `${this.publicBase()}${STORAGE_URL_PREFIX}/${name}`;
+    return object.url;
   }
 
-  /** absolute so the url survives being stored on a record and read anywhere */
-  private publicBase(): string {
-    const base =
-      process.env.STORAGE_PUBLIC_URL ??
-      process.env.BETTER_AUTH_URL ??
-      'http://localhost:3320';
+  put(
+    path: string,
+    body: Buffer | ReadableStream,
+    options?: PutOptions,
+  ): Promise<StorageObject> {
+    return this.adapter.put(path, body, options);
+  }
 
-    return base.replace(/\/+$/, '');
+  get(path: string): Promise<Buffer> {
+    return this.adapter.get(path);
+  }
+
+  remove(path: string): Promise<void> {
+    return this.adapter.remove(path);
+  }
+
+  list(prefix: string, paginationToken?: string): Promise<StorageListing> {
+    return this.adapter.list(prefix, paginationToken);
   }
 }
