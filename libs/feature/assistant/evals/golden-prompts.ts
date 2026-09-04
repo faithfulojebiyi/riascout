@@ -654,10 +654,16 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     kind: 'shape',
     sourceKind: 'firm',
     prompt: 'firms custodied at Schwab',
-    // the id is this load's dim_custodian row; the model must reach it via get_field_options
+    // every Schwab entity in this load's dim_custodian, reached via get_field_options
     expect: {
       filter: f({
-        all: [{ field: 'firm.custodian_ids', op: 'isAnyOf', value: ['1315'] }],
+        all: [
+          {
+            field: 'firm.custodian_ids',
+            op: 'isAnyOf',
+            value: ['1315', '1317', '1321', '4524', '4525'],
+          },
+        ],
       }),
     },
   },

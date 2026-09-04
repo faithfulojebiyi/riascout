@@ -179,9 +179,10 @@ describe.skipIf(!process.env.SPIKE_LLM)(
     const base = `http://localhost:${process.env.PORT ?? 3320}`;
     const agentId = 'assistant';
     const only = process.env.EVAL_KIND as GoldenKind | undefined;
-    const cases = only
-      ? GOLDEN_CASES.filter((c) => c.kind === only)
-      : GOLDEN_CASES;
+    const onlyId = process.env.EVAL_ID;
+    const cases = GOLDEN_CASES.filter(
+      (c) => (!only || c.kind === only) && (!onlyId || c.id === onlyId),
+    );
     const results: CaseResult[] = [];
     const threadIds: string[] = [];
     let cookie = '';
