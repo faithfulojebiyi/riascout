@@ -1,8 +1,17 @@
-import { useMemo, useState } from 'react';
-import { Flex, VStack } from '@riascout-ui/styled-system/jsx';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Flex, HStack, styled, VStack } from '@riascout-ui/styled-system/jsx';
 
 import { useFetchFacets } from '../queries/use-fetch-facets';
 import { useSearchProspects } from '../queries/use-search-prospects';
+import {
+  decodeAgentFilter,
+  encodeAgentFilter,
+} from '../stores/agent-filter-url';
+import {
+  toAgentFilter,
+  toFacetSelection,
+} from '../stores/agent-filter-to-selection';
 import { buildFilterTree } from '../stores/build-filter-tree';
 import type {
   FacetSelection,
@@ -48,13 +57,22 @@ const TABLE_COLUMNS: Record<SourceKind, ColumnDef[]> = {
 
 export type SourceKind = 'advisor' | 'firm';
 
-export type ProspectingPageProps = { sourceKind?: SourceKind };
+export type ProspectingPageProps = {
+  sourceKind?: SourceKind;
+  /** the assistant's filter from the url, applied once the facets are known */
+  encodedFilter?: string;
+};
 
 /** the same page for both; only the source kind and default columns differ */
 export const ProspectingPage = ({
   sourceKind = 'advisor',
+  encodedFilter,
 }: ProspectingPageProps) => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [selection, setSelection] = useState<FacetSelection>({});
+  const [unmapped, setUnmapped] = useState<string[]>([]);
+  const hydratedRef = useRef(false);
   const [openRow, setOpenRow] = useState<ProspectRow | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -92,6 +110,47 @@ export const ProspectingPage = ({
       }),
     [facets, sourceKind],
   );
+
+  /**
+   * Hydrate once, after the facets arrive: the token names fields, and only
+   * a facet knows the attribute id and control behind a field. Conditions the
+   * rail cannot show are surfaced, not applied, so the count is never quietly
+   * different from what the assistant reported.
+   */
+  useEffect(() => {
+    if (hydratedRef.current || facets.length === 0) return;
+
+    hydratedRef.current = true;
+
+    const parsed = encodedFilter ? decodeAgentFilter(encodedFilter) : null;
+
+    if (!parsed) {
+      if (encodedFilter)
+        setUnmapped(['the filter in this link could not be read']);
+
+      return;
+    }
+
+    const hydrated = toFacetSelection(parsed, facets);
+
+    setSelection(hydrated.selection);
+    setUnmapped(hydrated.unmapped);
+  }, [encodedFilter, facets]);
+
+  // keep the url shareable: the rail's state is always in `f`
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    const agentFilter = toAgentFilter(selection, facets);
+    const f = agentFilter ? encodeAgentFilter(agentFilter) : undefined;
+
+    if (f === encodedFilter) return;
+
+    void navigate({
+      href: f ? `${pathname}?f=${f}` : pathname,
+      replace: true,
+    });
+  }, [selection, facets, encodedFilter, navigate, pathname]);
 
   const filter = useMemo(() => buildFilterTree(selection), [selection]);
 
@@ -169,6 +228,33 @@ export const ProspectingPage = ({
           title={sourceKind === 'firm' ? 'Firms' : 'Advisors'}
           total={search.data?.total ?? null}
         />
+        {unmapped.length > 0 ? (
+          <HStack
+            bg="brand.panel.3"
+            borderBottomWidth="1px"
+            borderColor="brand.panel.4"
+            fontSize="1"
+            gap="3"
+            px="4"
+            py="2"
+          >
+            <styled.span color="text.muted" flex="1" minW="0">
+              Not applied here, so the count may differ from the assistant's:{' '}
+              <styled.span color="text.app">{unmapped.join(' · ')}</styled.span>
+            </styled.span>
+            <styled.button
+              color="text.muted"
+              cursor="pointer"
+              flexShrink="0"
+              onClick={() => setUnmapped([])}
+              textDecoration="underline"
+              textUnderlineOffset="3px"
+              type="button"
+            >
+              Dismiss
+            </styled.button>
+          </HStack>
+        ) : null}
         {rows.length === 0 && !isLoading ? (
           <ProspectingEmptyState hasFilters={hasFilters} />
         ) : (

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { openUrlFor } from '../filter/agent-filter-url.js';
 import { defineTool } from './define-tool.js';
 import {
   asNumber,
@@ -44,7 +45,9 @@ const outputSchema = z.object({
   rows: z.array(firmRowSchema),
   filter: z.unknown().nullable(),
   reading: z.string().nullable(),
+  /** the dashboard page with this filter applied, or the bare page if it would not fit a url */
   openUrl: z.string(),
+  openUrlCarriesFilter: z.boolean(),
   filterErrors: z.array(filterErrorSchema).optional(),
 });
 
@@ -85,6 +88,7 @@ export const searchFirmsTool = defineTool({
         filter: input.filter,
         reading: input.reading ?? null,
         openUrl: FIRM_OPEN_URL,
+        openUrlCarriesFilter: false,
         filterErrors: outcome.filterErrors,
       };
     }
@@ -93,7 +97,7 @@ export const searchFirmsTool = defineTool({
       total: outcome.total,
       filter: outcome.filter,
       reading: input.reading ?? null,
-      openUrl: FIRM_OPEN_URL,
+      ...openUrlFor(FIRM_OPEN_URL, outcome.filter),
       rows: outcome.rows.map((row) => {
         const channelCode = asString(row.byKey.get('firm.channel_code'));
         const aumBand = asString(row.byKey.get('firm.aum_band'));

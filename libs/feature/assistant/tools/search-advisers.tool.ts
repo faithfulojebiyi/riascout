@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { openUrlFor } from '../filter/agent-filter-url.js';
 import { defineTool } from './define-tool.js';
 import {
   asNumber,
@@ -47,8 +48,9 @@ const outputSchema = z.object({
   /** the filter that produced these rows, echoed for saving and linking */
   filter: z.unknown().nullable(),
   reading: z.string().nullable(),
-  /** the dashboard page where the recruiter can continue with the full grid */
+  /** the dashboard page with this filter applied, or the bare page if it would not fit a url */
   openUrl: z.string(),
+  openUrlCarriesFilter: z.boolean(),
   filterErrors: z.array(filterErrorSchema).optional(),
 });
 
@@ -95,6 +97,7 @@ export const searchAdvisersTool = defineTool({
         filter: input.filter,
         reading: input.reading ?? null,
         openUrl: ADVISER_OPEN_URL,
+        openUrlCarriesFilter: false,
         filterErrors: outcome.filterErrors,
       };
     }
@@ -103,7 +106,7 @@ export const searchAdvisersTool = defineTool({
       total: outcome.total,
       filter: outcome.filter,
       reading: input.reading ?? null,
-      openUrl: ADVISER_OPEN_URL,
+      ...openUrlFor(ADVISER_OPEN_URL, outcome.filter),
       rows: outcome.rows.map((row) => {
         const firmAumBand = asString(row.byKey.get('advisor.firm_aum_band'));
 
