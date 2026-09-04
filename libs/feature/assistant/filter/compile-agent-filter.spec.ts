@@ -169,13 +169,15 @@ describe('compileAgentFilter', () => {
   });
 
   it('returns null for an empty filter and a bare condition for one', () => {
-    expect(compileAgentFilter({ all: [], any: [] }, dictionary)).toEqual({
+    expect(
+      compileAgentFilter({ all: [], any: [], none: [] }, dictionary),
+    ).toEqual({
       ok: true,
       tree: null,
     });
 
     const single = compileAgentFilter(
-      { all: [{ field: 'advisor.state', op: 'isEmpty' }], any: [] },
+      { all: [{ field: 'advisor.state', op: 'isEmpty' }], any: [], none: [] },
       dictionary,
     );
 
@@ -190,14 +192,14 @@ describe('compileAgentFilter', () => {
     });
   });
 
-  it('reports every error at once, with near matches for unknown fields', () => {
+  it('reports every error at once, with near matches and examples', () => {
     const result = compileAgentFilter(
       {
         all: [
           { field: 'advisor.states', op: 'isAnyOf', value: ['TX'] },
-          { field: 'advisor.state', op: 'contains', value: 'T' },
+          { field: 'advisor.state', op: 'isWithinLastNDays', value: 3 },
           { field: 'advisor.tenure_years', op: 'isBetween', value: 5 },
-          { field: 'advisor.exam_codes', op: 'isAnyOf', value: 'S65' },
+          { field: 'advisor.exam_codes', op: 'isAnyOf', value: [] },
         ],
         any: [
           {
@@ -206,6 +208,7 @@ describe('compileAgentFilter', () => {
             value: -3,
           },
         ],
+        none: [],
       },
       dictionary,
     );
@@ -222,9 +225,145 @@ describe('compileAgentFilter', () => {
       'any[0]',
     ]);
     expect(result.errors[0]?.nearMatches).toEqual(['advisor.state']);
-    expect(result.errors[1]?.message).toContain('supports isAnyOf');
-    expect(result.errors[2]?.message).toContain('advisor.tenure_years');
-    expect(result.errors[3]?.message).toContain('non-empty array');
+    expect(result.errors[1]?.message).toContain('supports');
+    expect(result.errors[1]?.example).toEqual({
+      field: 'advisor.state',
+      op: 'isAnyOf',
+      value: ['TX'],
+    });
+    expect(result.errors[2]?.message).toContain('[low, high]');
+    expect(result.errors[3]?.message).toContain('at least one value');
+    expect(result.errors[4]?.message).toContain('positive whole number');
+  });
+
+  it('suggests a field from a glossary alias', () => {
+    const result = compileAgentFilter(
+      {
+        all: [{ field: 'book', op: 'isGreaterThan', value: 1 }],
+        any: [],
+        none: [],
+      },
+      buildFieldDictionary([
+        facet({
+          allowKey: 'advisor.firm_aum',
+          attributeId: 'a-aum',
+          kind: 'number',
+          type: 'currency',
+          operators: ['isGreaterThan', 'isLessThan', 'isBetween'],
+        }),
+      ]),
+    );
+
+    expect(result.ok).toBe(false);
+
+    if (result.ok) throw new Error('expected errors');
+
+    expect(result.errors[0]?.nearMatches).toEqual(['advisor.firm_aum']);
+  });
+
+  it('compiles none into not(or) and normalises loose values', () => {
+    const result = compileAgentFilter(
+      {
+        all: [
+          {
+            field: 'advisor.tenure_years',
+            op: 'isBetween',
+            value: { min: '1', max: 5 },
+          },
+          { field: 'advisor.exam_codes', op: 'isAnyOf', value: 'S65' },
+          {
+            field: 'advisor.last_detected_on',
+            op: 'isAfter',
+            value: '2026-01',
+          },
+        ],
+        any: [],
+        none: [{ field: 'advisor.state', op: 'isAnyOf', value: ['NY', 'NJ'] }],
+      },
+      dictionary,
+    );
+
+    expect(result.ok).toBe(true);
+
+    if (!result.ok || !result.tree) throw new Error('expected a tree');
+
+    expect(result.tree).toEqual({
+      kind: 'and',
+      children: [
+        {
+          kind: 'condition',
+          path: [{ attributeId: 'a-tenure' }],
+          operator: 'isBetween',
+          value: [1, 5],
+        },
+        {
+          kind: 'condition',
+          path: [{ attributeId: 'a-exams' }],
+          operator: 'isAnyOf',
+          value: ['S65'],
+        },
+        {
+          kind: 'condition',
+          path: [{ attributeId: 'a-detected' }],
+          operator: 'isAfter',
+          value: '2026-01-01',
+        },
+        {
+          kind: 'not',
+          child: {
+            kind: 'condition',
+            path: [{ attributeId: 'a-state' }],
+            operator: 'isAnyOf',
+            value: ['NY', 'NJ'],
+          },
+        },
+      ],
+    });
+
+    const { sql } = compileToSql(result.tree);
+
+    expect(sql).toContain('NOT (ref.state = ANY(');
+    expect(sql).toContain('BETWEEN');
+  });
+
+  it('rejects "X and Y" packed into one array value with an all-of hint', () => {
+    const result = compileAgentFilter(
+      {
+        all: [
+          { field: 'advisor.exam_codes', op: 'isAnyOf', value: ['S7 and S65'] },
+        ],
+        any: [],
+        none: [],
+      },
+      dictionary,
+    );
+
+    expect(result.ok).toBe(false);
+
+    if (result.ok) throw new Error('expected errors');
+
+    expect(result.errors[0]?.hint).toContain('one condition per value');
+  });
+
+  it('lets scalar numbers use is and isNot beyond the rail operators', () => {
+    const result = compileAgentFilter(
+      {
+        all: [{ field: 'advisor.tenure_years', op: 'is', value: '$3' }],
+        any: [],
+        none: [],
+      },
+      dictionary,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      tree: {
+        kind: 'condition',
+        path: [{ attributeId: 'a-tenure' }],
+        operator: 'is',
+        value: 3,
+      },
+    });
   });
 });
 

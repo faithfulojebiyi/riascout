@@ -1,5 +1,7 @@
-import { ZodError } from 'zod';
-
+import {
+  glossaryFor,
+  glossaryKeysForAlias,
+} from '@feature/entities/data/column-glossary.js';
 import type {
   FilterCondition,
   FilterTree,
@@ -7,14 +9,23 @@ import type {
 import { operatorRegistry } from '@feature/entities/filter-sort/operator-registry.js';
 import type { FacetDefinition } from '@feature/prospecting/facets/facet-definitions.js';
 
-import type { AgentCondition, AgentFilter } from './agent-filter.schema.js';
+import type {
+  AgentCondition,
+  AgentFilter,
+  AgentFilterGroup,
+} from './agent-filter.schema.js';
+import { agentOperatorsFor } from './agent-operators.js';
 import type { FieldDictionary } from './field-dictionary.js';
+import { normaliseValue } from './normalise-value.js';
 
 export type AgentFilterError = {
-  /** "all[0]" / "any[2]" so the model can point at the offending condition */
+  /** "all[0]" / "none[2]" so the model can point at the offending condition */
   path: string;
   message: string;
   nearMatches?: string[];
+  /** a known-good condition for the field, when the glossary has one */
+  example?: AgentCondition;
+  hint?: string;
 };
 
 export type CompileAgentFilterResult =
@@ -23,6 +34,8 @@ export type CompileAgentFilterResult =
 
 const NEAR_MATCH_LIMIT = 5;
 const PRESENCE_OPS = new Set(['isEmpty', 'isNotEmpty']);
+const ALL_OF_HINT =
+  'array fields match any of the listed values; for "X and Y" add one condition per value in `all`';
 
 const tokensOf = (key: string): string[] =>
   key
@@ -31,58 +44,45 @@ const tokensOf = (key: string): string[] =>
     .split(/[._\s]+/)
     .filter((token) => token.length > 2);
 
-/** token prefix overlap in either direction: "states" ~ "state", "aum" ~ "aum_band" */
+/**
+ * Glossary aliases first ("book" is advisor.firm_aum), then token prefix
+ * overlap in either direction ("states" ~ "state", "aum" ~ "aum_band").
+ */
 const nearMatches = (field: string, dictionary: FieldDictionary): string[] => {
+  const byAlias = glossaryKeysForAlias(
+    field.replace(/^(advisor|firm)\./, ''),
+  ).filter((key) => dictionary.has(key));
   const needleTokens = tokensOf(field);
-
-  return [...dictionary.keys()]
-    .filter((key) =>
-      tokensOf(key).some((token) =>
-        needleTokens.some(
-          (needle) => token.startsWith(needle) || needle.startsWith(token),
-        ),
+  const byToken = [...dictionary.keys()].filter((key) =>
+    tokensOf(key).some((token) =>
+      needleTokens.some(
+        (needle) => token.startsWith(needle) || needle.startsWith(token),
       ),
-    )
-    .sort()
-    .slice(0, NEAR_MATCH_LIMIT);
+    ),
+  );
+
+  return [...new Set([...byAlias, ...byToken.sort()])].slice(
+    0,
+    NEAR_MATCH_LIMIT,
+  );
 };
 
-const isScalarArray = (value: unknown): value is (string | number)[] =>
-  Array.isArray(value) &&
-  value.length > 0 &&
-  value.every((item) => typeof item === 'string' || typeof item === 'number');
+const exampleFor = (field: string): AgentCondition | undefined => {
+  const example = glossaryFor(field)?.example;
 
-const validateValue = (
+  return example ? { field, op: example.op, value: example.value } : undefined;
+};
+
+const looksLikeAllOf = (
   facet: FacetDefinition,
   condition: AgentCondition,
-): string | null => {
-  if (PRESENCE_OPS.has(condition.op)) {
-    return null;
-  }
-
-  // array columns compile to overlap and accept any scalar list; see compileReference
-  if (facet.isArray) {
-    return isScalarArray(condition.value)
-      ? null
-      : 'array fields take a non-empty array of values';
-  }
-
-  const descriptor = operatorRegistry.resolve(facet.type, condition.op);
-
-  if (!descriptor) {
-    return `operator ${condition.op} is not valid for a ${facet.type} field`;
-  }
-
-  try {
-    descriptor.parseValue(condition.value);
-
-    return null;
-  } catch (error) {
-    return error instanceof ZodError
-      ? error.issues.map((issue) => issue.message).join('; ')
-      : 'invalid value';
-  }
-};
+): boolean =>
+  facet.isArray &&
+  condition.op === 'isAnyOf' &&
+  Array.isArray(condition.value) &&
+  condition.value.length === 1 &&
+  typeof condition.value[0] === 'string' &&
+  / and /i.test(condition.value[0]);
 
 const compileCondition = (
   condition: AgentCondition,
@@ -101,21 +101,67 @@ const compileCondition = (
     };
   }
 
-  if (!facet.operators.includes(condition.op)) {
+  const operators = agentOperatorsFor(facet);
+
+  if (!operators.includes(condition.op)) {
     return {
       error: {
         path,
-        message: `${condition.field} supports ${facet.operators.join(', ')}, not ${condition.op}`,
+        message: `${condition.field} supports ${operators.join(', ')}, not ${condition.op}`,
+        example: exampleFor(condition.field),
+        hint: facet.isArray ? ALL_OF_HINT : undefined,
       },
     };
   }
 
-  const valueError = validateValue(facet, condition);
-
-  if (valueError) {
+  if (looksLikeAllOf(facet, condition)) {
     return {
-      error: { path, message: `${condition.field}: ${valueError}` },
+      error: {
+        path,
+        message: `${condition.field}: "${String((condition.value as string[])[0])}" looks like two values joined with "and"`,
+        example: exampleFor(condition.field),
+        hint: ALL_OF_HINT,
+      },
     };
+  }
+
+  const normalised = normaliseValue(facet, condition.op, condition.value);
+
+  if ('error' in normalised) {
+    return {
+      error: {
+        path,
+        message: `${condition.field}: ${normalised.error}`,
+        example: exampleFor(condition.field),
+      },
+    };
+  }
+
+  // scalar columns are validated by the registry; array columns compile to overlap
+  if (!facet.isArray && !PRESENCE_OPS.has(condition.op)) {
+    const descriptor = operatorRegistry.resolve(facet.type, condition.op);
+
+    if (!descriptor) {
+      return {
+        error: {
+          path,
+          message: `${condition.field}: operator ${condition.op} is not valid for a ${facet.type} field`,
+          example: exampleFor(condition.field),
+        },
+      };
+    }
+
+    try {
+      descriptor.parseValue(normalised.value);
+    } catch {
+      return {
+        error: {
+          path,
+          message: `${condition.field}: value ${JSON.stringify(normalised.value)} is not valid for ${condition.op}`,
+          example: exampleFor(condition.field),
+        },
+      };
+    }
   }
 
   return {
@@ -123,30 +169,37 @@ const compileCondition = (
       kind: 'condition',
       path: [{ attributeId: facet.attributeId }],
       operator: condition.op,
-      value: PRESENCE_OPS.has(condition.op) ? null : condition.value,
+      value: normalised.value,
     },
   };
 };
 
+const combine = (kind: 'and' | 'or', parts: FilterTree[]): FilterTree | null =>
+  parts.length === 0
+    ? null
+    : parts.length === 1
+      ? (parts[0] as FilterTree)
+      : { kind, children: parts };
+
 /**
  * Turns the model's field-keyed filter into the FilterTree the prospecting
- * compiler already accepts. Never throws: every problem is returned so the
- * model can correct all of them in one turn.
+ * compiler already accepts: all → and, any → or, none → not(or). Never
+ * throws: every problem is returned so the model can correct all of them in
+ * one turn.
  */
 export const compileAgentFilter = (
   filter: AgentFilter,
   dictionary: FieldDictionary,
 ): CompileAgentFilterResult => {
   const errors: AgentFilterError[] = [];
-  const all: FilterTree[] = [];
-  const any: FilterTree[] = [];
+  const compiled: Record<AgentFilterGroup, FilterTree[]> = {
+    all: [],
+    any: [],
+    none: [],
+  };
 
-  const collect = (
-    conditions: AgentCondition[],
-    group: 'all' | 'any',
-    into: FilterTree[],
-  ): void => {
-    conditions.forEach((condition, index) => {
+  for (const group of ['all', 'any', 'none'] as const) {
+    filter[group].forEach((condition, index) => {
       const result = compileCondition(
         condition,
         `${group}[${index}]`,
@@ -156,35 +209,21 @@ export const compileAgentFilter = (
       if ('error' in result) {
         errors.push(result.error);
       } else {
-        into.push(result.condition);
+        compiled[group].push(result.condition);
       }
     });
-  };
-
-  collect(filter.all, 'all', all);
-  collect(filter.any, 'any', any);
+  }
 
   if (errors.length > 0) {
     return { ok: false, errors };
   }
 
-  const groups: FilterTree[] = [...all];
+  const groups: FilterTree[] = [...compiled.all];
+  const any = combine('or', compiled.any);
+  const none = combine('or', compiled.none);
 
-  if (any.length === 1) {
-    groups.push(any[0] as FilterTree);
-  } else if (any.length > 1) {
-    groups.push({ kind: 'or', children: any });
-  }
+  if (any) groups.push(any);
+  if (none) groups.push({ kind: 'not', child: none });
 
-  if (groups.length === 0) {
-    return { ok: true, tree: null };
-  }
-
-  return {
-    ok: true,
-    tree:
-      groups.length === 1
-        ? (groups[0] as FilterTree)
-        : { kind: 'and', children: groups },
-  };
+  return { ok: true, tree: combine('and', groups) };
 };
