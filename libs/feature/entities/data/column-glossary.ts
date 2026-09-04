@@ -238,6 +238,19 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
     unit: 'date',
     nulls: 'no move detected',
   },
+  'advisor.current_firm_crd': {
+    description:
+      'CRD of the firm the adviser works at now; exclude firms with one is condition per CRD in none',
+    aliases: ['at firm', 'works at', 'excluding firm'],
+    example: { op: 'is', value: 8174 },
+  },
+  'advisor.owns_current_firm': {
+    description:
+      'Whether the adviser is a reported owner of their current firm',
+    aliases: ['owner', 'principal', 'founder'],
+    nulls: 'ownership not reported',
+    example: { op: 'is', value: true },
+  },
   'advisor.previous_firm_crd': {
     description: 'CRD of the firm the adviser most recently left',
     aliases: ['came from', 'left'],
