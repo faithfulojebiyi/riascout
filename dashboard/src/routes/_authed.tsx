@@ -5,6 +5,7 @@ import { authClient } from '../lib/auth-client';
 import { RecruiterProfileSheetHost } from '../modules/assistant/components/recruiter-profile-sheet';
 import { MastraProvider } from '../modules/assistant/mastra-provider';
 import { AppSidebar } from '../modules/layout/components/app-sidebar';
+import { MobileSidebarTrigger } from '../modules/layout/components/mobile-sidebar-trigger';
 import { SidebarInset, SidebarProvider } from '../ui/primitives/sidebar';
 
 /**
@@ -35,9 +36,10 @@ function AuthedLayout() {
   const { user } = Route.useRouteContext();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider mobile="rail">
       <div className={css({ display: 'flex', h: '100dvh', w: 'full' })}>
         <AppSidebar workspaceName={user.name ?? 'Workspace'} />
+        <MobileSidebarTrigger />
         <SidebarInset>
           <MastraProvider>
             <Outlet />

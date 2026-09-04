@@ -38,6 +38,12 @@ export type SidebarProviderProps = React.ComponentProps<'div'> & {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * What a narrow viewport does to the sidebar: 'drawer' hides it behind a
+   * sheet (needs a trigger elsewhere on the page); 'rail' collapses it to the
+   * icon rail and keeps it on screen.
+   */
+  mobile?: 'drawer' | 'rail';
 };
 
 const wrapperStyles = css({
@@ -53,12 +59,15 @@ export const SidebarProvider = ({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  mobile = 'drawer',
   className,
   style,
   children,
   ...props
 }: SidebarProviderProps) => {
-  const isMobile = useIsMobile();
+  const viewportMobile = useIsMobile();
+  // in rail mode nothing downstream should switch to the drawer
+  const isMobile = mobile === 'drawer' && viewportMobile;
   const [openMobile, setOpenMobile] = React.useState(false);
 
   // This is the internal state of the sidebar.
@@ -79,6 +88,12 @@ export const SidebarProvider = ({
     },
     [setOpenProp, open],
   );
+
+  // rail mode: entering a narrow viewport collapses; the user can still expand
+  React.useEffect(() => {
+    if (mobile === 'rail' && viewportMobile) setOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobile, viewportMobile]);
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
