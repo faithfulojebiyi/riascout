@@ -113,8 +113,13 @@ describe('/agent (mastra mount)', () => {
     expect(Object.keys(assistant?.tools ?? {})).toEqual(
       expect.arrayContaining([
         'search_advisers',
+        'search_firms',
+        'get_field_options',
         'lookup_firm',
         'get_firm_profile',
+        'list_lists',
+        'create_list',
+        'add_to_list',
       ]),
     );
   });

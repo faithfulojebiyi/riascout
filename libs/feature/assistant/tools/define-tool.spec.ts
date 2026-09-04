@@ -11,6 +11,16 @@ const context: ToolContext = {
       Promise.resolve({ rows: [], total: 0, limit: 10, offset: 0 }),
     lookupFirm: () => Promise.resolve([]),
     searchFacetOptions: () => Promise.resolve([]),
+    getEntities: () => Promise.resolve([]),
+    getLists: () => Promise.resolve([]),
+    createList: () => Promise.resolve({ id: 'list', name: 'List' }),
+    addToList: () =>
+      Promise.resolve({
+        completed: true,
+        recordsCreated: 0,
+        membersAdded: 0,
+        requested: 0,
+      }),
     getFirmProfile: () => Promise.reject(new Error('not used')),
   },
 };

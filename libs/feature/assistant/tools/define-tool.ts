@@ -55,6 +55,34 @@ export type FirmFacetRow = {
 
 export type FacetOptionItem = { value: string; label: string };
 
+export type EntitySummary = {
+  id: string;
+  slug: string;
+  name: string;
+  sourceKind: SourceKind | null;
+};
+
+export type ListSummary = {
+  id: string;
+  name: string;
+  entityId: string;
+  kind: 'static' | 'dynamic';
+  memberCount: number;
+  createdAt: string;
+};
+
+/** CRDs for a picked set; a tree for "everything the search matched" */
+export type AddToListInput =
+  | { listId: string; sourceCrds: string[]; filter?: undefined }
+  | { listId: string; filter: FilterTree; sourceCrds?: undefined };
+
+export type AddToListResult = {
+  completed: boolean;
+  recordsCreated: number;
+  membersAdded: number;
+  requested: number;
+};
+
 export type FirmProfile = {
   clientTypes: FirmFacetRow[];
   services: FirmFacetRow[];
@@ -89,6 +117,16 @@ export type AssistantQueries = {
     identity: ToolIdentity,
     input: { allowKey: string; query: string; limit: number },
   ): Promise<FacetOptionItem[]>;
+  getEntities(identity: ToolIdentity): Promise<EntitySummary[]>;
+  getLists(identity: ToolIdentity, entityId: string): Promise<ListSummary[]>;
+  createList(
+    identity: ToolIdentity,
+    input: { entityId: string; name: string },
+  ): Promise<{ id: string; name: string }>;
+  addToList(
+    identity: ToolIdentity,
+    input: AddToListInput,
+  ): Promise<AddToListResult>;
 };
 
 export type ToolContext = {

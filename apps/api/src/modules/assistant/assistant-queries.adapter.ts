@@ -1,15 +1,19 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 
 import { lookupFirm } from '@orm/app/sql/lookupFirm.js';
 import type {
+  AddToListInput,
+  AddToListResult,
   AssistantQueries,
+  EntitySummary,
   FirmCandidate,
   FirmLookupInput,
   FacetOptionItem,
   FirmProfile,
+  ListSummary,
   ProspectSearchInput,
   ProspectSearchResult,
   SourceKind,
@@ -23,7 +27,11 @@ import type { FacetDefinition } from '@feature/prospecting/facets/facet-definiti
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
+import { GetEntitiesQuery } from '../entities/queries/get-entities.js';
 import { GetFirmProfileQuery } from '../firms/queries/get-firm-profile.js';
+import { AddToListCommand } from '../lists/commands/add-to-list.js';
+import { CreateListCommand } from '../lists/commands/create-list.js';
+import { GetListsQuery } from '../lists/queries/get-lists.js';
 import { GetFacetsQuery } from '../prospecting/queries/get-facets.js';
 import { SearchFacetOptionsQuery } from '../prospecting/queries/search-facet-options.js';
 import { SearchAdvisorsQuery } from '../prospecting/queries/search-advisors.js';
@@ -41,6 +49,7 @@ const isFilterOperator = (value: string): value is FilterOperator =>
 export class AssistantQueriesAdapter implements AssistantQueries {
   constructor(
     private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus,
     private readonly als: AlsService,
     private readonly appPrismaService: AppPrismaService,
   ) {}
@@ -124,5 +133,56 @@ export class AssistantQueriesAdapter implements AssistantQueries {
     );
 
     return options;
+  }
+
+  getEntities(identity: ToolIdentity): Promise<EntitySummary[]> {
+    return this.inScope(identity, async () => {
+      const { entities } = await this.queryBus.execute(
+        new GetEntitiesQuery({}),
+      );
+
+      return entities.map(({ id, slug, name, sourceKind }) => ({
+        id,
+        slug,
+        name,
+        sourceKind,
+      }));
+    });
+  }
+
+  getLists(identity: ToolIdentity, entityId: string): Promise<ListSummary[]> {
+    return this.inScope(identity, async () => {
+      const { lists } = await this.queryBus.execute(
+        new GetListsQuery({ entityId }),
+      );
+
+      return lists;
+    });
+  }
+
+  createList(
+    identity: ToolIdentity,
+    input: { entityId: string; name: string },
+  ): Promise<{ id: string; name: string }> {
+    return this.inScope(identity, () =>
+      this.commandBus.execute(
+        new CreateListCommand({ ...input, visibility: 'workspace' }),
+      ),
+    );
+  }
+
+  addToList(
+    identity: ToolIdentity,
+    input: AddToListInput,
+  ): Promise<AddToListResult> {
+    return this.inScope(identity, () =>
+      this.commandBus.execute(
+        new AddToListCommand(
+          input.sourceCrds
+            ? { listId: input.listId, sourceCrds: input.sourceCrds }
+            : { listId: input.listId, filter: input.filter },
+        ),
+      ),
+    );
   }
 }
