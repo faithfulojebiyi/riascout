@@ -22,11 +22,40 @@ type CaseResult = {
 
 const SEARCH_TOOLS = new Set(['search_advisers', 'search_firms']);
 
+type Canonical = { field: string; op: string; value?: unknown; group: string };
+
+/**
+ * Equivalent spellings score the same: `is X` is `isAnyOf [X]`, `isNot X` is
+ * `isNoneOf [X]`, and a condition in `none` is its negation in `all`. The
+ * compiler treats them identically, so the scorer must too.
+ */
+const canonical = (
+  c: { field: string; op: string; value?: unknown },
+  group: string,
+): Canonical => {
+  let { op, value } = c;
+
+  if (op === 'is' && !Array.isArray(value) && typeof value !== 'boolean') {
+    op = 'isAnyOf';
+    value = [value];
+  } else if (op === 'isNot' && !Array.isArray(value)) {
+    op = 'isNoneOf';
+    value = [value];
+  }
+
+  if (group === 'none' && op === 'isAnyOf')
+    return { ...c, op: 'isNoneOf', value, group: 'all' };
+  if (group === 'none' && op === 'isNoneOf')
+    return { ...c, op: 'isAnyOf', value, group: 'all' };
+
+  return { ...c, op, value, group };
+};
+
 // the model omits empty groups; the server's zod defaults never reach the stream
-const conditionsOf = (filter: Partial<AgentFilter>) => [
-  ...(filter.all ?? []).map((c) => ({ ...c, group: 'all' })),
-  ...(filter.any ?? []).map((c) => ({ ...c, group: 'any' })),
-  ...(filter.none ?? []).map((c) => ({ ...c, group: 'none' })),
+const conditionsOf = (filter: Partial<AgentFilter>): Canonical[] => [
+  ...(filter.all ?? []).map((c) => canonical(c, 'all')),
+  ...(filter.any ?? []).map((c) => canonical(c, 'any')),
+  ...(filter.none ?? []).map((c) => canonical(c, 'none')),
 ];
 
 const sameValue = (expected: unknown, actual: unknown): boolean => {
