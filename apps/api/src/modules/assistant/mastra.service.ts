@@ -7,7 +7,7 @@ import { Pool } from 'pg';
 
 import {
   buildFieldDictionary,
-  renderFieldDictionary,
+  renderDictionarySections,
 } from '@feature/assistant/filter/field-dictionary.js';
 import type { ToolIdentity } from '@feature/assistant/tools/define-tool.js';
 import { getMastra, type MastraRuntime } from '@providers/mastra/mastra.js';
@@ -74,8 +74,14 @@ export class MastraService implements OnModuleInit, OnModuleDestroy {
       return cached.text;
     }
 
-    const facets = await this.queries.getFacets(identity, 'advisor');
-    const text = renderFieldDictionary(buildFieldDictionary(facets));
+    const [advisor, firm] = await Promise.all([
+      this.queries.getFacets(identity, 'advisor'),
+      this.queries.getFacets(identity, 'firm'),
+    ]);
+    const text = renderDictionarySections({
+      advisor: buildFieldDictionary(advisor),
+      firm: buildFieldDictionary(firm),
+    });
 
     this.dictionaries.set(identity.workspaceId, {
       text,

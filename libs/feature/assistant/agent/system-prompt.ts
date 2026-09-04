@@ -1,3 +1,5 @@
+import { DICTIONARY_COLUMNS } from '../filter/field-dictionary.js';
+
 /**
  * Frozen text. Anything that varies per request goes after it so the prefix
  * stays cacheable; the field dictionary follows because it varies per workspace
@@ -23,8 +25,14 @@ Working rules
 - Quote the total match count and a short preview; the recruiter can open the full grid at the returned openUrl.
 - Answer in plain text without markdown headings. Be concise and specific.`;
 
-export const buildInstructions = (dictionaryText: string): string =>
+/** the date is last so it is the only line that changes between days */
+export const buildInstructions = (
+  dictionaryText: string,
+  today: string = new Date().toISOString().slice(0, 10),
+): string =>
   `${SYSTEM_PROMPT_STATIC}
 
-Field dictionary (key | label | kind | operators | option values)
-${dictionaryText}`;
+Field dictionary (${DICTIONARY_COLUMNS}). Use the key exactly, an operator the field lists, and option values rather than labels.
+${dictionaryText}
+
+Today is ${today}.`;

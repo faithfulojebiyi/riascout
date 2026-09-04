@@ -368,17 +368,17 @@ describe('compileAgentFilter', () => {
 });
 
 describe('renderFieldDictionary', () => {
-  it('is sorted, one line per field, with option previews', () => {
+  it('is sorted, one line per field, with glossary meaning and option previews', () => {
     const text = renderFieldDictionary(dictionary);
     const lines = text.split('\n');
 
     expect(lines).toHaveLength(4);
-    expect(lines[0]).toBe(
-      'advisor.exam_codes | advisor.exam_codes | multiSelect | isAnyOf/isNoneOf/isEmpty/isNotEmpty',
+    expect(lines[0]).toMatch(
+      /^advisor\.exam_codes \| advisor\.exam_codes \| multiSelect \| isAnyOf\/isNoneOf\/isEmpty\/isNotEmpty \| /,
     );
-    expect(lines[2]).toBe(
-      'advisor.state | State | multiSelect | isAnyOf/isNoneOf/isEmpty/isNotEmpty | TX (Texas), CA (California)',
-    );
+    expect(lines[0]).toContain('aka: Series 7');
+    expect(lines[2]).toContain('advisor.state | State | multiSelect |');
+    expect(lines[2]).toContain('TX (Texas), CA (California)');
     // same input, same bytes: the text sits in the cached prompt prefix
     expect(renderFieldDictionary(dictionary)).toBe(text);
   });
