@@ -127,16 +127,30 @@ export const addToListTool = defineTool({
       list = { id: existing.id, name: existing.name, isNew: false };
     }
 
-    const result = await ctx.queries.addToList(
-      ctx.identity,
-      input.sourceCrds
-        ? { listId: list.id, sourceCrds: input.sourceCrds }
-        : // an empty filter means "everything"; the API needs an explicit tree
-          {
-            listId: list.id,
-            filter: resolved?.tree ?? { kind: 'and', children: [] },
-          },
-    );
+    let result;
+
+    try {
+      result = await ctx.queries.addToList(
+        ctx.identity,
+        input.sourceCrds
+          ? { listId: list.id, sourceCrds: input.sourceCrds }
+          : // an empty filter means "everything"; the API needs an explicit tree
+            {
+              listId: list.id,
+              filter: resolved?.tree ?? { kind: 'and', children: [] },
+            },
+      );
+    } catch (error) {
+      // the list may already exist by now; the model must not claim nothing happened
+      const reason = error instanceof Error ? error.message : String(error);
+
+      throw new Error(
+        `${list.isNew ? `Created the list "${list.name}" (${list.id}) but the` : 'The'} add did not run: ${reason}. ` +
+          (input.filter
+            ? 'Filter saves run through the background job service; if it is unreachable, say so and offer to retry.'
+            : 'Offer to retry.'),
+      );
+    }
 
     return {
       list,

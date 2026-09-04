@@ -155,10 +155,19 @@ const ToolStep = ({
   }
 
   if (state === 'output-error' || invocation.isError) {
+    // the live stream can carry an error object where history carries a string
+    const raw: unknown = invocation.errorText ?? invocation.result;
+    const errorText =
+      typeof raw === 'string'
+        ? raw
+        : typeof raw === 'object' && raw !== null && 'message' in raw
+          ? String((raw as { message: unknown }).message)
+          : 'the tool failed';
+
     return (
       <Box my="2">
         <StatusRow
-          detail={invocation.errorText ?? 'the tool failed'}
+          detail={errorText}
           finished
           label={toolLabel(toolName, false)}
           tone="error"
