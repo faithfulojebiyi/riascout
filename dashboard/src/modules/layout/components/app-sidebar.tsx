@@ -167,7 +167,12 @@ export const AppSidebar = ({ workspaceName }: { workspaceName: string }) => {
                     </SidebarMenuButton>
 
                     {entity.recordCount > 0 && !isActive ? (
-                      <SidebarMenuBadge>
+                      <SidebarMenuBadge
+                        // the rail has no room for a count next to the icon
+                        css={{
+                          '[data-collapsible=icon] &': { display: 'none' },
+                        }}
+                      >
                         {entity.recordCount.toLocaleString()}
                       </SidebarMenuBadge>
                     ) : null}
