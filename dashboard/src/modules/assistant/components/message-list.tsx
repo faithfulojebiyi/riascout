@@ -47,18 +47,66 @@ const StatusRow = ({
   </HStack>
 );
 
+type PendingApproval = { toolCallId: string; toolName: string; args: unknown };
+
+const isPendingApproval = (value: unknown): value is PendingApproval =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as PendingApproval).toolCallId === 'string';
+
+/**
+ * @mastra/react leaves the part in state "call" and records the pending
+ * approval on the message metadata: keyed by tool name while streaming, by
+ * tool call id after a reload. The part state alone never says "approval".
+ */
+const pendingApprovalFor = (
+  message: MastraDBMessage,
+  toolCallId: string,
+): PendingApproval | null => {
+  const metadata = message.content.metadata ?? {};
+  const buckets = [
+    metadata.requireApprovalMetadata,
+    metadata.pendingToolApprovals,
+  ];
+
+  for (const bucket of buckets) {
+    if (typeof bucket !== 'object' || bucket === null) continue;
+
+    const match = Object.values(bucket).find(
+      (entry) => isPendingApproval(entry) && entry.toolCallId === toolCallId,
+    );
+
+    if (match) return match as PendingApproval;
+  }
+
+  return null;
+};
+
 /**
  * One tool call, from in-flight to landed. Running work stays a status row;
  * a write parks on the approval card; a landed result gets its renderer.
  */
-const ToolStep = ({ part }: { part: ToolInvocationPart }) => {
+const ToolStep = ({
+  part,
+  message,
+}: {
+  part: ToolInvocationPart;
+  message: MastraDBMessage;
+}) => {
   const approvalActions = useApprovalActions();
   const invocation = part.toolInvocation;
   const { toolName, toolCallId, state } = invocation;
   const renderer = TOOL_RENDERERS[toolName];
   const input = invocation.args;
+  const settled =
+    state === 'result' || state === 'output-error' || state === 'output-denied';
+  const pending = settled ? null : pendingApprovalFor(message, toolCallId);
 
-  if (state === 'approval-requested' || state === 'approval-responded') {
+  if (
+    pending ||
+    state === 'approval-requested' ||
+    state === 'approval-responded'
+  ) {
     const description = renderer?.describeApproval?.(input) ?? {
       title: toolLabel(toolName, false),
       lines: [],
@@ -192,7 +240,13 @@ const AssistantMessage = ({
     <Flex direction="column" gap="0.5" maxW="85%">
       {parts.map((part, index) => {
         if (part.type === 'tool-invocation') {
-          return <ToolStep key={`${message.id}-${index}`} part={part} />;
+          return (
+            <ToolStep
+              key={`${message.id}-${index}`}
+              message={message}
+              part={part}
+            />
+          );
         }
 
         if (part.type === 'text' && part.text.length > 0) {
