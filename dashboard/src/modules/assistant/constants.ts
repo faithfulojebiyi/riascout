@@ -4,8 +4,13 @@ export const AGENT_ID = 'assistant';
 export const TOOL_LABELS: Record<string, [running: string, finished: string]> =
   {
     search_advisers: ['Searching advisers', 'Searched advisers'],
+    search_firms: ['Searching firms', 'Searched firms'],
+    get_field_options: ['Resolving a field value', 'Resolved a field value'],
     lookup_firm: ['Looking up the firm', 'Looked up the firm'],
     get_firm_profile: ['Reading the firm profile', 'Read the firm profile'],
+    list_lists: ['Reading your lists', 'Read your lists'],
+    create_list: ['Creating the list', 'Created the list'],
+    add_to_list: ['Adding to the list', 'Added to the list'],
   };
 
 export const toolLabel = (toolName: string, finished: boolean): string =>

@@ -1,5 +1,4 @@
-import type { MastraDBMessage, MastraMessagePart } from '@mastra/react';
-import { Link } from '@tanstack/react-router';
+import type { MastraDBMessage } from '@mastra/react';
 import { toast } from 'sonner';
 
 import { Box, Flex, HStack, styled } from '@riascout-ui/styled-system/jsx';
@@ -8,228 +7,135 @@ import { Icons } from '../../../ui/icons/base';
 import { Button } from '../../../ui/primitives/button';
 import { toolLabel } from '../constants';
 import { exchangeTime } from '../relative-time';
+import { useApprovalActions } from './approval-context';
 import { MarkdownText } from './markdown-text';
-
-type AdviserRow = {
-  advisorCrd: string;
-  fullName: string | null;
-  firmCrd: string | null;
-  firmName: string | null;
-  state: string | null;
-  firmAumBand: string | null;
-  firmAumBandLabel?: string | null;
-  tenureYears: number | null;
-};
-
-type SearchResult = { total: number; rows: AdviserRow[]; openUrl: string };
-
-type FirmCandidate = {
-  firmCrd: string;
-  firmName: string | null;
-  city: string | null;
-  state: string | null;
-  regulatoryAum: string | null;
-  advisorCount: number | null;
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const isSearchResult = (value: unknown): value is SearchResult =>
-  isRecord(value) &&
-  Array.isArray(value.rows) &&
-  typeof value.total === 'number';
-
-const isFirmLookup = (
-  value: unknown,
-): value is { candidates: FirmCandidate[] } =>
-  isRecord(value) && Array.isArray(value.candidates);
+import { ApprovalCard } from './tool-cards/approval-card';
+import { GenericCard } from './tool-cards/generic-card';
+import { TOOL_RENDERERS } from './tool-cards/registry';
+import type { ToolInvocationPart } from './tool-cards/types';
 
 const textOf = (message: MastraDBMessage): string =>
   message.content.parts
     .flatMap((part) => (part.type === 'text' ? [part.text] : []))
     .join('\n\n');
 
-const money = (value: string | null): string => {
-  if (value === null) return 'not reported';
-
-  const amount = Number(value);
-
-  if (!Number.isFinite(amount)) return value;
-  if (amount >= 1e9) return `$${(amount / 1e9).toFixed(1)}B`;
-  if (amount >= 1e6) return `$${Math.round(amount / 1e6)}M`;
-
-  return `$${Math.round(amount).toLocaleString()}`;
-};
-
-/** fallback for rows recorded before the tool started sending labels */
-const AUM_BAND_LABEL: Record<string, string> = {
-  lt_25m: 'Under $25M',
-  '25m_100m': '$25M – $100M',
-  '100m_250m': '$100M – $250M',
-  '250m_500m': '$250M – $500M',
-  '500m_1b': '$500M – $1B',
-  '1b_5b': '$1B – $5B',
-  '5b_20b': '$5B – $20B',
-  gte_20b: '$20B+',
-};
-
-const bandLabel = (row: AdviserRow): string =>
-  row.firmAumBandLabel ??
-  (row.firmAumBand === null
-    ? '—'
-    : (AUM_BAND_LABEL[row.firmAumBand] ?? row.firmAumBand));
-
-/* tiles: every cell is its own panel, the page background is the gridline */
-const Table = styled('table', {
-  base: {
-    borderCollapse: 'separate',
-    borderSpacing: '3px',
-    display: 'block',
-    fontSize: '1',
-    overflowX: 'auto',
-    w: 'full',
-  },
-});
-
-const Th = styled('th', {
-  base: {
-    bg: 'brand.panel.6',
-    color: 'text.muted',
-    fontWeight: '500',
-    px: '2.5',
-    py: '1.5',
-    rounded: 'md',
-    textAlign: 'left',
-    whiteSpace: 'nowrap',
-  },
-});
-
-const Td = styled('td', {
-  base: {
-    bg: 'brand.panel.3',
-    px: '2.5',
-    py: '1.5',
-    rounded: 'md',
-    whiteSpace: 'nowrap',
-  },
-});
-
-const SearchTable = ({ result }: { result: SearchResult }) => (
-  <Box my="2">
-    <Table>
-      <thead>
-        <tr>
-          <Th>Adviser</Th>
-          <Th>CRD</Th>
-          <Th>Firm</Th>
-          <Th>State</Th>
-          <Th>Firm AUM</Th>
-          <Th>Tenure</Th>
-        </tr>
-      </thead>
-      <tbody>
-        {result.rows.map((row) => (
-          <tr key={row.advisorCrd}>
-            <Td fontWeight="500">{row.fullName ?? 'Name not reported'}</Td>
-            <Td color="text.muted" fontFamily="mono">
-              {row.advisorCrd}
-            </Td>
-            <Td>
-              {row.firmName ?? '—'}
-              {row.firmCrd ? (
-                <styled.span color="text.muted" fontFamily="mono" ml="1.5">
-                  {row.firmCrd}
-                </styled.span>
-              ) : null}
-            </Td>
-            <Td>{row.state ?? '—'}</Td>
-            <Td>{bandLabel(row)}</Td>
-            <Td>{row.tenureYears === null ? '—' : `${row.tenureYears} yrs`}</Td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-    <HStack color="text.muted" fontSize="1" gap="3" mt="1.5" px="1">
-      <span>
-        {result.total.toLocaleString()} match
-        {result.rows.length < result.total
-          ? `, showing ${result.rows.length}`
-          : ''}
-      </span>
-      <Link to="/prospecting/advisors">
-        <styled.span
-          color="text.app"
-          textDecoration="underline"
-          textUnderlineOffset="3px"
-        >
-          Open in Prospecting
-        </styled.span>
-      </Link>
-    </HStack>
-  </Box>
-);
-
-const FirmCandidates = ({ candidates }: { candidates: FirmCandidate[] }) => (
-  <Box my="2">
-    <Table>
-      <thead>
-        <tr>
-          <Th>Firm</Th>
-          <Th>CRD</Th>
-          <Th>Location</Th>
-          <Th>Regulatory AUM</Th>
-          <Th>Advisers</Th>
-        </tr>
-      </thead>
-      <tbody>
-        {candidates.map((firm) => (
-          <tr key={firm.firmCrd}>
-            <Td fontWeight="500">{firm.firmName ?? 'Name not reported'}</Td>
-            <Td color="text.muted" fontFamily="mono">
-              {firm.firmCrd}
-            </Td>
-            <Td>{[firm.city, firm.state].filter(Boolean).join(', ') || '—'}</Td>
-            <Td>{money(firm.regulatoryAum)}</Td>
-            <Td>{firm.advisorCount?.toLocaleString() ?? 'not reported'}</Td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  </Box>
-);
-
-const ToolStep = ({
-  part,
+const StatusRow = ({
+  finished,
+  label,
+  detail,
+  tone = 'muted',
 }: {
-  part: Extract<MastraMessagePart, { type: 'tool-invocation' }>;
-}) => {
-  const { toolName, state } = part.toolInvocation;
-  const finished = state === 'result' || state === 'output-error';
-  const result =
-    'result' in part.toolInvocation ? part.toolInvocation.result : undefined;
-  const detail = isSearchResult(result)
-    ? `${result.total.toLocaleString()} match`
-    : isFirmLookup(result)
-      ? `${result.candidates.length} candidate${result.candidates.length === 1 ? '' : 's'}`
-      : null;
+  finished: boolean;
+  label: string;
+  detail?: string | null;
+  tone?: 'muted' | 'error';
+}) => (
+  <HStack
+    color={tone === 'error' ? 'red.11' : 'text.muted'}
+    fontSize="1"
+    gap="1.5"
+  >
+    {tone === 'error' ? (
+      <Icons.closeCircle size={12} />
+    ) : finished ? (
+      <Icons.checkCircle size={12} />
+    ) : (
+      <Icons.loading animation="loader" size={12} />
+    )}
+    <span>{label}</span>
+    {detail ? <styled.span opacity="0.7">· {detail}</styled.span> : null}
+  </HStack>
+);
+
+/**
+ * One tool call, from in-flight to landed. Running work stays a status row;
+ * a write parks on the approval card; a landed result gets its renderer.
+ */
+const ToolStep = ({ part }: { part: ToolInvocationPart }) => {
+  const approvalActions = useApprovalActions();
+  const invocation = part.toolInvocation;
+  const { toolName, toolCallId, state } = invocation;
+  const renderer = TOOL_RENDERERS[toolName];
+  const input = invocation.args;
+
+  if (state === 'approval-requested' || state === 'approval-responded') {
+    const description = renderer?.describeApproval?.(input) ?? {
+      title: toolLabel(toolName, false),
+      lines: [],
+    };
+    const local = approvalActions.approvals[toolCallId]?.status;
+    const declined =
+      local === 'declined' ||
+      (state === 'approval-responded' &&
+        invocation.approval?.approved === false);
+
+    if (declined) {
+      return (
+        <Box my="2">
+          <StatusRow finished label="Declined" detail={description.title} />
+        </Box>
+      );
+    }
+
+    const phase =
+      state === 'approval-responded' || local === 'approved'
+        ? 'running'
+        : approvalActions.awaiting
+          ? 'pending'
+          : 'expired';
+
+    return (
+      <ApprovalCard
+        description={description}
+        onApprove={() => approvalActions.approve(toolCallId)}
+        onDecline={() => approvalActions.decline(toolCallId)}
+        phase={phase}
+      />
+    );
+  }
+
+  if (state === 'output-denied') {
+    return (
+      <Box my="2">
+        <StatusRow
+          finished
+          label="Declined"
+          detail={toolLabel(toolName, false)}
+        />
+      </Box>
+    );
+  }
+
+  if (state === 'output-error' || invocation.isError) {
+    return (
+      <Box my="2">
+        <StatusRow
+          detail={invocation.errorText ?? 'the tool failed'}
+          finished
+          label={toolLabel(toolName, false)}
+          tone="error"
+        />
+      </Box>
+    );
+  }
+
+  const finished = state === 'result';
+  const result = 'result' in invocation ? invocation.result : undefined;
+  const Result = renderer?.Result;
 
   return (
     <Box my="2">
-      <HStack color="text.muted" fontSize="1" gap="1.5">
-        {finished ? (
-          <Icons.checkCircle size={12} />
-        ) : (
-          <Icons.loading animation="loader" size={12} />
-        )}
-        <span>{toolLabel(toolName, finished)}</span>
-        {detail ? <styled.span opacity="0.7">· {detail}</styled.span> : null}
-      </HStack>
-      {isSearchResult(result) && result.rows.length > 0 ? (
-        <SearchTable result={result} />
-      ) : null}
-      {isFirmLookup(result) && result.candidates.length > 0 ? (
-        <FirmCandidates candidates={result.candidates} />
+      <StatusRow
+        detail={finished ? renderer?.detail?.(result) : null}
+        finished={finished}
+        label={toolLabel(toolName, finished)}
+      />
+      {finished ? (
+        Result ? (
+          <Result input={input} result={result} toolCallId={toolCallId} />
+        ) : renderer ? null : (
+          <GenericCard result={result} />
+        )
       ) : null}
     </Box>
   );

@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 
 import { Box, Flex, HStack, styled } from '@riascout-ui/styled-system/jsx';
 
+import { ApprovalContext } from '../../../modules/assistant/components/approval-context';
 import { Composer } from '../../../modules/assistant/components/composer';
 import { MessageList } from '../../../modules/assistant/components/message-list';
 import { ThreadHistoryMenu } from '../../../modules/assistant/components/thread-history-menu';
@@ -86,7 +87,16 @@ function Conversation({
   const client = useMastraClient();
   const invalidateThreads = useInvalidateThreads();
   const { data: threads } = useThreads();
-  const { messages, sendMessage, isRunning, cancelRun } = useChat({
+  const {
+    messages,
+    sendMessage,
+    isRunning,
+    cancelRun,
+    isAwaitingToolApproval,
+    approveToolCall,
+    declineToolCall,
+    toolCallApprovals,
+  } = useChat({
     agentId: AGENT_ID,
     threadId,
     initialMessages,
@@ -151,13 +161,27 @@ function Conversation({
 
         <Box flex="1" overflowY="auto" px="6" py="6" ref={scrollRef}>
           <Box maxW="780px" mx="auto" w="full">
-            <MessageList isRunning={isRunning} messages={messages} />
+            <ApprovalContext.Provider
+              value={{
+                awaiting: isAwaitingToolApproval,
+                approvals: toolCallApprovals,
+                approve: (toolCallId) => approveToolCall(toolCallId),
+                decline: declineToolCall,
+              }}
+            >
+              <MessageList isRunning={isRunning} messages={messages} />
+            </ApprovalContext.Provider>
           </Box>
         </Box>
 
         <Box flexShrink="0" px="6" pb="4" pt="2">
           <Box maxW="780px" mx="auto" w="full">
             <Composer
+              blockedHint={
+                isAwaitingToolApproval
+                  ? 'Approve or decline the request above to continue'
+                  : undefined
+              }
               busy={isRunning}
               onSend={send}
               onStop={cancelRun}

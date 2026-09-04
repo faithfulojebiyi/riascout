@@ -17,6 +17,11 @@ const inputSchema = z
       .nullable()
       .default(null)
       .describe('an existing list, from list_lists'),
+    listName: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe("the existing list's name, shown on the approval card"),
     newListName: z
       .string()
       .trim()

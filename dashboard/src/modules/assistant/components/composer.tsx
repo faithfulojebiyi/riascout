@@ -14,6 +14,8 @@ type ComposerProps = {
   placeholder?: string;
   /** the home page shows the hint; a live thread does not need it twice */
   showHint?: boolean;
+  /** shown in place of the input hint while sending is blocked */
+  blockedHint?: string;
 };
 
 /**
@@ -27,9 +29,11 @@ export const Composer = ({
   autoFocus = false,
   placeholder = 'Ask about advisers, firms, or a list',
   showHint = false,
+  blockedHint,
 }: ComposerProps) => {
   const [draft, setDraft] = useState('');
-  const canSend = draft.trim().length > 0 && !busy;
+  const blocked = blockedHint !== undefined;
+  const canSend = draft.trim().length > 0 && !busy && !blocked;
 
   const submit = () => {
     if (!canSend) return;
@@ -91,7 +95,9 @@ export const Composer = ({
           px="1"
         >
           <HStack color="text.muted" fontSize="1" gap="1.5">
-            {showHint ? (
+            {blocked ? (
+              <span>{blockedHint}</span>
+            ) : showHint ? (
               <span>Enter to send, Shift+Enter for a new line</span>
             ) : null}
           </HStack>
