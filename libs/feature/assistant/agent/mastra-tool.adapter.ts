@@ -40,6 +40,8 @@ export const toMastraTool = (
     description: definition.description,
     inputSchema: definition.input,
     outputSchema: definition.output,
+    requireApproval: definition.approval,
+    toModelOutput: definition.toModelOutput,
     execute: async (input, context) => {
       const identity = readIdentity(context?.requestContext);
 

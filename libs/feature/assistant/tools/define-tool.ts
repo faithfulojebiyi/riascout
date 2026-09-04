@@ -53,6 +53,8 @@ export type FirmFacetRow = {
   regulatoryAum: string | null;
 };
 
+export type FacetOptionItem = { value: string; label: string };
+
 export type FirmProfile = {
   clientTypes: FirmFacetRow[];
   services: FirmFacetRow[];
@@ -83,6 +85,10 @@ export type AssistantQueries = {
     input: FirmLookupInput,
   ): Promise<FirmCandidate[]>;
   getFirmProfile(identity: ToolIdentity, firmCrd: string): Promise<FirmProfile>;
+  searchFacetOptions(
+    identity: ToolIdentity,
+    input: { allowKey: string; query: string; limit: number },
+  ): Promise<FacetOptionItem[]>;
 };
 
 export type ToolContext = {
@@ -107,6 +113,8 @@ export type ToolDefinition<
     input: z.output<TInput>,
     ctx: ToolContext,
   ) => Promise<z.output<TOutput>>;
+  /** a compact view for the model; the UI still receives the full output */
+  toModelOutput?: (output: z.output<TOutput>) => unknown;
 };
 
 /** identity function that pins the generics so execute is typed by its schemas */

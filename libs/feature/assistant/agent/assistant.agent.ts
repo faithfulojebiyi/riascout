@@ -36,7 +36,9 @@ export const createAssistantAgent = (deps: {
     ),
     memory: deps.memory,
     defaultOptions: {
-      maxSteps: 8,
+      maxSteps: 10,
+      // approval tools would otherwise serialise every step's tool calls
+      toolCallConcurrency: { limit: 4, strategy: 'called' },
       providerOptions: {
         anthropic: {
           thinking: { type: 'adaptive', display: 'summarized' },

@@ -8,6 +8,7 @@ import type {
   AssistantQueries,
   FirmCandidate,
   FirmLookupInput,
+  FacetOptionItem,
   FirmProfile,
   ProspectSearchInput,
   ProspectSearchResult,
@@ -24,6 +25,7 @@ import { AppPrismaService } from '@system/database/database.service.js';
 
 import { GetFirmProfileQuery } from '../firms/queries/get-firm-profile.js';
 import { GetFacetsQuery } from '../prospecting/queries/get-facets.js';
+import { SearchFacetOptionsQuery } from '../prospecting/queries/search-facet-options.js';
 import { SearchAdvisorsQuery } from '../prospecting/queries/search-advisors.js';
 
 const isFilterOperator = (value: string): value is FilterOperator =>
@@ -110,5 +112,17 @@ export class AssistantQueriesAdapter implements AssistantQueries {
     return this.queryBus.execute(
       new GetFirmProfileQuery({ firmCrd: BigInt(firmCrd) }),
     );
+  }
+
+  async searchFacetOptions(
+    _identity: ToolIdentity,
+    input: { allowKey: string; query: string; limit: number },
+  ): Promise<FacetOptionItem[]> {
+    // option values are global market vocabulary; no workspace scope involved
+    const { options } = await this.queryBus.execute(
+      new SearchFacetOptionsQuery(input),
+    );
+
+    return options;
   }
 }

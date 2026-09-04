@@ -10,6 +10,7 @@ const context: ToolContext = {
     searchAdvisors: () =>
       Promise.resolve({ rows: [], total: 0, limit: 10, offset: 0 }),
     lookupFirm: () => Promise.resolve([]),
+    searchFacetOptions: () => Promise.resolve([]),
     getFirmProfile: () => Promise.reject(new Error('not used')),
   },
 };
