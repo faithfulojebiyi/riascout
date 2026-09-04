@@ -120,6 +120,8 @@ describe('/agent (mastra mount)', () => {
         'list_lists',
         'create_list',
         'add_to_list',
+        'get_record',
+        'update_record',
       ]),
     );
   });
@@ -201,6 +203,7 @@ describe('/agent (mastra mount)', () => {
         'How many advisers are in Texas at firms in the $1B to $5B AUM band?',
         'Find advisers in California who hold the Series 65 and moved in the last 90 days.',
         'Look up the firm Fisher Investments.',
+        'What have we noted about adviser 495?',
       ];
 
       it('streams a tool call and records latency', async () => {

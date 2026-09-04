@@ -7,6 +7,11 @@ import {
   listDetail,
 } from './list-card';
 import {
+  describeUpdateRecord,
+  RecordCard,
+  updateRecordDetail,
+} from './record-card';
+import {
   AdviserSearchTable,
   FirmSearchTable,
   searchDetail,
@@ -16,6 +21,13 @@ import { isRecord, type ToolRenderer } from './types';
 const listsDetail = (result: unknown): string | null =>
   isRecord(result) && Array.isArray(result.lists)
     ? `${result.lists.length} list${result.lists.length === 1 ? '' : 's'}`
+    : null;
+
+const recordDetail = (result: unknown): string | null =>
+  isRecord(result)
+    ? result.record === null
+      ? 'not saved yet'
+      : `${Array.isArray(result.fields) ? result.fields.length : 0} fields`
     : null;
 
 const optionsDetail = (result: unknown): string | null =>
@@ -43,5 +55,11 @@ export const TOOL_RENDERERS: Record<string, ToolRenderer> = {
     Result: ListCard,
     detail: listDetail,
     describeApproval: describeAddToList,
+  },
+  get_record: { detail: recordDetail },
+  update_record: {
+    Result: RecordCard,
+    detail: updateRecordDetail,
+    describeApproval: describeUpdateRecord,
   },
 };

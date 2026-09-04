@@ -16,6 +16,9 @@ import type {
   ListSummary,
   ProspectSearchInput,
   ProspectSearchResult,
+  RecordSnapshot,
+  RecordWrite,
+  RecordWriteResult,
   SourceKind,
   ToolIdentity,
 } from '@feature/assistant/tools/define-tool.js';
@@ -27,7 +30,10 @@ import type { FacetDefinition } from '@feature/prospecting/facets/facet-definiti
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 
+import { CreateEntityRecordCommand } from '../entities/commands/create-entity-record.js';
+import { UpdateRecordValuesCommand } from '../entities/commands/update-record-values.js';
 import { GetEntitiesQuery } from '../entities/queries/get-entities.js';
+import { GetEntityRecordQuery } from '../entities/queries/get-entity-record.js';
 import { GetFirmProfileQuery } from '../firms/queries/get-firm-profile.js';
 import { AddToListCommand } from '../lists/commands/add-to-list.js';
 import { CreateListCommand } from '../lists/commands/create-list.js';
@@ -183,6 +189,73 @@ export class AssistantQueriesAdapter implements AssistantQueries {
             : { listId: input.listId, filter: input.filter },
         ),
       ),
+    );
+  }
+
+  async findRecordId(
+    identity: ToolIdentity,
+    input: { entityId: string; sourceKind: SourceKind; sourceCrd: string },
+  ): Promise<string | null> {
+    // a read must not create a record; the command path is idempotent but writes
+    const record = await this.appPrismaService.entityRecord.findFirst({
+      where: {
+        workspaceId: identity.workspaceId,
+        entityId: input.entityId,
+        sourceKind: input.sourceKind,
+        sourceCrd: BigInt(input.sourceCrd),
+      },
+      select: { id: true },
+    });
+
+    return record?.id ?? null;
+  }
+
+  ensureRecord(
+    identity: ToolIdentity,
+    input: { entityId: string; sourceKind: SourceKind; sourceCrd: string },
+  ): Promise<{ id: string; created: boolean }> {
+    return this.inScope(identity, () =>
+      this.commandBus.execute(
+        new CreateEntityRecordCommand({ ...input, values: [] }),
+      ),
+    );
+  }
+
+  getRecord(identity: ToolIdentity, recordId: string): Promise<RecordSnapshot> {
+    return this.inScope(identity, async () => {
+      const record = await this.queryBus.execute(
+        new GetEntityRecordQuery({ recordId }),
+      );
+
+      return {
+        recordId: record.recordId,
+        entitySlug: record.entitySlug,
+        attributes: record.attributes
+          .filter((a) => a.referenceColumn === null && a.isEditable)
+          .map((a) => ({
+            id: a.attributeId,
+            key: a.key,
+            label: a.label,
+            type: a.type,
+            isMultiValue: a.isMultiValue,
+            choices: a.choices.map((choice) => choice.name),
+          })),
+        cells: record.cells.map(({ attributeId, value, version }) => ({
+          attributeId,
+          value,
+          version,
+        })),
+        lists: record.lists.map((list) => list.name),
+      };
+    });
+  }
+
+  updateRecordValues(
+    identity: ToolIdentity,
+    input: { recordId: string; values: RecordWrite[] },
+  ): Promise<RecordWriteResult> {
+    return this.inScope(identity, () =>
+      this.commandBus.execute(new UpdateRecordValuesCommand(input)),
     );
   }
 }

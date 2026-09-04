@@ -76,6 +76,40 @@ export type AddToListInput =
   | { listId: string; sourceCrds: string[]; filter?: undefined }
   | { listId: string; filter: FilterTree; sourceCrds?: undefined };
 
+export type EditableAttribute = {
+  id: string;
+  key: string;
+  label: string;
+  type: string;
+  isMultiValue: boolean;
+  /** choice names for status and select fields; the cell stores the name */
+  choices: string[];
+};
+
+export type RecordSnapshot = {
+  recordId: string;
+  entitySlug: string;
+  /** workspace-authored fields only; projected market columns are excluded */
+  attributes: EditableAttribute[];
+  cells: { attributeId: string; value: unknown; version: number }[];
+  /** names of the lists the record belongs to */
+  lists: string[];
+};
+
+export type RecordWrite = {
+  attributeId: string;
+  value: unknown;
+  expectedVersion?: number;
+};
+
+export type RecordWriteResult = {
+  results: {
+    attributeId: string;
+    status: 'written' | 'skipped' | 'conflict';
+    version: number | null;
+  }[];
+};
+
 export type AddToListResult = {
   completed: boolean;
   recordsCreated: number;
@@ -127,6 +161,19 @@ export type AssistantQueries = {
     identity: ToolIdentity,
     input: AddToListInput,
   ): Promise<AddToListResult>;
+  findRecordId(
+    identity: ToolIdentity,
+    input: { entityId: string; sourceKind: SourceKind; sourceCrd: string },
+  ): Promise<string | null>;
+  ensureRecord(
+    identity: ToolIdentity,
+    input: { entityId: string; sourceKind: SourceKind; sourceCrd: string },
+  ): Promise<{ id: string; created: boolean }>;
+  getRecord(identity: ToolIdentity, recordId: string): Promise<RecordSnapshot>;
+  updateRecordValues(
+    identity: ToolIdentity,
+    input: { recordId: string; values: RecordWrite[] },
+  ): Promise<RecordWriteResult>;
 };
 
 export type ToolContext = {

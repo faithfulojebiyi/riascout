@@ -21,6 +21,17 @@ const context: ToolContext = {
         membersAdded: 0,
         requested: 0,
       }),
+    findRecordId: () => Promise.resolve(null),
+    ensureRecord: () => Promise.resolve({ id: 'record', created: true }),
+    getRecord: () =>
+      Promise.resolve({
+        recordId: 'record',
+        entitySlug: 'advisors',
+        attributes: [],
+        cells: [],
+        lists: [],
+      }),
+    updateRecordValues: () => Promise.resolve({ results: [] }),
     getFirmProfile: () => Promise.reject(new Error('not used')),
   },
 };
