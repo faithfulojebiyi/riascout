@@ -167,6 +167,19 @@ describe('/agent (mastra mount)', () => {
     expect(listB.threads).toEqual([]);
   });
 
+  it('scopes working memory to the session resource and keeps it from other users', async () => {
+    const threadId = await createThread(cookieA);
+    const path = `/memory/threads/${threadId}/working-memory?agentId=${agentId}`;
+    const mine = await agentFetch(cookieA, path);
+
+    expect(mine.status).toBe(200);
+
+    const body = (await mine.json()) as { source: string };
+
+    expect(body.source).toBe('resource');
+    expect((await agentFetch(cookieB, path)).status).toBe(403);
+  });
+
   it('leaves nest routes untouched by the child plugin', async () => {
     const response = await fetch(`${base}/prospecting/facets`, {
       method: 'POST',

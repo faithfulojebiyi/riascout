@@ -4,6 +4,7 @@ import { PostgresStore } from '@mastra/pg';
 import type { Pool } from 'pg';
 
 import { createAssistantAgent } from '@feature/assistant/agent/assistant.agent.js';
+import { recruiterProfileSchema } from '@feature/assistant/memory/recruiter-profile.schema.js';
 import type { AssistantQueries } from '@feature/assistant/tools/define-tool.js';
 
 /** mastra's tables live here; prisma manages only app and market */
@@ -40,7 +41,12 @@ export const getMastra = (deps: {
     storage,
     options: {
       lastMessages: 30,
-      workingMemory: { enabled: false },
+      // resource scope: the recruiter's profile follows them across threads in a workspace
+      workingMemory: {
+        enabled: true,
+        scope: 'resource',
+        schema: recruiterProfileSchema,
+      },
       generateTitle: false,
     },
   });

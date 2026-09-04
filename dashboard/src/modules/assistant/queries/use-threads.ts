@@ -39,12 +39,15 @@ export const useThreads = () => {
         perPage: 50,
       });
 
-      return result.threads.map((thread) => ({
-        id: thread.id,
-        title: thread.title ?? '',
-        createdAt: asIso(thread.createdAt),
-        updatedAt: asIso(thread.updatedAt),
-      }));
+      // the preferences holder is a system thread, not a conversation
+      return result.threads
+        .filter((thread) => thread.metadata?.system !== true)
+        .map((thread) => ({
+          id: thread.id,
+          title: thread.title ?? '',
+          createdAt: asIso(thread.createdAt),
+          updatedAt: asIso(thread.updatedAt),
+        }));
     },
     staleTime: 15_000,
   });
