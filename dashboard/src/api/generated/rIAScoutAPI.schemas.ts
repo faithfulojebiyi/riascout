@@ -1571,6 +1571,8 @@ export interface FacetDefinition {
   label: string;
   /** @nullable */
   icon: string | null;
+  /** @nullable */
+  description: string | null;
   group: string;
   kind: FacetDefinitionKind;
   type: FacetDefinitionType;

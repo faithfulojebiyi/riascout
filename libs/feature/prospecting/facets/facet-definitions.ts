@@ -2,6 +2,7 @@ import type { AttributeType } from '@orm/app';
 
 import { resolveReferenceColumn } from '@feature/entities/attribute-types/reference-columns.js';
 import type { FilterOperator } from '@feature/entities/filter-sort/ast.js';
+import { glossaryFor } from '@feature/entities/data/column-glossary.js';
 import { COLUMN_META } from '@feature/entities/data/column-meta.js';
 
 import { facetKindFor, operatorsFor, type FacetKind } from './facet-kinds.js';
@@ -13,6 +14,8 @@ export type FacetDefinition = {
   allowKey: string;
   label: string;
   icon: string | null;
+  /** one sentence from the column glossary; null for undocumented columns */
+  description: string | null;
   group: string;
   kind: FacetKind;
   /** kind drives the filter control; type drives the cell renderer */
@@ -50,6 +53,7 @@ export const buildFacetDefinitions = (
         allowKey,
         label: attribute.label,
         icon: attribute.icon,
+        description: glossaryFor(allowKey)?.description ?? null,
         group: COLUMN_META[allowKey]?.group ?? 'Identity',
         kind,
         type: ref.type,

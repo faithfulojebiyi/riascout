@@ -19,6 +19,7 @@ const facet = (
 ): FacetDefinition => ({
   label: over.allowKey,
   icon: null,
+  description: null,
   group: 'Identity',
   kind: 'multiSelect',
   type: 'text',

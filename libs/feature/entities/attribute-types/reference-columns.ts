@@ -79,6 +79,7 @@ export const REFERENCE_COLUMNS: ReadonlyMap<string, ReferenceColumn> = new Map([
   advisor('is_us_workplace', 'boolean'),
 
   // movement
+  advisor('last_moved_on', 'date'),
   advisor('last_detected_on', 'date'),
   advisor('previous_firm_crd', 'number'),
   advisor('move_count_5y', 'number'),

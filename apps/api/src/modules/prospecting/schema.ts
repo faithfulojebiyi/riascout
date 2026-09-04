@@ -60,6 +60,8 @@ const FacetDefinitionSchema = z
     allowKey: z.string(),
     label: z.string(),
     icon: z.string().nullable(),
+    /** one sentence of meaning for the rail and the assistant; null when undocumented */
+    description: z.string().nullable(),
     group: z.string(),
     kind: z.enum(['multiSelect', 'search', 'number', 'boolean', 'date']),
     /** kind drives the filter control; type drives the cell renderer */
