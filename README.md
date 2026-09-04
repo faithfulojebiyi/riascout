@@ -1,7 +1,32 @@
 # RIAScout
 
 A recruiting CRM for RIAs (Registered Investment Advisers). Recruiters search a database of firms and
-advisors, save results into lists, add their own columns, and work them as a pipeline.
+advisors, save results into lists, add their own columns, and work them as a pipeline. An assistant on
+the home page turns a sentence into a search and answers questions about a firm or adviser.
+
+## Screenshots
+
+**Assistant home.** The first thing a recruiter sees: ask for a shortlist, a firm, or who moved.
+
+![Assistant home page with greeting, composer, suggested prompts and recent conversations](.github/screenshots/assistant-home.png)
+
+**A conversation.** The assistant runs the real search and shows the matches with CRDs before it answers.
+
+![Assistant conversation showing a searched-advisers result table and a written answer](.github/screenshots/assistant-conversation.png)
+
+**Prospecting.** Pick advisers or firms; the filters follow from the choice.
+
+![Prospecting source picker with adviser, firm and custodian cards](.github/screenshots/prospecting-picker.png)
+
+![Firm prospecting with the filter rail and the result grid](.github/screenshots/prospecting-firms.png)
+
+**Records.** Saved firms as a grid with the workspace's own columns and view settings.
+
+![Firm records grid with the view settings panel open](.github/screenshots/records-grid.png)
+
+**A firm.** Assets, accounts and headcount over time, from every filing the firm has made.
+
+![Firm record page with AUM, accounts and employee charts and the attribute panel](.github/screenshots/firm-record.png)
 
 ## Architecture
 
