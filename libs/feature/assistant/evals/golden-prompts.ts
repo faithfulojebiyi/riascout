@@ -561,6 +561,7 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     id: 'shape-bd-affiliated',
     kind: 'shape',
     sourceKind: 'firm',
+    // bd_affiliated is defined but empty in this release; broker-dealer affiliation means hybrid
     prompt: 'broker-dealer affiliated firms with over $1B',
     expect: {
       filter: f({
@@ -568,7 +569,7 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
           {
             field: 'firm.channel_code',
             op: 'isAnyOf',
-            value: ['bd_affiliated'],
+            value: ['hybrid'],
           },
           {
             field: 'firm.regulatory_aum',

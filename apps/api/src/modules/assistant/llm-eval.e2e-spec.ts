@@ -43,6 +43,10 @@ const canonical = (
     value = [value];
   }
 
+  if (group === 'none' && op === 'is' && typeof value === 'boolean') {
+    return { ...c, op: 'is', value: !value, group: 'all' };
+  }
+
   if (group === 'none' && op === 'isAnyOf')
     return { ...c, op: 'isNoneOf', value, group: 'all' };
   if (group === 'none' && op === 'isNoneOf')
