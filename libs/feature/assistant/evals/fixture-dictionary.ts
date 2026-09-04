@@ -30,14 +30,14 @@ const CHANNELS: FacetOption[] = [
   ['bank_affiliated', 'Bank affiliated'],
   ['era', 'Exempt reporting adviser'],
 ].map(([value, label]) => ({ value: value as string, label: label as string }));
-/** IAPD exam codes are stable; designation names must be checked against market.facet_option */
-const EXAMS = ['S7', 'S65', 'S66', 'S63', 'S24', 'SIE', 'S79'];
+/** the complete vocabularies in market.facet_option as of the 2026-09 load */
+const EXAMS = ['S63', 'S65', 'S66'];
 export const DESIGNATIONS = [
-  'Certified Financial Planner (CFP)',
-  'Chartered Financial Analyst (CFA)',
-  'Chartered Financial Consultant (ChFC)',
-  'Certified Public Accountant (CPA)',
-  'Certified Investment Management Analyst (CIMA)',
+  'Certified Financial Planner',
+  'Chartered Financial Consultant',
+  'Chartered Financial Analyst',
+  'Personal Financial Specialist',
+  'Chartered Investment Counselor',
 ];
 
 const CANNED_OPTIONS: Readonly<Record<string, FacetOption[]>> = {
@@ -54,9 +54,8 @@ const CANNED_OPTIONS: Readonly<Record<string, FacetOption[]>> = {
     label: value,
   })),
   'advisor.disclosure_status': [
-    { value: 'has_disclosure', label: 'Has disclosure' },
-    { value: 'none_reported', label: 'None reported' },
-    { value: 'unknown', label: 'Unknown' },
+    { value: 'has_disclosure', label: 'has_disclosure' },
+    { value: 'none_reported', label: 'none_reported' },
   ],
   'advisor.current_firm_source': [
     { value: 'registration', label: 'Registration' },

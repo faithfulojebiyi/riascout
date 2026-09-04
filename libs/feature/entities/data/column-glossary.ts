@@ -284,22 +284,22 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   // credentials and compliance
   'advisor.designations': {
     description:
-      'Professional designations as IAPD names; "X and Y" is one condition per designation, use get_field_options for exact spelling',
+      'IAPD designation names: Certified Financial Planner, Chartered Financial Consultant, Chartered Financial Analyst, Personal Financial Specialist, Chartered Investment Counselor. CPA and CIMA are not captured. "X and Y" is one condition per designation',
     aliases: [
       'CFP',
       'CFA',
       'ChFC',
-      'CPA',
-      'CIMA',
+      'PFS',
+      'CIC',
       'credentials',
       'certifications',
     ],
     nulls: 'none reported',
-    example: { op: 'isAnyOf', value: ['Certified Financial Planner (CFP)'] },
+    example: { op: 'isAnyOf', value: ['Certified Financial Planner'] },
   },
   'advisor.exam_codes': {
     description:
-      'Exams passed as IAPD codes (S7, S65, S66, S63, S24, SIE); "X and Y" is one condition per exam',
+      'IAPD exam codes; only S63, S65 and S66 are captured. Series 7, Series 24 and SIE are not in the data, so say so rather than substituting. "X and Y" is one condition per exam',
     aliases: [
       'Series 7',
       'Series 65',
@@ -319,7 +319,7 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   },
   'advisor.disclosure_status': {
     description:
-      'has_disclosure | none_reported | unknown; "no disclosures" means none_reported, and unknown must be reported separately',
+      'has_disclosure | none_reported; "no disclosures" and "clean record" mean none_reported',
     aliases: ['clean record', 'no disclosures', 'disclosures', 'complaints'],
     example: { op: 'isAnyOf', value: ['none_reported'] },
   },
@@ -332,7 +332,7 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   // firm shape
   'advisor.firm_channel': {
     description:
-      "Current firm's channel: pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. There is no wirehouse code",
+      "Current firm's channel: pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. No wirehouse code: the wirehouses are hybrid, target them by firm CRD",
     aliases: [
       'independent',
       'RIA only',
@@ -346,7 +346,7 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   },
   'firm.channel_code': {
     description:
-      'pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. There is no wirehouse code',
+      'pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. No wirehouse code: Merrill 7691, Morgan Stanley 149777, UBS 8174 and Wells Fargo Clearing 19616 are hybrid',
     aliases: [
       'independent',
       'RIA only',

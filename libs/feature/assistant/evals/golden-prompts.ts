@@ -333,7 +333,7 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
           {
             field: 'advisor.designations',
             op: 'isAnyOf',
-            value: ['Certified Financial Planner (CFP)'],
+            value: ['Certified Financial Planner'],
           },
           { field: 'advisor.firm_advisor_count', op: 'isLessThan', value: 20 },
           { field: 'advisor.state', op: 'isAnyOf', value: ['FL'] },
@@ -342,14 +342,14 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     },
   },
   {
-    id: 'cred-series-7-and-65',
+    id: 'cred-series-65-and-63',
     kind: 'credential',
     sourceKind: 'advisor',
-    prompt: 'advisers with the Series 7 and 65',
+    prompt: 'advisers with the Series 65 and 63',
     expect: {
       filter: f({
         all: [
-          { field: 'advisor.exam_codes', op: 'isAnyOf', value: ['S7'] },
+          { field: 'advisor.exam_codes', op: 'isAnyOf', value: ['S65'] },
           { field: 'advisor.exam_codes', op: 'isAnyOf', value: ['S65'] },
         ],
       }),
@@ -379,12 +379,12 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
           {
             field: 'advisor.designations',
             op: 'isAnyOf',
-            value: ['Chartered Financial Analyst (CFA)'],
+            value: ['Chartered Financial Analyst'],
           },
           {
             field: 'advisor.designations',
             op: 'isAnyOf',
-            value: ['Certified Financial Planner (CFP)'],
+            value: ['Certified Financial Planner'],
           },
         ],
       }),
@@ -422,19 +422,19 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     },
   },
   {
-    id: 'cred-no-series-7',
+    id: 'cred-no-series-66',
     kind: 'credential',
     sourceKind: 'advisor',
-    prompt: 'CFPs who do not hold the Series 7',
+    prompt: 'CFPs who do not hold the Series 66',
     expect: {
       filter: f({
         all: [
           {
             field: 'advisor.designations',
             op: 'isAnyOf',
-            value: ['Certified Financial Planner (CFP)'],
+            value: ['Certified Financial Planner'],
           },
-          { field: 'advisor.exam_codes', op: 'isNoneOf', value: ['S7'] },
+          { field: 'advisor.exam_codes', op: 'isNoneOf', value: ['S66'] },
         ],
       }),
     },
@@ -454,10 +454,10 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     },
   },
   {
-    id: 'cred-chfc-or-cpa',
+    id: 'cred-chfc-or-pfs',
     kind: 'credential',
     sourceKind: 'advisor',
-    prompt: 'ChFC or CPA designation holders at $500M+ firms',
+    prompt: 'ChFC or PFS designation holders at $500M+ firms',
     expect: {
       filter: f({
         all: [
@@ -472,8 +472,8 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
             field: 'advisor.designations',
             op: 'isAnyOf',
             value: [
-              'Chartered Financial Consultant (ChFC)',
-              'Certified Public Accountant (CPA)',
+              'Chartered Financial Consultant',
+              'Personal Financial Specialist',
             ],
           },
         ],
@@ -481,13 +481,19 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     },
   },
   {
-    id: 'cred-sie-only',
+    id: 'cred-cic',
     kind: 'credential',
     sourceKind: 'advisor',
-    prompt: 'advisers who have passed the SIE',
+    prompt: 'advisers holding the Chartered Investment Counselor designation',
     expect: {
       filter: f({
-        all: [{ field: 'advisor.exam_codes', op: 'isAnyOf', value: ['SIE'] }],
+        all: [
+          {
+            field: 'advisor.designations',
+            op: 'isAnyOf',
+            value: ['Chartered Investment Counselor'],
+          },
+        ],
       }),
     },
   },
@@ -649,6 +655,13 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     sourceKind: 'firm',
     prompt: 'firms custodied at Schwab',
     expect: { unavailable: 'custodian' },
+  },
+  {
+    id: 'null-series-7',
+    kind: 'null',
+    sourceKind: 'advisor',
+    prompt: 'advisers with the Series 7 in Texas',
+    expect: { unavailable: 'series 7' },
   },
   {
     id: 'null-wirehouse',
