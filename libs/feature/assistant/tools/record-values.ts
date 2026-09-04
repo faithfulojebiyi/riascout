@@ -107,15 +107,21 @@ export const coerceRecordValue = (
   }
 };
 
-/** the same attribute whether the model says "status", "Status" or "pipeline status" */
+/**
+ * Labels are the contract ("Status", "Notes", "Last Contacted"): keys are
+ * opaque ids in provisioned workspaces. Underscores and case are forgiven.
+ */
+const fold = (value: string): string =>
+  value.trim().toLowerCase().replaceAll(/[_-]+/g, ' ');
+
 export const findAttribute = (
   attributes: readonly EditableAttribute[],
   field: string,
 ): EditableAttribute | undefined => {
-  const wanted = field.trim().toLowerCase();
+  const wanted = fold(field);
 
   return (
-    attributes.find((a) => a.key.toLowerCase() === wanted) ??
-    attributes.find((a) => a.label.toLowerCase() === wanted)
+    attributes.find((a) => fold(a.label) === wanted) ??
+    attributes.find((a) => fold(a.key) === wanted)
   );
 };

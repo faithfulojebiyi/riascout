@@ -78,6 +78,7 @@ export type AddToListInput =
 
 export type EditableAttribute = {
   id: string;
+  /** opaque in provisioned workspaces; the label is what people and the model use */
   key: string;
   label: string;
   type: string;
@@ -161,6 +162,11 @@ export type AssistantQueries = {
     identity: ToolIdentity,
     input: AddToListInput,
   ): Promise<AddToListResult>;
+  /** the entity's editable fields, readable before any record exists */
+  getEntityAttributes(
+    identity: ToolIdentity,
+    entityId: string,
+  ): Promise<EditableAttribute[]>;
   findRecordId(
     identity: ToolIdentity,
     input: { entityId: string; sourceKind: SourceKind; sourceCrd: string },

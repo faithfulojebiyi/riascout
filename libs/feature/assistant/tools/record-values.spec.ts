@@ -76,6 +76,12 @@ describe('findAttribute', () => {
     expect(findAttribute(attributes, 'STATUS')?.id).toBe('1');
     expect(findAttribute(attributes, 'pipeline')?.id).toBe('1');
     expect(findAttribute(attributes, 'Notes')?.id).toBe('2');
+    expect(
+      findAttribute(
+        [attr({ id: '3', key: '01a0', label: 'Last Contacted', type: 'date' })],
+        'last_contacted',
+      )?.id,
+    ).toBe('3');
     expect(findAttribute(attributes, 'owner')).toBeUndefined();
   });
 });

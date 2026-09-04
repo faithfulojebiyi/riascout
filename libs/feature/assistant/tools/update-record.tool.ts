@@ -26,7 +26,7 @@ export const updateRecordTool = defineTool({
   approval: true,
   description: [
     "Set the workspace's own fields on an adviser or firm: status, notes, owner, last contacted, contact details. The recruiter approves it first; call it once per record.",
-    'Fields are keyed by their key (see get_record); status and select fields take a choice name; dates take YYYY-MM-DD; an empty value clears the field.',
+    'Name fields by their label as get_record shows them ("Status", "Notes", "Last Contacted"); status and select fields take a choice name; dates take YYYY-MM-DD; an empty value clears the field.',
     'A CRD that is not yet a record is saved as one first. If fieldErrors is returned nothing was written; fix them and call again.',
   ].join(' '),
   input: z.object({
@@ -35,7 +35,7 @@ export const updateRecordTool = defineTool({
     values: z
       .array(
         z.object({
-          field: z.string().min(1).describe('field key, e.g. "status"'),
+          field: z.string().min(1).describe('field label, e.g. "Status"'),
           value: z.unknown().describe('null or "" clears the field'),
         }),
       )
@@ -63,39 +63,21 @@ export const updateRecordTool = defineTool({
       sourceCrd: input.sourceCrd,
     });
 
-    /**
-     * Validate against the entity's fields before creating anything: a typo in
-     * a field key must not leave a new empty record behind. A record is needed
-     * to read the fields, so when none exists yet an existing one of the same
-     * entity is not available; fall back to creating and validating after.
-     */
-    const recordId =
-      existingId ??
-      (
-        await ctx.queries.ensureRecord(ctx.identity, {
-          entityId: entity.id,
-          sourceKind: input.sourceKind,
-          sourceCrd: input.sourceCrd,
-        })
-      ).id;
-    const created = existingId === null;
-    const snapshot = await ctx.queries.getRecord(ctx.identity, recordId);
-    const cellByAttribute = new Map(
-      snapshot.cells.map((cell) => [cell.attributeId, cell]),
+    // validate against the entity's fields first: a typo must not create a record
+    const attributes = await ctx.queries.getEntityAttributes(
+      ctx.identity,
+      entity.id,
     );
-    const availableFields = snapshot.attributes.map((a) => a.key);
+    const availableFields = attributes.map((a) => a.label);
     const fieldErrors: z.output<typeof fieldErrorSchema>[] = [];
-    const writes: {
-      attributeId: string;
+    const planned: {
+      attribute: (typeof attributes)[number];
       value: unknown;
-      expectedVersion?: number;
       field: string;
-      label: string;
-      from: unknown;
     }[] = [];
 
     for (const { field, value } of input.values) {
-      const attribute = findAttribute(snapshot.attributes, field);
+      const attribute = findAttribute(attributes, field);
 
       if (!attribute) {
         fieldErrors.push({
@@ -113,18 +95,51 @@ export const updateRecordTool = defineTool({
         continue;
       }
 
+      planned.push({ attribute, value: coerced.value, field: attribute.label });
+    }
+
+    if (fieldErrors.length > 0) {
+      return {
+        record: existingId
+          ? {
+              id: existingId,
+              sourceCrd: input.sourceCrd,
+              url: recordUrl(existingId),
+              created: false,
+            }
+          : null,
+        changes: [],
+        fieldErrors,
+      };
+    }
+
+    const recordId =
+      existingId ??
+      (
+        await ctx.queries.ensureRecord(ctx.identity, {
+          entityId: entity.id,
+          sourceKind: input.sourceKind,
+          sourceCrd: input.sourceCrd,
+        })
+      ).id;
+    const created = existingId === null;
+    const snapshot = await ctx.queries.getRecord(ctx.identity, recordId);
+    const cellByAttribute = new Map(
+      snapshot.cells.map((cell) => [cell.attributeId, cell]),
+    );
+    const writes = planned.map(({ attribute, value, field }) => {
       const cell = cellByAttribute.get(attribute.id);
 
-      writes.push({
+      return {
         attributeId: attribute.id,
-        value: coerced.value,
+        value,
         // a version pins the write to what the recruiter approved seeing
         ...(cell ? { expectedVersion: cell.version } : {}),
-        field: attribute.key,
+        field,
         label: attribute.label,
         from: cell?.value ?? null,
-      });
-    }
+      };
+    });
 
     const record = {
       id: recordId,
@@ -132,10 +147,6 @@ export const updateRecordTool = defineTool({
       url: recordUrl(recordId),
       created,
     };
-
-    if (fieldErrors.length > 0) {
-      return { record, changes: [], fieldErrors };
-    }
 
     const { results } = await ctx.queries.updateRecordValues(ctx.identity, {
       recordId,

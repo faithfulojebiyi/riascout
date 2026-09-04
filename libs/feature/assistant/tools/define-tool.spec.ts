@@ -21,6 +21,7 @@ const context: ToolContext = {
         membersAdded: 0,
         requested: 0,
       }),
+    getEntityAttributes: () => Promise.resolve([]),
     findRecordId: () => Promise.resolve(null),
     ensureRecord: () => Promise.resolve({ id: 'record', created: true }),
     getRecord: () =>

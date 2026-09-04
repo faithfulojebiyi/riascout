@@ -8,6 +8,7 @@ import type {
   AddToListInput,
   AddToListResult,
   AssistantQueries,
+  EditableAttribute,
   EntitySummary,
   FirmCandidate,
   FirmLookupInput,
@@ -190,6 +191,39 @@ export class AssistantQueriesAdapter implements AssistantQueries {
         ),
       ),
     );
+  }
+
+  async getEntityAttributes(
+    identity: ToolIdentity,
+    entityId: string,
+  ): Promise<EditableAttribute[]> {
+    const attributes = await this.appPrismaService.entityAttribute.findMany({
+      where: {
+        workspaceId: identity.workspaceId,
+        entityId,
+        referenceColumn: null,
+        isEditable: true,
+        isArchived: false,
+      },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        key: true,
+        label: true,
+        type: true,
+        isMultiValue: true,
+        choices: { orderBy: { position: 'asc' }, select: { name: true } },
+      },
+    });
+
+    return attributes.map((a) => ({
+      id: a.id,
+      key: a.key,
+      label: a.label,
+      type: a.type,
+      isMultiValue: a.isMultiValue,
+      choices: a.choices.map((choice) => choice.name),
+    }));
   }
 
   async findRecordId(

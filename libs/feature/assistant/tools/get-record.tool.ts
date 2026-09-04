@@ -20,7 +20,7 @@ export const getRecordTool = defineTool({
   approval: false,
   description: [
     "The workspace's own notes on an adviser or firm: status, notes, owner, contact details and any other editable field, with current values.",
-    'Call it before update_record when you are unsure of the field keys, or to answer "what did we note about X". A CRD that was never saved returns record null; reading never creates a record.',
+    'Call it before update_record when you are unsure of the field names, or to answer "what did we note about X". A CRD that was never saved returns record null; reading never creates a record.',
   ].join(' '),
   input: z.object({
     sourceKind: sourceKindSchema,
@@ -41,7 +41,26 @@ export const getRecordTool = defineTool({
       sourceCrd,
     });
 
-    if (!recordId) return { record: null, fields: [], lists: [] };
+    // an unsaved CRD still has fields: the model needs their names to edit
+    if (!recordId) {
+      const attributes = await ctx.queries.getEntityAttributes(
+        ctx.identity,
+        entity.id,
+      );
+
+      return {
+        record: null,
+        fields: attributes.map((attribute) => ({
+          key: attribute.label,
+          label: attribute.label,
+          type: attribute.type,
+          choices: attribute.choices,
+          value: null,
+          version: null,
+        })),
+        lists: [],
+      };
+    }
 
     const snapshot = await ctx.queries.getRecord(ctx.identity, recordId);
     const cellByAttribute = new Map(
@@ -54,7 +73,8 @@ export const getRecordTool = defineTool({
         const cell = cellByAttribute.get(attribute.id);
 
         return {
-          key: attribute.key,
+          // the label is the name the model uses in update_record
+          key: attribute.label,
           label: attribute.label,
           type: attribute.type,
           choices: attribute.choices,

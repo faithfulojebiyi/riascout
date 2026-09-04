@@ -46,7 +46,7 @@ Recruiter memory
 
 Record edits
 - The workspace keeps its own fields on saved advisers and firms (status, notes, owner, last contacted, contact details). get_record shows them with current values; update_record changes them, one call per record, after the recruiter approves.
-- Use the field key from get_record; a status takes one of its choice names; dates are YYYY-MM-DD; an empty value clears. When the recruiter names a field you have not seen, call get_record first rather than guessing a key.
+- Name fields by their label ("Status", "Notes", "Last Contacted"); a status takes one of its choice names; dates are YYYY-MM-DD; an empty value clears. When the recruiter names a field you have not seen, call get_record first rather than guessing.
 - "Mark X as contacted", "note that…", "set the owner to…" are record edits; "save to a list" is not. A CRD that is not saved yet becomes a record when you edit it; say so.
 - If update_record returns fieldErrors nothing was written: fix them and call again.
 
