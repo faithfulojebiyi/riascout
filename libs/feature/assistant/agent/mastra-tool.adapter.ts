@@ -31,6 +31,18 @@ export const readIdentity = (
  * definition's own generics are erased here because Mastra's inference type
  * and zod's output type are not provably the same to the compiler.
  */
+/**
+ * Mastra's types say toModelOutput receives the output, but at runtime it is
+ * called with { toolCallId, input, output }. Accept both.
+ */
+const unwrapToolOutput = (arg: unknown): unknown =>
+  typeof arg === 'object' && arg !== null && 'output' in arg
+    ? (arg as { output: unknown }).output
+    : arg;
+
+const toJsonValue = (value: unknown): Record<string, unknown> =>
+  JSON.parse(JSON.stringify(value ?? null)) as Record<string, unknown>;
+
 export const toMastraTool = (
   definition: ToolDefinition,
   queries: AssistantQueries,
@@ -41,7 +53,13 @@ export const toMastraTool = (
     inputSchema: definition.input,
     outputSchema: definition.output,
     requireApproval: definition.approval,
-    toModelOutput: definition.toModelOutput,
+    toModelOutput: definition.toModelOutput
+      ? (arg: unknown) => ({
+          // the AI SDK wants a tagged ToolResultOutput; a bare object reaches the model as nothing
+          type: 'json' as const,
+          value: toJsonValue(definition.toModelOutput?.(unwrapToolOutput(arg))),
+        })
+      : undefined,
     execute: async (input, context) => {
       const identity = readIdentity(context?.requestContext);
 

@@ -466,8 +466,7 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
             op: 'isGreaterThan',
             value: 500_000_000,
           },
-        ],
-        any: [
+          // "X or Y" on one array field is a single isAnyOf, not an any group
           {
             field: 'advisor.designations',
             op: 'isAnyOf',

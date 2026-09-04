@@ -22,10 +22,11 @@ type CaseResult = {
 
 const SEARCH_TOOLS = new Set(['search_advisers', 'search_firms']);
 
-const conditionsOf = (filter: AgentFilter) => [
-  ...filter.all.map((c) => ({ ...c, group: 'all' })),
-  ...filter.any.map((c) => ({ ...c, group: 'any' })),
-  ...filter.none.map((c) => ({ ...c, group: 'none' })),
+// the model omits empty groups; the server's zod defaults never reach the stream
+const conditionsOf = (filter: Partial<AgentFilter>) => [
+  ...(filter.all ?? []).map((c) => ({ ...c, group: 'all' })),
+  ...(filter.any ?? []).map((c) => ({ ...c, group: 'any' })),
+  ...(filter.none ?? []).map((c) => ({ ...c, group: 'none' })),
 ];
 
 const sameValue = (expected: unknown, actual: unknown): boolean => {
@@ -60,7 +61,8 @@ const scoreFilterCase = (
     return { score: 0, note: `searched ${call.toolName}` };
   }
 
-  const actualFilter = call.args.filter as AgentFilter | null | undefined;
+  const actualFilter = call.args.filter as
+    Partial<AgentFilter> | null | undefined;
   const actual = actualFilter ? conditionsOf(actualFilter) : [];
   const expected = conditionsOf(goldenCase.expect.filter);
   const expectedFields = new Set(expected.map((c) => c.field));
