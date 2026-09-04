@@ -115,11 +115,16 @@ export const RecruiterProfileSheet = ({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent maxW="calc(100vw - 16px)" w="700px">
+      <SheetContent
+        display="flex"
+        flexDirection="column"
+        maxW="calc(100vw - 16px)"
+        w="700px"
+      >
         <SheetHeader>
           <SheetTitle>What the assistant remembers</SheetTitle>
         </SheetHeader>
-        <SheetBody>
+        <SheetBody flex="1" minH="0" overflowY="auto">
           <Flex direction="column" gap="4">
             <styled.p color="text.muted" fontSize="1" lineHeight="1.5">
               These fill in gaps when you do not say otherwise. Anything you
@@ -241,7 +246,7 @@ export const RecruiterProfileSheet = ({
             </Field>
           </Flex>
         </SheetBody>
-        <SheetFooter>
+        <SheetFooter borderTop="subtle" flexShrink="0">
           <HStack gap="2" justifyContent="space-between" w="full">
             <Button
               disabled={update.isPending}
