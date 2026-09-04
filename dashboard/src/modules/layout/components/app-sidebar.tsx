@@ -146,7 +146,12 @@ export const AppSidebar = ({ workspaceName }: { workspaceName: string }) => {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={entity.name}
+                      // the rail hides the badge, so its tooltip carries the count
+                      tooltip={
+                        entity.recordCount > 0
+                          ? `${entity.name} · ${entity.recordCount.toLocaleString()}`
+                          : entity.name
+                      }
                     >
                       <Link
                         onClick={(event) => {

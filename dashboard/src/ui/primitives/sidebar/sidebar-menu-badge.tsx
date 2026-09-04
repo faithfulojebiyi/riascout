@@ -22,20 +22,18 @@ const menuBadgeStyles = css({
   px: '1',
   right: '1',
   rounded: 'md',
+  // centred on the row whatever the button height
+  top: '50%',
+  transform: 'translateY(-50%)',
   textOverflow: 'ellipsis',
   userSelect: 'none',
   whiteSpace: 'nowrap',
 });
 
 const collapsedBadgeStyles = css({
+  // the icon rail has no room for a count; the button tooltip carries it
   '[data-collapsible=icon] &': {
-    fontSize: '0.625rem',
-    h: '4',
-    minW: '4',
-    position: 'absolute',
-    right: '-1',
-    rounded: 'full',
-    top: '-1',
+    display: 'none',
   },
 });
 
