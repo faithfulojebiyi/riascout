@@ -193,10 +193,17 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
       'registration | observation: the evidence behind the current firm link',
   },
   'advisor.previous_firm_count': {
-    description: 'Distinct earlier firms in the registration history',
-    aliases: ['prior firms', 'job changes'],
+    description:
+      'Distinct earlier firms in the registration history; 0 means the adviser has never changed firms on record',
+    aliases: [
+      'prior firms',
+      'job changes',
+      'never changed firms',
+      'never moved',
+    ],
     unit: 'count',
     nulls: 'no history',
+    example: { op: 'is', value: 0 },
   },
   'advisor.previous_firm_crds': {
     description:
@@ -332,7 +339,7 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   // firm shape
   'advisor.firm_channel': {
     description:
-      "Current firm's channel: pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. No wirehouse code: the wirehouses are hybrid, target them by firm CRD",
+      "Current firm's channel: pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. Only pure_ria, hybrid and era occur in this release. No wirehouse code: the wirehouses are hybrid, target them by firm CRD",
     aliases: [
       'independent',
       'RIA only',
@@ -346,7 +353,7 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   },
   'firm.channel_code': {
     description:
-      'pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. No wirehouse code: Merrill 7691, Morgan Stanley 149777, UBS 8174 and Wells Fargo Clearing 19616 are hybrid',
+      'pure_ria (independent RIA), hybrid (RIA with a broker-dealer), bd_affiliated, insurance_affiliated, bank_affiliated, era. Only pure_ria, hybrid and era occur in this release. No wirehouse code: Merrill 7691, Morgan Stanley 149777, UBS 8174 and Wells Fargo Clearing 19616 are hybrid',
     aliases: [
       'independent',
       'RIA only',

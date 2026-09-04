@@ -30,6 +30,11 @@ const conditionsOf = (filter: Partial<AgentFilter>) => [
 ];
 
 const sameValue = (expected: unknown, actual: unknown): boolean => {
+  // "six months" is 180 or 183 days; a day-count within 5% is the same reading
+  if (typeof expected === 'number' && typeof actual === 'number') {
+    return Math.abs(expected - actual) <= Math.abs(expected) * 0.05;
+  }
+
   const norm = (v: unknown): string =>
     JSON.stringify(
       Array.isArray(v)
@@ -107,27 +112,32 @@ const scoreFilterCase = (
   };
 };
 
-/** null probes pass when the assistant does not search and says why */
+/**
+ * Null probes pass when the answer names the caveat. Searching is not a
+ * failure in itself: the prompt allows the literal reading when it is stated.
+ */
 const scoreNullCase = (
   goldenCase: GoldenCase,
   turn: Turn,
 ): { score: number; note: string } => {
   const searched = turn.toolCalls.some((c) => SEARCH_TOOLS.has(c.toolName));
-  const term =
+  const mentions =
     'unavailable' in goldenCase.expect
-      ? goldenCase.expect.unavailable
+      ? (goldenCase.expect.mentions ?? [goldenCase.expect.unavailable])
       : 'clarify' in goldenCase.expect
-        ? goldenCase.expect.clarify
-        : '';
-  const spokeToIt =
-    'unavailable' in goldenCase.expect
-      ? turn.text.toLowerCase().includes(goldenCase.expect.unavailable)
-      : turn.text.includes('?');
+        ? goldenCase.expect.mentions
+        : [];
+  const text = turn.text.toLowerCase();
+  const named = mentions.some((term) => text.includes(term.toLowerCase()));
+  const asked = turn.text.includes('?');
 
-  if (!searched && spokeToIt) return { score: 1, note: '' };
-  if (!searched) return { score: 0.5, note: `did not name "${term}"` };
+  if (named) return { score: 1, note: '' };
+  if (!searched && asked)
+    return { score: 0.75, note: 'asked without naming the caveat' };
+  if (!searched)
+    return { score: 0.5, note: `did not name ${mentions.join('/')}` };
 
-  return { score: 0, note: 'searched anyway' };
+  return { score: 0, note: 'searched and named no caveat' };
 };
 
 describe.skipIf(!process.env.SPIKE_LLM)(

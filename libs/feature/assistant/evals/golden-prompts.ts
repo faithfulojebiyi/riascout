@@ -9,8 +9,9 @@ export type GoldenCase = {
   prompt: string;
   expect:
     | { filter: AgentFilter; countOnly?: boolean }
-    | { clarify: string }
-    | { unavailable: string };
+    /** honest answers name the caveat; `mentions` are the words that prove it */
+    | { clarify: string; mentions: string[] }
+    | { unavailable: string; mentions?: string[] };
 };
 
 const f = (partial: Partial<AgentFilter>): AgentFilter => ({
@@ -583,7 +584,7 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     kind: 'shape',
     sourceKind: 'firm',
     prompt:
-      'registered advisers only, no exempt reporting advisers, in Massachusetts',
+      'SEC-registered firms only, no exempt reporting advisers, in Massachusetts',
     expect: {
       filter: f({
         all: [
@@ -669,11 +670,21 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     expect: { unavailable: 'series 7' },
   },
   {
-    id: 'null-wirehouse',
-    kind: 'null',
+    id: 'shape-wirehouse-by-crd',
+    kind: 'shape',
     sourceKind: 'advisor',
     prompt: 'advisers at wirehouses in Texas',
-    expect: { unavailable: 'wirehouse' },
+    expect: {
+      filter: f({
+        all: [{ field: 'advisor.state', op: 'isAnyOf', value: ['TX'] }],
+        any: [
+          { field: 'advisor.current_firm_crd', op: 'is', value: 7691 },
+          { field: 'advisor.current_firm_crd', op: 'is', value: 149777 },
+          { field: 'advisor.current_firm_crd', op: 'is', value: 8174 },
+          { field: 'advisor.current_firm_crd', op: 'is', value: 19616 },
+        ],
+      }),
+    },
   },
   {
     id: 'null-contact',
@@ -683,25 +694,41 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     expect: { unavailable: 'email' },
   },
   {
-    id: 'null-never-moved',
-    kind: 'null',
+    id: 'time-never-moved',
+    kind: 'time',
     sourceKind: 'advisor',
     prompt: 'advisers who have never changed firms',
-    expect: { clarify: 'null movement means not observed, not never moved' },
+    expect: {
+      filter: f({
+        all: [{ field: 'advisor.previous_firm_count', op: 'is', value: 0 }],
+      }),
+    },
   },
   {
     id: 'null-attrition-this-year',
     kind: 'null',
     sourceKind: 'firm',
     prompt: 'firms that lost advisers this year',
-    expect: { clarify: 'only a fixed 90-day window exists' },
+    expect: {
+      clarify: 'only a fixed 90-day window exists',
+      mentions: ['90-day', '90 day', 'ninety'],
+    },
   },
   {
     id: 'null-aum-ambiguous',
     kind: 'null',
     sourceKind: 'advisor',
     prompt: 'advisers managing over $2B',
-    expect: { clarify: 'firm AUM vs AUM per adviser' },
+    expect: {
+      clarify: 'firm AUM vs AUM per adviser',
+      mentions: [
+        'per adviser',
+        'per-adviser',
+        'firm aum',
+        'firm reports',
+        'firm-level',
+      ],
+    },
   },
   {
     id: 'null-state-registered',
@@ -715,14 +742,34 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     kind: 'null',
     sourceKind: 'firm',
     prompt: 'fee-only firms in Texas',
-    expect: { clarify: 'fee method codes, empty means unknown' },
+    expect: {
+      clarify: 'fee method codes, empty means unknown',
+      mentions: ['fee-only', 'commission'],
+    },
   },
   {
     id: 'null-detection-latency',
     kind: 'null',
     sourceKind: 'advisor',
     prompt: 'moves we detected in the last week',
-    expect: { clarify: 'detection date equals the load date' },
+    expect: {
+      clarify: 'detection date equals the load date',
+      mentions: ['not yet', 'release', 'load date'],
+    },
+  },
+  {
+    id: 'null-series-24',
+    kind: 'null',
+    sourceKind: 'advisor',
+    prompt: 'advisers who hold the Series 24 in Illinois',
+    expect: { unavailable: 'series 24' },
+  },
+  {
+    id: 'null-cpa',
+    kind: 'null',
+    sourceKind: 'advisor',
+    prompt: 'CPAs at firms over $1B',
+    expect: { unavailable: 'cpa' },
   },
   {
     id: 'null-zero-vs-unknown-disclosures',

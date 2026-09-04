@@ -11,6 +11,10 @@ export const TOOL_LABELS: Record<string, [running: string, finished: string]> =
     list_lists: ['Reading your lists', 'Read your lists'],
     create_list: ['Creating the list', 'Created the list'],
     add_to_list: ['Adding to the list', 'Added to the list'],
+    updateWorkingMemory: [
+      'Remembering a preference',
+      'Remembered a preference',
+    ],
   };
 
 export const toolLabel = (toolName: string, finished: boolean): string =>
