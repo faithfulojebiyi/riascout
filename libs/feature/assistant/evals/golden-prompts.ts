@@ -648,14 +648,20 @@ export const GOLDEN_CASES: readonly GoldenCase[] = [
     },
   },
 
-  // null discipline: no search on the unavailable field, honest answer
   {
-    id: 'null-custodian',
-    kind: 'null',
+    id: 'shape-custodian-by-name',
+    kind: 'shape',
     sourceKind: 'firm',
     prompt: 'firms custodied at Schwab',
-    expect: { unavailable: 'custodian' },
+    // the id is this load's dim_custodian row; the model must reach it via get_field_options
+    expect: {
+      filter: f({
+        all: [{ field: 'firm.custodian_ids', op: 'isAnyOf', value: ['1315'] }],
+      }),
+    },
   },
+
+  // null discipline: no search on the unavailable field, honest answer
   {
     id: 'null-series-7',
     kind: 'null',

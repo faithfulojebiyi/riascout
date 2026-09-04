@@ -4,6 +4,7 @@ import { REFERENCE_COLUMNS } from '../libs/feature/entities/attribute-types/refe
 import {
   facetKindFor,
   DIM_SOURCE,
+  LABEL_SOURCE,
 } from '../libs/feature/prospecting/facets/facet-kinds.js';
 
 /**
@@ -44,6 +45,7 @@ export const refreshFacetOptions = async (
       if (kind !== 'multiSelect' && kind !== 'search') continue;
 
       const dim = DIM_SOURCE[allowKey];
+      const labelled = LABEL_SOURCE[allowKey];
 
       /**
        * A dim table is authoritative and carries a display label, and it also
@@ -59,13 +61,21 @@ export const refreshFacetOptions = async (
         ? `SELECT code::text AS value, name::text AS label, 0 AS row_count,
                   ${position} AS position
              FROM market.${dim}`
-        : ref.isArray
-          ? `SELECT v::text AS value, v::text AS label, count(*)::int AS row_count,
+        : ref.isArray && labelled
+          ? `SELECT v::text AS value,
+                    coalesce(d.${labelled.label}::text, v::text) AS label,
+                    count(*)::int AS row_count, NULL::int AS position
+               FROM market.${ref.source}, unnest(${ref.column}) AS v
+               LEFT JOIN market.${labelled.table} d ON d.${labelled.id} = v
+              WHERE v IS NOT NULL
+              GROUP BY v, d.${labelled.label}`
+          : ref.isArray
+            ? `SELECT v::text AS value, v::text AS label, count(*)::int AS row_count,
                     NULL::int AS position
                FROM market.${ref.source}, unnest(${ref.column}) AS v
               WHERE v IS NOT NULL
               GROUP BY v`
-          : `SELECT ${ref.column}::text AS value, ${ref.column}::text AS label,
+            : `SELECT ${ref.column}::text AS value, ${ref.column}::text AS label,
                     count(*)::int AS row_count, NULL::int AS position
                FROM market.${ref.source}
               WHERE ${ref.column} IS NOT NULL

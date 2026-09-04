@@ -17,6 +17,26 @@ export const DIM_SOURCE: Readonly<Record<string, string>> = {
   'firm.asset_category_codes': 'dim_asset_category',
 };
 
+/**
+ * Array columns whose values are ids into a dimension: the projection is still
+ * scanned for counts, but the label comes from the dimension so a recruiter can
+ * search "Schwab" rather than an id.
+ */
+export const LABEL_SOURCE: Readonly<
+  Record<string, { table: string; id: string; label: string }>
+> = {
+  'firm.custodian_ids': {
+    table: 'dim_custodian',
+    id: 'id',
+    label: 'canonical_name',
+  },
+  'advisor.firm_custodian_ids': {
+    table: 'dim_custodian',
+    id: 'id',
+    label: 'canonical_name',
+  },
+};
+
 const OPERATORS: Record<FacetKind, FilterOperator[]> = {
   multiSelect: ['isAnyOf', 'isNoneOf', 'isEmpty', 'isNotEmpty'],
   search: ['isAnyOf', 'isNoneOf'],

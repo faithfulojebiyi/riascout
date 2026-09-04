@@ -376,14 +376,14 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, ColumnGlossaryEntry>> = {
   },
   'firm.custodian_ids': {
     description:
-      'Custodian identifiers from Schedule D; not yet resolvable by custodian name, so questions like "custodied at Schwab" cannot be answered today',
+      'Custodians the firm reports on Schedule D, as ids labelled with the custodian name; resolve a name with get_field_options, then filter isAnyOf on the id',
     aliases: ['custodian', 'Schwab', 'Fidelity', 'Pershing', 'custodied at'],
     nulls: NOT_REPORTED,
   },
   'advisor.firm_custodian_ids': {
     description:
-      "Custodian identifiers of the adviser's current firm; not yet resolvable by name, so custodian questions cannot be answered today",
-    aliases: ['custodian', 'custodied at'],
+      "Custodians of the adviser's current firm, as ids labelled with the custodian name; resolve a name with get_field_options first",
+    aliases: ['custodian', 'Schwab', 'Fidelity', 'Pershing', 'custodied at'],
     nulls: NOT_REPORTED,
   },
 

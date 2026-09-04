@@ -53,6 +53,14 @@ const CANNED_OPTIONS: Readonly<Record<string, FacetOption[]>> = {
     value,
     label: value,
   })),
+  'firm.custodian_ids': [
+    { value: '1315', label: 'CHARLES SCHWAB & CO., INC.' },
+    { value: '3934', label: 'THE NORTHERN TRUST COMPANY' },
+  ],
+  'advisor.firm_custodian_ids': [
+    { value: '1315', label: 'CHARLES SCHWAB & CO., INC.' },
+    { value: '3934', label: 'THE NORTHERN TRUST COMPANY' },
+  ],
   'advisor.disclosure_status': [
     { value: 'has_disclosure', label: 'has_disclosure' },
     { value: 'none_reported', label: 'none_reported' },
