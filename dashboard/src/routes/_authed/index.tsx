@@ -1,10 +1,8 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
 
 import { Box, Flex, HStack, styled } from '@riascout-ui/styled-system/jsx';
 
 import { Composer } from '../../modules/assistant/components/composer';
-import { RecruiterProfileSheet } from '../../modules/assistant/components/recruiter-profile-sheet';
 import { SUGGESTED_PROMPTS } from '../../modules/assistant/constants';
 import { setPendingMessage } from '../../modules/assistant/pending-message';
 import { useThreads } from '../../modules/assistant/queries/use-threads';
@@ -27,7 +25,6 @@ function Home() {
   const navigate = useNavigate();
   const { data: threads } = useThreads();
   const firstName = user.name?.split(' ')[0] || null;
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const start = (message: string) => {
     const threadId = crypto.randomUUID();
@@ -70,23 +67,6 @@ function Home() {
         </Box>
 
         <Composer autoFocus onSend={start} showHint />
-        <styled.button
-          alignSelf="flex-start"
-          color="text.muted"
-          cursor="pointer"
-          fontSize="1"
-          mt="-5"
-          onClick={() => setProfileOpen(true)}
-          textDecoration="underline"
-          textUnderlineOffset="3px"
-          type="button"
-        >
-          What the assistant remembers about you
-        </styled.button>
-        <RecruiterProfileSheet
-          onOpenChange={setProfileOpen}
-          open={profileOpen}
-        />
 
         <HStack flexWrap="wrap" gap="2">
           {SUGGESTED_PROMPTS.map((prompt) => (

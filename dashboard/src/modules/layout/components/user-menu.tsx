@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Box, HStack } from '@riascout-ui/styled-system/jsx';
 
 import { authClient, useSession } from '../../../lib/auth-client';
+import { openRecruiterProfile } from '../../assistant/recruiter-profile-store';
 import { Icons } from '../../../ui/icons/base';
 import { Avatar, AvatarFallback } from '../../../ui/primitives/avatar';
 import {
@@ -105,6 +106,15 @@ export const UserMenu = () => {
             css={{ minW: '15rem' }}
             side={isMobile ? 'bottom' : 'right'}
           >
+            <DropdownMenuItem onSelect={openRecruiterProfile}>
+              <HStack gap="2">
+                <Icons.aiChip size={14} />
+                <Text fontSize="1">Assistant memory</Text>
+              </HStack>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
             <DropdownMenuLabel>Theme</DropdownMenuLabel>
             {THEMES.map((option) => {
               const ThemeIcon = Icons[option.icon];

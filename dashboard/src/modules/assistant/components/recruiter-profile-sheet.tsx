@@ -21,6 +21,10 @@ import {
   useRecruiterProfile,
   useUpdateRecruiterProfile,
 } from '../queries/use-recruiter-profile';
+import {
+  setRecruiterProfileOpen,
+  useRecruiterProfileOpen,
+} from '../recruiter-profile-store';
 
 const FIRM_PATTERN = /^(.*?)(?:\s*\((\d+)\))?$/;
 
@@ -111,7 +115,7 @@ export const RecruiterProfileSheet = ({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent>
+      <SheetContent maxW="calc(100vw - 16px)" w="700px">
         <SheetHeader>
           <SheetTitle>What the assistant remembers</SheetTitle>
         </SheetHeader>
@@ -271,5 +275,14 @@ export const RecruiterProfileSheet = ({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+};
+
+/** mounted once in the authed layout; the user menu opens it */
+export const RecruiterProfileSheetHost = () => {
+  const open = useRecruiterProfileOpen();
+
+  return (
+    <RecruiterProfileSheet onOpenChange={setRecruiterProfileOpen} open={open} />
   );
 };

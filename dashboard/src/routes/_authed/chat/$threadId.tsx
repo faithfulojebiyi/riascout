@@ -1,14 +1,13 @@
 import type { MastraDBMessage } from '@mastra/react';
 import { useChat, useMastraClient } from '@mastra/react';
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Box, Flex, HStack, styled } from '@riascout-ui/styled-system/jsx';
 
 import { ApprovalContext } from '../../../modules/assistant/components/approval-context';
 import { Composer } from '../../../modules/assistant/components/composer';
 import { MessageList } from '../../../modules/assistant/components/message-list';
-import { RecruiterProfileSheet } from '../../../modules/assistant/components/recruiter-profile-sheet';
 import { ThreadHistoryMenu } from '../../../modules/assistant/components/thread-history-menu';
 import {
   AGENT_ID,
@@ -22,7 +21,6 @@ import {
   useThreads,
 } from '../../../modules/assistant/queries/use-threads';
 import { Icons } from '../../../ui/icons/base';
-import { Button } from '../../../ui/primitives/button';
 
 export const Route = createFileRoute('/_authed/chat/$threadId')({
   component: ThreadPage,
@@ -105,7 +103,6 @@ function Conversation({
   });
   const scrollRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const send = async (message: string) => {
     // only a thread this page created gets a title; existing ones keep theirs
@@ -160,20 +157,6 @@ function Conversation({
           px="2"
         >
           <ThreadHistoryMenu activeThreadId={threadId} title={title} />
-          <Box flex="1" />
-          <Button
-            aria-label="What the assistant remembers"
-            onClick={() => setProfileOpen(true)}
-            size="icon"
-            title="What the assistant remembers"
-            variant="ghost"
-          >
-            <Icons.user size={14} />
-          </Button>
-          <RecruiterProfileSheet
-            onOpenChange={setProfileOpen}
-            open={profileOpen}
-          />
         </Flex>
 
         <Box flex="1" overflowY="auto" px="6" py="6" ref={scrollRef}>

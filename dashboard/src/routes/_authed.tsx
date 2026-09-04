@@ -2,6 +2,7 @@ import { css } from '@riascout-ui/styled-system/css';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 import { authClient } from '../lib/auth-client';
+import { RecruiterProfileSheetHost } from '../modules/assistant/components/recruiter-profile-sheet';
 import { MastraProvider } from '../modules/assistant/mastra-provider';
 import { AppSidebar } from '../modules/layout/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '../ui/primitives/sidebar';
@@ -40,6 +41,7 @@ function AuthedLayout() {
         <SidebarInset>
           <MastraProvider>
             <Outlet />
+            <RecruiterProfileSheetHost />
           </MastraProvider>
         </SidebarInset>
       </div>
