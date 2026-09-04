@@ -11,6 +11,10 @@ import {
 } from '@feature/entities/cells/cell-writer.js';
 import { AlsService } from '@system/als/als.service.js';
 import { AppPrismaService } from '@system/database/database.service.js';
+import {
+  TransactionRunner,
+  type AppPrismaTx,
+} from '@system/database/transaction-runner.service.js';
 
 import type {
   UpdateRecordValuesDto,
@@ -28,6 +32,7 @@ export class UpdateRecordValuesCommandHandler implements ICommandHandler<UpdateR
   constructor(
     private readonly appPrismaService: AppPrismaService,
     private readonly alsService: AlsService,
+    private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async execute({
@@ -84,52 +89,61 @@ export class UpdateRecordValuesCommandHandler implements ICommandHandler<UpdateR
       );
     }
 
-    const results: UpdateRecordValuesResponseDto['results'] = [];
+    /**
+     * One transaction for the whole batch: a conflict on any cell rolls back
+     * every cell written before it, so the caller never sees a half-saved
+     * record behind a 409.
+     */
+    return this.transactionRunner.run(async (tx) => {
+      const executor = this.executorFor(tx);
+      const results: UpdateRecordValuesResponseDto['results'] = [];
 
-    for (const write of dto.values) {
-      const attribute = byId.get(write.attributeId);
+      for (const write of dto.values) {
+        const attribute = byId.get(write.attributeId);
 
-      if (!attribute) {
-        continue;
+        if (!attribute) {
+          continue;
+        }
+
+        const result = await writeCell(executor, {
+          recordId: record.id,
+          attributeId: write.attributeId,
+          workspaceId,
+          type: attribute.type,
+          isMultiValue: attribute.isMultiValue,
+          value: write.value,
+          // a request through this endpoint is a human edit, never a machine one
+          source: null,
+          expectedVersion: write.expectedVersion,
+        });
+
+        results.push({
+          attributeId: write.attributeId,
+          status: result.status,
+          version: result.status === 'written' ? result.version : null,
+        });
       }
 
-      const result = await writeCell(this.executor, {
-        recordId: record.id,
-        attributeId: write.attributeId,
-        workspaceId,
-        type: attribute.type,
-        isMultiValue: attribute.isMultiValue,
-        value: write.value,
-        // a request through this endpoint is a human edit, never a machine one
-        source: null,
-        expectedVersion: write.expectedVersion,
-      });
+      if (results.some((r) => r.status === 'conflict')) {
+        // thrown inside the transaction, so the writes above are rolled back
+        throw new ConflictException({
+          message: 'One or more cells changed underneath this edit',
+          code: 'CELL_VERSION_CONFLICT',
+          results,
+        });
+      }
 
-      results.push({
-        attributeId: write.attributeId,
-        status: result.status,
-        version: result.status === 'written' ? result.version : null,
-      });
-    }
-
-    if (results.some((r) => r.status === 'conflict')) {
-      throw new ConflictException({
-        message: 'One or more cells changed underneath this edit',
-        code: 'CELL_VERSION_CONFLICT',
-        results,
-      });
-    }
-
-    return { results };
+      return { results };
+    });
   }
 
-  private get executor(): CellExecutor {
+  private executorFor(tx: AppPrismaTx): CellExecutor {
     return {
       query: async <T>(
         sql: string,
         params: unknown[],
       ): Promise<{ rows: T[] }> => ({
-        rows: await this.appPrismaService.$queryRawUnsafe<T[]>(sql, ...params),
+        rows: await tx.$queryRawUnsafe<T[]>(sql, ...params),
       }),
     };
   }

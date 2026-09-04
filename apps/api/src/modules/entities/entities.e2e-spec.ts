@@ -379,6 +379,50 @@ describe('POST /entities/get-entity-records', () => {
       await db.query('delete from app.entity_record where id = $1', [id]);
     });
 
+    it('rolls back every cell in a batch when one conflicts', async () => {
+      const created = await post('/entities/create-entity-record', {
+        entityId,
+        sourceKind: 'advisor',
+        sourceCrd: '910008',
+      });
+      const { id } = (await created.json()) as { id: string };
+
+      await post('/entities/update-record-values', {
+        recordId: id,
+        values: [
+          { attributeId: statusAttr, value: 'A' },
+          { attributeId: hiddenAttr, value: 'h0' },
+        ],
+      });
+      await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'B', expectedVersion: 0 }],
+      });
+
+      // status would write cleanly at version 1; the stale hidden cell must undo it
+      const mixed = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [
+          { attributeId: statusAttr, value: 'C', expectedVersion: 1 },
+          { attributeId: hiddenAttr, value: 'h1', expectedVersion: 5 },
+        ],
+      });
+
+      expect(mixed.status).toBe(409);
+
+      // still at version 1: a committed 'C' would have moved it to 2 and 409ed here
+      const after = await post('/entities/update-record-values', {
+        recordId: id,
+        values: [{ attributeId: statusAttr, value: 'D', expectedVersion: 1 }],
+      });
+      const body = (await after.json()) as { results: { version: number }[] };
+
+      expect(after.status).toBe(201);
+      expect(body.results[0]?.version).toBe(2);
+
+      await db.query('delete from app.entity_record where id = $1', [id]);
+    });
+
     it('refuses to write a projected market column', async () => {
       const created = await post('/entities/create-entity-record', {
         entityId,
