@@ -17,6 +17,8 @@ export const bulkAddToListSchema = withUser({
   sourceKind: z.enum(['advisor', 'firm']),
   sourceCrds: z.array(z.string().regex(/^\d+$/)).optional(),
   filter: z.unknown().optional(),
+  /** the background_job row the worker reports progress to */
+  jobId: z.uuid().optional(),
 })
   // exactly one of the two, never both and never neither
   .refine(

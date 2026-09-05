@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 
+import { jobsControllerGetJob } from '../../../api/generated/jobs/jobs';
 import { listsControllerAddToList } from '../../../api/generated/lists/lists';
 import type {
   AddToList,
@@ -16,7 +17,9 @@ import { toast } from '../../../ui/primitives/toast/toast';
  */
 const message = (result: AddToListResponse): string => {
   if (!result.completed) {
-    return `Adding ${result.requested.toLocaleString()} in the background`;
+    return result.requested > 0
+      ? `Adding ${result.requested.toLocaleString()} in the background`
+      : 'Adding the matching records in the background';
   }
 
   if (result.membersAdded === 0) {
@@ -28,6 +31,40 @@ const message = (result: AddToListResponse): string => {
   return already > 0
     ? `Added ${result.membersAdded.toLocaleString()}, ${already.toLocaleString()} already there`
     : `Added ${result.membersAdded.toLocaleString()}`;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Polls the job the queued add returned and reports the outcome once, so a
+ * save that finishes or fails after the response is never silent.
+ */
+const watchJob = async (jobId: string, onSettled: () => void) => {
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    await sleep(2000);
+
+    const job = await jobsControllerGetJob({ jobId }).catch(() => null);
+
+    if (!job) return;
+
+    if (job.status === 'completed') {
+      toast.success(
+        job.added === 0
+          ? `All ${job.requested.toLocaleString()} were already in the list`
+          : `Added ${job.added.toLocaleString()} to the list`,
+      );
+      onSettled();
+
+      return;
+    }
+
+    if (job.status === 'failed') {
+      toast.error('The background add failed; nothing more was added');
+      onSettled();
+
+      return;
+    }
+  }
 };
 
 export const useAddToList = () => {
@@ -59,8 +96,8 @@ export const useAddToList = () => {
 
       invalidate();
 
-      if (!result.completed) {
-        setTimeout(invalidate, 4000);
+      if (!result.completed && result.jobId) {
+        void watchJob(result.jobId, invalidate);
       }
     },
     onError: () => toast.error('Could not add to that list'),

@@ -14,6 +14,7 @@ import type {
   FirmLookupInput,
   FacetOptionItem,
   FirmProfile,
+  JobSnapshot,
   ListSummary,
   ProspectSearchInput,
   ProspectSearchResult,
@@ -36,6 +37,7 @@ import { UpdateRecordValuesCommand } from '../entities/commands/update-record-va
 import { GetEntitiesQuery } from '../entities/queries/get-entities.js';
 import { GetEntityRecordQuery } from '../entities/queries/get-entity-record.js';
 import { GetFirmProfileQuery } from '../firms/queries/get-firm-profile.js';
+import { GetJobQuery } from '../jobs/queries/get-job.js';
 import { AddToListCommand } from '../lists/commands/add-to-list.js';
 import { CreateListCommand } from '../lists/commands/create-list.js';
 import { GetListsQuery } from '../lists/queries/get-lists.js';
@@ -190,6 +192,12 @@ export class AssistantQueriesAdapter implements AssistantQueries {
             : { listId: input.listId, filter: input.filter },
         ),
       ),
+    );
+  }
+
+  getJob(identity: ToolIdentity, jobId: string): Promise<JobSnapshot> {
+    return this.inScope(identity, () =>
+      this.queryBus.execute(new GetJobQuery({ jobId })),
     );
   }
 

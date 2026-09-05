@@ -54,6 +54,9 @@ lerna-debug.log*
 # ETL working files sourced from MARKET_DATA_DIR
 /etl/.staging
 
+# Local scraper workspace and downloaded datasets
+/scraper/
+
 # uploaded user assets — STORAGE_LOCAL_DIR's default target, never committed
 /storage
 

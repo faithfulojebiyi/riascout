@@ -7,6 +7,7 @@ import {
   type BulkAddResult,
 } from '@feature/lists/perform-bulk-add.js';
 import { resolveCrdsForFilter } from '@feature/lists/resolve-crds.js';
+import { JobProgress } from '@feature/jobs/job-progress.js';
 import { AppPrismaService } from '@system/database/database.service.js';
 import type { BulkAddToListDto } from '@system/queues/dto/lists.dto.js';
 
@@ -29,6 +30,23 @@ export class BulkAddToListCommandHandler implements ICommandHandler<BulkAddToLis
 
   async execute({ payload }: BulkAddToListCommand): Promise<BulkAddResult> {
     const { listId, entityId, sourceKind, user } = payload;
+    const job = payload.jobId
+      ? new JobProgress(this.appPrismaService, payload.jobId)
+      : null;
+
+    try {
+      return await this.run(payload, job);
+    } catch (error) {
+      await job?.fail(error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  }
+
+  private async run(
+    payload: BulkAddToListDto,
+    job: JobProgress | null,
+  ): Promise<BulkAddResult> {
+    const { listId, entityId, sourceKind, user } = payload;
 
     /**
      * Resolving here rather than in the api keeps the event small and avoids
@@ -44,14 +62,23 @@ export class BulkAddToListCommandHandler implements ICommandHandler<BulkAddToLis
           filter: filterTreeSchema.nullable().parse(payload.filter ?? null),
         });
 
-    const result = await performBulkAdd(this.appPrismaService, {
-      listId,
-      entityId,
-      workspaceId: user.workspaceId,
-      sourceKind,
-      userId: user.userId,
-      sourceCrds,
-    });
+    // a retry starts the counters over rather than double counting
+    await job?.start(sourceCrds.length);
+
+    const result = await performBulkAdd(
+      this.appPrismaService,
+      {
+        listId,
+        entityId,
+        workspaceId: user.workspaceId,
+        sourceKind,
+        userId: user.userId,
+        sourceCrds,
+      },
+      (chunk) => job?.advance(chunk) ?? Promise.resolve(),
+    );
+
+    await job?.complete();
 
     this.logger.log(
       `list ${listId}: ${result.added} added, ${result.created} records created, from ${result.requested} crds`,

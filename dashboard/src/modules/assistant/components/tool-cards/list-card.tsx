@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { QUERY_KEYS } from '../../../../lib/query';
 import { Icons } from '../../../../ui/icons/base';
+import { isJobSettled, useJob } from '../../../entities/queries/use-job';
 import { ArtifactCard } from './artifact-card';
 import { type ApprovalDescription, isRecord } from './types';
 
@@ -13,6 +14,7 @@ type ListResult = {
   requested?: number;
   added?: number;
   queued?: boolean;
+  jobId?: string | null;
 };
 
 const isListResult = (value: unknown): value is ListResult =>
@@ -24,26 +26,21 @@ const isListResult = (value: unknown): value is ListResult =>
 /** the same tool call re-renders many times; the sidebar refresh runs once */
 const refreshed = new Set<string>();
 
-const useRefreshLists = (toolCallId: string, queued: boolean) => {
+const useRefreshLists = (toolCallId: string, settled: boolean) => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  // once on landing, and once more when a queued job settles
   useEffect(() => {
-    if (refreshed.has(toolCallId)) return;
+    const key = `${toolCallId}:${settled}`;
 
-    refreshed.add(toolCallId);
+    if (refreshed.has(key)) return;
 
-    const invalidate = () => {
-      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.lists] });
-      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.entities] });
-      void router.invalidate();
-    };
-
-    invalidate();
-
-    // a queued add settles in the background; one late refetch picks it up
-    if (queued) setTimeout(invalidate, 4000);
-  }, [toolCallId, queued, queryClient, router]);
+    refreshed.add(key);
+    void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.lists] });
+    void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.entities] });
+    void router.invalidate();
+  }, [toolCallId, settled, queryClient, router]);
 };
 
 const noun = (input: unknown, count: number): string => {
@@ -66,26 +63,39 @@ export const ListCard = ({
   input?: unknown;
 }) => {
   const ok = isListResult(result);
+  const job = useJob(ok && result.queued ? result.jobId : null);
+  const settled = !ok || !result.queued || isJobSettled(job.data);
 
-  useRefreshLists(toolCallId, ok && Boolean(result.queued));
+  useRefreshLists(toolCallId, settled);
 
   if (!ok) return null;
 
-  const count = result.queued
-    ? (result.requested ?? 0)
-    : (result.added ?? result.list.memberCount ?? 0);
-  const meta = result.queued
-    ? `${count.toLocaleString()} ${noun(input, count)} · count settles shortly`
-    : result.list.memberCount === 0 && result.added === undefined
+  const live = job.data;
+  const meta = !result.queued
+    ? result.list.memberCount === 0 && result.added === undefined
       ? 'Empty list'
-      : `${count.toLocaleString()} ${noun(input, count)} added`;
+      : `${(result.added ?? result.list.memberCount ?? 0).toLocaleString()} ${noun(input, result.added ?? 0)} added`
+    : live?.status === 'completed'
+      ? `${live.added.toLocaleString()} ${noun(input, live.added)} added`
+      : live?.status === 'failed'
+        ? 'The background add failed'
+        : live && live.requested > 0
+          ? `${live.processed.toLocaleString()} of ${live.requested.toLocaleString()} ${noun(input, live.requested)} added so far`
+          : `${(result.requested ?? 0).toLocaleString()} ${noun(input, result.requested ?? 0)} · adding in the background`;
+  const tag = result.list.isNew
+    ? 'New list'
+    : result.queued && !settled
+      ? 'In progress'
+      : live?.status === 'failed'
+        ? 'Failed'
+        : null;
 
   return (
     <ArtifactCard
       href={result.url}
       icon={<Icons.checklist size={16} />}
       meta={meta}
-      tag={result.list.isNew ? 'New list' : result.queued ? 'Queued' : null}
+      tag={tag}
       title={result.list.name}
     />
   );

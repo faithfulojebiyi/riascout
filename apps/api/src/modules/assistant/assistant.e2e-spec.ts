@@ -120,6 +120,7 @@ describe('/agent (mastra mount)', () => {
         'list_lists',
         'create_list',
         'add_to_list',
+        'get_job',
         'get_record',
         'update_record',
       ]),

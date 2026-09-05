@@ -72,5 +72,7 @@ export const AddToListResponseSchema = z
     /** memberships added; lower than requested when some were already members */
     membersAdded: z.number().int(),
     requested: z.number().int(),
+    /** set when the add was queued; poll POST /jobs/get with it */
+    jobId: z.uuid().nullable(),
   })
   .meta({ id: 'AddToListResponse' });

@@ -1560,6 +1560,7 @@ model Organization {
   entityViewFieldPaths      EntityViewFieldPath[]
   lists                     List[]
   listMembers               ListMember[]
+  backgroundJobs            BackgroundJob[]
 
   @@map("organization")
   @@schema("app")
@@ -1992,6 +1993,45 @@ enum ListKind {
   dynamic
 
   @@map("list_kind")
+  @@schema("app")
+}
+
+enum BackgroundJobStatus {
+  queued
+  running
+  completed
+  failed
+
+  @@map("background_job_status")
+  @@schema("app")
+}
+
+/// Progress of queued work, so a save that continues after the response is
+/// never invisible. Counters are incremented atomically per chunk.
+model BackgroundJob {
+  id          String              @id @default(uuid(7))
+  workspaceId String              @map("workspace_id")
+  userId      String              @map("user_id")
+  /// the event key that started it, e.g. lists/bulk.add
+  kind        String
+  status      BackgroundJobStatus @default(queued)
+  /// what the job acts on, e.g. { listId, entityId }
+  payload     Json                @default("{}") @db.JsonB
+  requested   Int                 @default(0)
+  processed   Int                 @default(0)
+  created     Int                 @default(0)
+  added       Int                 @default(0)
+  error       String?
+  startedAt   DateTime?           @map("started_at")
+  finishedAt  DateTime?           @map("finished_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("background_job")
   @@schema("app")
 }
 

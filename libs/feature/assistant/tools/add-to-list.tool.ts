@@ -70,6 +70,8 @@ const outputSchema = z.object({
   recordsCreated: z.number().int(),
   /** true when the add runs in the background and the count settles later */
   queued: z.boolean(),
+  /** poll with get_job while queued */
+  jobId: z.string().nullable(),
   filterErrors: z.array(filterErrorSchema).optional(),
 });
 
@@ -80,7 +82,7 @@ export const addToListTool = defineTool({
   description: [
     'Add advisers or firms to a list, creating the list when newListName is given. The recruiter approves it first; call it once.',
     'Pass sourceCrds for specific people, or the filter from the search you just ran (with its total as expectedTotal) to save everything it matched.',
-    'A filter save is queued and its member count settles shortly after; say so.',
+    'A filter save is queued: the result carries a jobId, and get_job reports its progress when the recruiter asks.',
   ].join(' '),
   input: inputSchema,
   output: outputSchema,
@@ -95,6 +97,7 @@ export const addToListTool = defineTool({
       added: 0,
       recordsCreated: 0,
       queued: false,
+      jobId: null,
       filterErrors,
     });
 
@@ -162,6 +165,7 @@ export const addToListTool = defineTool({
       added: result.membersAdded,
       recordsCreated: result.recordsCreated,
       queued: !result.completed,
+      jobId: result.jobId,
     };
   },
 });

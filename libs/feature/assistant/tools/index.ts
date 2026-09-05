@@ -3,6 +3,7 @@ import { createListTool } from './create-list.tool.js';
 import type { ToolDefinition } from './define-tool.js';
 import { getFieldOptionsTool } from './get-field-options.tool.js';
 import { getFirmProfileTool } from './get-firm-profile.tool.js';
+import { getJobTool } from './get-job.tool.js';
 import { getRecordTool } from './get-record.tool.js';
 import { listListsTool } from './list-lists.tool.js';
 import { lookupFirmTool } from './lookup-firm.tool.js';
@@ -20,6 +21,7 @@ export const ASSISTANT_TOOLS: readonly ToolDefinition[] = [
   listListsTool,
   createListTool,
   addToListTool,
+  getJobTool,
   getRecordTool,
   updateRecordTool,
 ];

@@ -62,15 +62,34 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
       sourceCrds: [...new Set(dto.sourceCrds ?? [])],
     };
 
-    /** the filter's size is unknown until it runs, so it never blocks a request */
-    if (dto.filter) {
+    /** the job row exists before the event, so a lost event is still visible */
+    const queue = async (
+      data: { sourceCrds: string[] } | { filter: unknown },
+      requested: number,
+    ): Promise<AddToListResponseDto> => {
+      const job = await this.appPrismaService.backgroundJob.create({
+        data: {
+          workspaceId,
+          userId,
+          kind: EVENT_KEYS.LIST_BULK_ADD,
+          payload: {
+            listId: input.listId,
+            entityId: input.entityId,
+            sourceKind: input.sourceKind,
+          },
+          requested,
+        },
+        select: { id: true },
+      });
+
       await this.eventPublisherService.sendEvent({
         name: EVENT_KEYS.LIST_BULK_ADD,
         data: {
           listId: input.listId,
           entityId: input.entityId,
           sourceKind: input.sourceKind,
-          filter: dto.filter,
+          jobId: job.id,
+          ...data,
         },
         user: { userId, workspaceId },
       });
@@ -79,8 +98,14 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
         completed: false,
         recordsCreated: 0,
         membersAdded: 0,
-        requested: 0,
+        requested,
+        jobId: job.id,
       };
+    };
+
+    /** the filter's size is unknown until it runs, so it never blocks a request */
+    if (dto.filter) {
+      return queue({ filter: dto.filter }, 0);
     }
 
     /**
@@ -90,23 +115,7 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
      * counts arrive when the list refreshes.
      */
     if (input.sourceCrds.length > SYNC_ADD_MAX) {
-      await this.eventPublisherService.sendEvent({
-        name: EVENT_KEYS.LIST_BULK_ADD,
-        data: {
-          listId: input.listId,
-          entityId: input.entityId,
-          sourceKind: input.sourceKind,
-          sourceCrds: input.sourceCrds,
-        },
-        user: { userId, workspaceId },
-      });
-
-      return {
-        completed: false,
-        recordsCreated: 0,
-        membersAdded: 0,
-        requested: input.sourceCrds.length,
-      };
+      return queue({ sourceCrds: input.sourceCrds }, input.sourceCrds.length);
     }
 
     const result = await performBulkAdd(this.appPrismaService, input);
@@ -116,6 +125,7 @@ export class AddToListCommandHandler implements ICommandHandler<AddToListCommand
       recordsCreated: result.created,
       membersAdded: result.added,
       requested: result.requested,
+      jobId: null,
     };
   }
 }

@@ -66,6 +66,7 @@ export const QUERY_KEYS = {
   entities: 'entities',
   entityRecords: 'entity-records',
   facetOptions: 'facet-options',
+  jobs: 'jobs',
   lists: 'lists',
   onboarding: 'onboarding',
   prospectSearch: 'prospect-search',

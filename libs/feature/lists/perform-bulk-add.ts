@@ -23,6 +23,13 @@ export type BulkAddResult = {
   requested: number;
 };
 
+/** what one committed chunk contributed, for progress reporting */
+export type BulkAddChunk = {
+  processed: number;
+  created: number;
+  added: number;
+};
+
 type UpsertRow = { id: string; inserted: boolean };
 
 /**
@@ -36,6 +43,7 @@ type UpsertRow = { id: string; inserted: boolean };
 export const performBulkAdd = async (
   appPrismaService: AppPrismaService,
   input: PerformBulkAddInput,
+  onChunk?: (chunk: BulkAddChunk) => Promise<void>,
 ): Promise<BulkAddResult> => {
   let created = 0;
   let added = 0;
@@ -69,6 +77,7 @@ export const performBulkAdd = async (
 
     created += result.created;
     added += result.added;
+    await onChunk?.({ processed: chunk.sourceCrds.length, ...result });
   }
 
   return { created, added, requested: input.sourceCrds.length };

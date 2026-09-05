@@ -14,6 +14,7 @@ import { AdvisorsModule } from './modules/advisors/advisors.module.js';
 import { AssistantModule } from './modules/assistant/assistant.module.js';
 import { EntitiesModule } from './modules/entities/entities.module.js';
 import { FirmsModule } from './modules/firms/firms.module.js';
+import { JobsModule } from './modules/jobs/jobs.module.js';
 import { ListsModule } from './modules/lists/lists.module.js';
 import { MovementModule } from './modules/movement/movement.module.js';
 import { OnboardingModule } from './modules/onboarding/onboarding.module.js';
@@ -35,6 +36,7 @@ import { EventPublisherModule } from './modules/event-publisher/event-publisher.
     EntitiesModule,
     FirmsModule,
     ListsModule,
+    JobsModule,
     MovementModule,
     OnboardingModule,
     ProspectingModule,

@@ -116,6 +116,20 @@ export type AddToListResult = {
   recordsCreated: number;
   membersAdded: number;
   requested: number;
+  /** the background job to poll when completed is false */
+  jobId: string | null;
+};
+
+export type JobSnapshot = {
+  id: string;
+  kind: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  payload: Record<string, unknown>;
+  requested: number;
+  processed: number;
+  created: number;
+  added: number;
+  error: string | null;
 };
 
 export type FirmProfile = {
@@ -162,6 +176,7 @@ export type AssistantQueries = {
     identity: ToolIdentity,
     input: AddToListInput,
   ): Promise<AddToListResult>;
+  getJob(identity: ToolIdentity, jobId: string): Promise<JobSnapshot>;
   /** the entity's editable fields, readable before any record exists */
   getEntityAttributes(
     identity: ToolIdentity,
